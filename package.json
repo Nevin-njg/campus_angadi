@@ -1,0 +1,50 @@
+{
+  "name": "campusbaza",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build:packages && concurrently -n API,WEB -c auto \"npm run dev --workspace=@campusbaza/api\" \"npm run dev --workspace=@campusbaza/web\"",
+    "dev:api": "npm run build:packages && npm run dev --workspace=@campusbaza/api",
+    "dev:web": "npm run build:packages && npm run dev --workspace=@campusbaza/web",
+    "build": "npm run build:packages && npm run build:api && npm run build:web",
+    "build:packages": "npm run build --workspace=@campusbaza/contracts && npm run build --workspace=@campusbaza/config && npm run build --workspace=@campusbaza/validation",
+    "build:api": "npm run build --workspace=@campusbaza/api",
+    "build:web": "npm run build --workspace=@campusbaza/web",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "npm run build:packages && npm run typecheck --workspace=@campusbaza/api && npm run typecheck --workspace=@campusbaza/web",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "npm run test --workspace=@campusbaza/api",
+    "test:web": "npm run test --workspace=@campusbaza/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "postinstall": "npm run build:packages",
+    "seed:catalog": "npm run build:packages && npm run seed:catalog --workspace=@campusbaza/api",
+    "seed:dealers": "npm run build:packages && npm run seed:dealers --workspace=@campusbaza/api",
+    "db:indexes:check": "npm run build:packages && npm run db:indexes:check --workspace=@campusbaza/api",
+    "db:indexes:ensure": "npm run build:packages && npm run db:indexes:ensure --workspace=@campusbaza/api",
+    "backup:mongodb": "bash scripts/backup-mongodb.sh",
+    "restore:mongodb": "bash scripts/restore-mongodb.sh",
+    "check:release": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build && npm audit --audit-level=high",
+    "smoke:api": "node scripts/smoke-api.mjs"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.16.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.13.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

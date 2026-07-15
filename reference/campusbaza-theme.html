@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campus Angaadi — NIT Calicut</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-page: #17181a;
+    --bg-card: #232323;
+    --bg-elevated: #2a2a2a;
+    --bg-hover: #2f2f2f;
+    --bg-input: #232323;
+    --border: #383838;
+    --border-soft: #2b2b2b;
+    --text-primary: #f1f2f5;
+    --text-secondary: #9aa0a6;
+    --text-tertiary: #6c7076;
+    --accent: #ffa116;
+    --accent-hover: #ffb84d;
+    --accent-soft: rgba(255, 161, 22, 0.13);
+    --accent-glow: rgba(255, 161, 22, 0.35);
+    --green: #2cbb5d;
+    --green-soft: rgba(44, 187, 93, 0.13);
+    --blue: #4b9bff;
+    --blue-soft: rgba(75, 155, 255, 0.13);
+    --violet: #a78bfa;
+    --violet-soft: rgba(167, 139, 250, 0.13);
+    --teal: #2dd4bf;
+    --teal-soft: rgba(45, 212, 191, 0.13);
+    --gray-soft: rgba(154, 160, 166, 0.13);
+    --red: #f0555a;
+    --red-soft: rgba(240, 85, 90, 0.13);
+    --radius: 10px;
+    --radius-sm: 7px;
+    --radius-lg: 18px;
+    --font-display: 'Fraunces', serif;
+    --font-ui: 'Inter', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --nav-h: 66px;
+  }
+
+  [data-theme="light"] {
+    --bg-page: #fbfbfc;
+    --bg-card: #ffffff;
+    --bg-elevated: #f5f6f8;
+    --bg-hover: #f0f1f3;
+    --bg-input: #f2f3f5;
+    --border: #e6e7eb;
+    --border-soft: #eef0f2;
+    --text-primary: #17181a;
+    --text-secondary: #5c6066;
+    --text-tertiary: #8a8e94;
+    --accent-soft: rgba(255, 161, 22, 0.10);
+    --green-soft: rgba(44, 187, 93, 0.10);
+    --blue-soft: rgba(75, 155, 255, 0.10);
+    --violet-soft: rgba(167, 139, 250, 0.12);
+    --teal-soft: rgba(45, 212, 191, 0.12);
+    --gray-soft: rgba(92, 96, 102, 0.07);
+    --red-soft: rgba(240, 85, 90, 0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  body {
+    font-family: var(--font-ui);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s ease, color 0.2s ease;
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  ul { list-style: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  img { max-width: 100%; display: block; }
+  svg { display: block; }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+  .icon { width: 17px; height: 17px; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+
+  /* ===== PAGE LOAD ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .fade-up { animation: fadeUp 0.7s cubic-bezier(.2,.7,.2,1) both; }
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.6s cubic-bezier(.2,.7,.2,1), transform 0.6s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  /* ===== NAVBAR ===== */
+  .navbar {
+    position: sticky; top: 0; z-index: 100;
+    background: color-mix(in srgb, var(--bg-page) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+    transition: height 0.25s ease, box-shadow 0.25s ease;
+  }
+  .navbar.scrolled { box-shadow: 0 6px 24px rgba(0,0,0,0.18); }
+  .nav-inner { display: flex; align-items: center; gap: 24px; height: var(--nav-h); transition: height 0.25s ease; }
+  .navbar.scrolled .nav-inner { height: 58px; }
+  .logo { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(145deg, var(--accent), #e8890a);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #17181a; font-size: 15px; font-family: var(--font-display);
+    box-shadow: 0 3px 10px var(--accent-glow);
+    transition: transform 0.3s cubic-bezier(.2,.7,.3,1.5);
+  }
+  .logo:hover .logo-mark { transform: rotate(-8deg) scale(1.06); }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .logo-text .name { font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+  .logo-text .sub { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-tertiary); letter-spacing: 0.08em; }
+
+  .nav-links { display: flex; gap: 2px; align-items: center; }
+  .nav-links a {
+    padding: 9px 13px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; position: relative;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .nav-links a:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-links a.active { color: var(--accent); }
+  .nav-links a.active::after { content: ""; position: absolute; left: 13px; right: 13px; bottom: 3px; height: 2px; background: var(--accent); border-radius: 2px; animation: fadeIn 0.3s ease; }
+
+  .nav-search { flex: 1; max-width: 440px; position: relative; }
+  .nav-search input {
+    width: 100%; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 9px 14px 9px 38px;
+    color: var(--text-primary); font-size: 14px; font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .nav-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .nav-search input::placeholder { color: var(--text-tertiary); }
+  .nav-search .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
+  .nav-search kbd {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--text-tertiary);
+    border: 1px solid var(--border); border-radius: 4px; padding: 2px 5px;
+  }
+
+  .nav-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; color: var(--text-secondary);
+    transition: all 0.15s ease; position: relative;
+  }
+  .icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-tertiary); transform: translateY(-1px); }
+  .icon-btn:active { transform: translateY(0) scale(0.94); }
+  .icon-btn .dot {
+    position: absolute; top: -3px; right: -3px; min-width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg-page);
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(.2,.7,.3,1.5);
+  }
+  .icon-btn .dot.has-count {
+    width: auto; min-width: 16px; height: 16px; padding: 0 3px; font-size: 9px; font-weight: 700;
+    font-family: var(--font-mono); color: #17181a;
+  }
+  .icon-btn .dot.bump { animation: bump 0.35s cubic-bezier(.2,.7,.3,1.5); }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.5); } 100% { transform: scale(1); } }
+  .icon-btn.shake { animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+  .btn {
+    padding: 9px 17px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600;
+    white-space: nowrap; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid transparent; position: relative; overflow: hidden;
+  }
+  .btn-primary { background: var(--accent); color: #17181a; box-shadow: 0 2px 8px var(--accent-glow); }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
+  .btn-primary:active { transform: translateY(0) scale(0.98); }
+  .btn-outline { border-color: var(--border); color: var(--text-primary); }
+  .btn-outline:hover { background: var(--bg-hover); border-color: var(--text-tertiary); }
+  .btn-outline:active { transform: scale(0.98); }
+  .btn-ghost { color: var(--text-secondary); }
+  .btn-ghost:hover { color: var(--text-primary); }
+  .btn-sm { padding: 7px 14px; font-size: 13.5px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* ripple */
+  .btn .ripple {
+    position: absolute; border-radius: 50%; background: rgba(255,255,255,0.5); pointer-events: none;
+    transform: scale(0); animation: rippleAnim 0.55s ease-out;
+  }
+  @keyframes rippleAnim { to { transform: scale(2.6); opacity: 0; } }
+
+  .mobile-menu-btn { display: none; }
+
+  /* ===== MOBILE DRAWER ===== */
+  .mobile-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199;
+    opacity: 0; transition: opacity 0.25s ease;
+  }
+  .mobile-overlay.open { display: block; opacity: 1; }
+  .mobile-drawer {
+    position: fixed; top: 0; right: 0; height: 100%; width: 280px; max-width: 82vw;
+    background: var(--bg-card); border-left: 1px solid var(--border); z-index: 200;
+    transform: translateX(100%); transition: transform 0.3s cubic-bezier(.2,.7,.3,1);
+    padding: 20px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .mobile-drawer.open { transform: translateX(0); }
+  .mobile-drawer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .mobile-drawer-head span { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+  .mobile-drawer a {
+    padding: 13px 10px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500;
+    color: var(--text-secondary); border-bottom: 1px solid var(--border-soft);
+  }
+  .mobile-drawer a.active { color: var(--accent); }
+  .mobile-drawer a:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .mobile-drawer .btn { margin-top: 14px; justify-content: center; }
+
+  /* ===== HERO ===== */
+  .hero {
+    position: relative; padding: 68px 0 46px; border-bottom: 1px solid var(--border-soft); overflow: hidden;
+    background-image: radial-gradient(var(--border-soft) 1px, transparent 1px);
+    background-size: 28px 28px; background-position: -10px -10px;
+  }
+  .hero::before {
+    content: ""; position: absolute; top: -120px; right: -80px; width: 480px; height: 480px; border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-soft), transparent 70%); pointer-events: none;
+    animation: float 9s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-18px, 22px); }
+  }
+  .hero-grid { position: relative; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--accent);
+    letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 18px;
+    display: inline-flex; align-items: center; gap: 8px; background: var(--accent-soft); padding: 6px 12px; border-radius: 20px;
+  }
+  .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); animation: pulse 1.8s ease-in-out infinite; }
+
+  .hero h1 {
+    font-family: var(--font-display); font-size: 50px; font-weight: 600; font-optical-sizing: auto;
+    line-height: 1.12; letter-spacing: -0.02em; margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: italic; font-weight: 500; color: var(--accent); }
+  .hero p.lead { font-size: 16.5px; color: var(--text-secondary); max-width: 490px; margin-bottom: 28px; }
+  .hero-ctas { display: flex; gap: 12px; margin-bottom: 24px; }
+  .hero-ctas .btn { padding: 12px 22px; font-size: 14.5px; }
+
+  .trust-row { display: flex; gap: 20px; margin-bottom: 36px; flex-wrap: wrap; }
+  .trust-item { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--text-secondary); }
+  .trust-item .icon { color: var(--green); }
+
+  .stats-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    background: var(--bg-card); box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .stat-block { padding: 17px 15px; border-right: 1px solid var(--border); }
+  .stat-block:last-child { border-right: none; }
+  .stat-num { font-family: var(--font-mono); font-size: 23px; font-weight: 700; letter-spacing: -0.01em; }
+  .stat-num.accent { color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.3; }
+
+  .hero-panel {
+    position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 26px; box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  }
+  .hero-panel-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .hero-panel-title h3 { font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); }
+  .live-dot { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--green); background: var(--green-soft); padding: 4px 9px; border-radius: 20px; }
+  .live-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .wa-contact-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); transition: transform 0.15s ease; }
+  .wa-contact-row:hover { transform: translateX(3px); }
+  .wa-contact-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .wa-avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; font-family: var(--font-mono); }
+  .wa-info { flex: 1; min-width: 0; }
+  .wa-name { font-size: 13.5px; font-weight: 600; }
+  .wa-meta { color: var(--text-tertiary); font-size: 11.5px; font-family: var(--font-mono); margin-top: 1px; }
+  .wa-load-wrap { width: 72px; flex-shrink: 0; }
+  .wa-load-num { font-family: var(--font-mono); font-size: 11px; text-align: right; margin-bottom: 4px; color: var(--text-secondary); }
+  .wa-bar { height: 4px; border-radius: 3px; background: var(--border-soft); overflow: hidden; }
+  .wa-bar-fill { height: 100%; border-radius: 3px; background: var(--green); width: 0; transition: width 1s cubic-bezier(.2,.7,.2,1); }
+  .wa-bar-fill.busy { background: var(--accent); }
+
+  /* ===== PILL / BADGE SYSTEM (signature) ===== */
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 600; font-family: var(--font-mono); white-space: nowrap; backdrop-filter: blur(6px); }
+  .pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; }
+  .pill-official { background: rgba(75,155,255,0.22); color: #cfe4ff; }
+  .pill-official::before { background: var(--blue); }
+  .pill-new, .pill-likenew { background: rgba(44,187,93,0.22); color: #c6f3d6; }
+  .pill-new::before, .pill-likenew::before { background: var(--green); }
+  .pill-good { background: rgba(255,161,22,0.24); color: #ffdca6; }
+  .pill-good::before { background: var(--accent); }
+  .pill-used { background: rgba(255,255,255,0.16); color: #e7e8ea; }
+  .pill-used::before { background: #cfd2d6; }
+  .pill-sold { background: rgba(240,85,90,0.22); color: #ffcdce; }
+  .pill-sold::before { background: var(--red); }
+  .pill-secondhand { background: rgba(167,139,250,0.24); color: #e3d9ff; }
+  .pill-secondhand::before { background: var(--violet); }
+
+  /* ===== SECTIONS ===== */
+  .section { padding: 56px 0; border-bottom: 1px solid var(--border-soft); }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 28px; }
+  .section-head-left { display: flex; align-items: baseline; gap: 12px; }
+  .section-head h2 { font-family: var(--font-display); font-size: 25px; font-weight: 600; letter-spacing: -0.01em; }
+  .section-head .count { font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary); }
+  .see-all { font-size: 13px; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 4px; transition: gap 0.15s ease; }
+  .see-all:hover { gap: 7px; }
+
+  .chip-row { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 4px; scrollbar-width: thin; }
+  .chip-row::-webkit-scrollbar { height: 4px; }
+  .chip-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .chip {
+    flex-shrink: 0; padding: 8px 16px; border-radius: 24px; border: 1px solid var(--border);
+    font-size: 13.5px; font-weight: 500; color: var(--text-secondary); background: var(--bg-card);
+    display: flex; align-items: center; gap: 8px; transition: all 0.15s ease;
+  }
+  .chip img { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
+  .chip:hover { border-color: var(--text-tertiary); color: var(--text-primary); transform: translateY(-1px); }
+  .chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+  .empty-state {
+    display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: 56px 20px; color: var(--text-secondary); border: 1px dashed var(--border); border-radius: var(--radius-lg);
+    grid-column: 1 / -1; animation: fadeIn 0.3s ease;
+  }
+  .empty-state.show { display: flex; }
+  .empty-state .icon { width: 34px; height: 34px; color: var(--text-tertiary); margin-bottom: 12px; }
+  .empty-state strong { color: var(--text-primary); font-size: 15px; margin-bottom: 4px; }
+  .empty-state span { font-size: 13px; }
+
+  /* ===== PRODUCT GRID / CARD ===== */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: border-color 0.2s ease, transform 0.35s cubic-bezier(.2,.7,.2,1), box-shadow 0.35s ease, opacity 0.3s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease;
+  }
+  .card:hover { border-color: var(--text-tertiary); transform: translateY(-4px); box-shadow: 0 16px 32px rgba(0,0,0,0.2); }
+  .card.hide-filtered { opacity: 0; transform: scale(0.92); pointer-events: none; position: absolute; visibility: hidden; }
+
+  .card-media { aspect-ratio: 4/3; position: relative; overflow: hidden; border-bottom: 1px solid var(--border-soft); background: var(--bg-elevated); }
+  .card-media img {
+    width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s cubic-bezier(.2,.7,.3,1), opacity 0.4s ease;
+    opacity: 0;
+  }
+  .card-media img.loaded { opacity: 1; }
+  .card-media::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, var(--bg-elevated) 30%, var(--bg-hover) 50%, var(--bg-elevated) 70%);
+    background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite;
+  }
+  .card-media.img-loaded::before { display: none; }
+  @keyframes shimmer { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+  .card:hover .card-media img { transform: scale(1.06); }
+  .card-media-tint { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.15; }
+  .card-media-wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 30%, transparent 65%, rgba(0,0,0,0.45) 100%); }
+
+  .card-badges { position: absolute; top: 11px; left: 11px; display: flex; gap: 5px; flex-wrap: wrap; max-width: calc(100% - 22px); z-index: 2; }
+  .card-fav {
+    position: absolute; top: 11px; right: 11px; width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(20,20,20,0.45); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; color: #fff; z-index: 2; transition: all 0.15s ease;
+  }
+  .card-fav:hover { background: var(--red); transform: scale(1.08); }
+  .card-fav:active svg { animation: heartPop 0.35s cubic-bezier(.2,.7,.3,1.5); }
+  .card-fav.active-fav svg { fill: #fff; }
+  @keyframes heartPop { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .card-discount {
+    position: absolute; bottom: 11px; right: 11px; background: var(--accent); color: #17181a;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; z-index: 2;
+  }
+  .card-sold-overlay { position: absolute; inset: 0; background: rgba(10,10,10,0.62); backdrop-filter: blur(1px); display: flex; align-items: center; justify-content: center; z-index: 3; }
+  .card-sold-overlay span { font-family: var(--font-mono); font-weight: 700; font-size: 12.5px; letter-spacing: 0.08em; color: #fff; border: 1px solid rgba(255,255,255,0.6); padding: 5px 14px; border-radius: var(--radius-sm); }
+
+  .card-body { padding: 15px 16px 17px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+  .card-cat { font-size: 10.5px; color: var(--text-tertiary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .card-title {
+    font-size: 15px; font-weight: 600; line-height: 1.35; letter-spacing: -0.005em; font-family: var(--font-ui);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 40px;
+  }
+  .card-rating { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-tertiary); }
+  .card-rating .stars { color: var(--accent); display: flex; gap: 1px; }
+  .card-price-row { display: flex; align-items: baseline; gap: 8px; }
+  .price { font-family: var(--font-mono); font-weight: 700; font-size: 17.5px; }
+  .price-original { font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary); text-decoration: line-through; }
+  .card-seller { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--text-tertiary); }
+  .seller-avatar { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+  .card-meta { font-size: 11.5px; color: var(--text-tertiary); }
+  .card-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .card-actions .btn { flex: 1; padding: 8px 10px; font-size: 12.5px; }
+
+  .deal-strip {
+    background: linear-gradient(90deg, var(--accent-soft), transparent);
+    border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--radius);
+    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 16px; flex-wrap: wrap;
+  }
+  .deal-strip-text { font-size: 14px; display: flex; align-items: center; gap: 10px; }
+  .deal-strip-text b { color: var(--accent); }
+  .deal-strip-text .icon { animation: boltFlicker 2.2s ease-in-out infinite; }
+  @keyframes boltFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .deal-timer { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); display: flex; gap: 6px; align-items: center; }
+  .deal-timer span { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 4px; padding: 3px 7px; font-weight: 600; min-width: 24px; text-align: center; display: inline-block; }
+  .deal-timer span.tick { animation: tick 0.4s ease; }
+  @keyframes tick { 0% { transform: translateY(-6px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+  .sell-banner {
+    position: relative; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 44px 48px; display: flex; align-items: center; justify-content: space-between; gap: 28px;
+  }
+  .sell-banner::after { content: ""; position: absolute; top: -60px; right: -40px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, var(--accent-soft), transparent 70%); animation: float 10s ease-in-out infinite; }
+  .sell-banner-left { position: relative; }
+  .sell-banner-left h3 { font-family: var(--font-display); font-size: 27px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em; }
+  .sell-banner-left p { color: var(--text-secondary); font-size: 14px; max-width: 470px; }
+  .sell-banner-right { position: relative; display: flex; gap: 12px; flex-shrink: 0; }
+  .sell-banner-right .btn { padding: 13px 24px; }
+
+  footer { padding: 56px 0 24px; }
+  .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+  .footer-col h4 { font-size: 13px; font-weight: 700; margin-bottom: 16px; letter-spacing: 0.02em; }
+  .footer-col ul li { margin-bottom: 10px; }
+  .footer-col ul a { font-size: 13.5px; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; }
+  .footer-col ul a:hover { color: var(--accent); }
+  .footer-col p { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+  .footer-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 14px; border: 1px solid var(--border); border-radius: 20px; padding: 5px 11px; }
+  .footer-bottom { border-top: 1px solid var(--border-soft); padding-top: 22px; display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--text-tertiary); flex-wrap: wrap; gap: 10px; }
+
+  /* ===== TOAST ===== */
+  .toast-stack { position: fixed; bottom: 20px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+  .toast {
+    display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    font-size: 13.5px; font-weight: 500; animation: toastIn 0.35s cubic-bezier(.2,.7,.2,1);
+    max-width: 280px;
+  }
+  .toast.out { animation: toastOut 0.3s ease forwards; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px) scale(0.96); } to { opacity: 1; transform: translateX(0) scale(1); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(20px) scale(0.96); } }
+  .toast .toast-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .toast .toast-icon svg { width: 12px; height: 12px; }
+
+  /* ===== FLY TO CART ===== */
+  .fly-dot {
+    position: fixed; width: 14px; height: 14px; border-radius: 50%; background: var(--accent);
+    z-index: 250; pointer-events: none; box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .nav-links, .nav-search { display: none; }
+    .mobile-menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .stats-strip { grid-template-columns: repeat(2, 1fr); }
+    .stat-block:nth-child(2) { border-right: none; }
+    .stat-block { border-bottom: 1px solid var(--border); }
+  }
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 34px; }
+    .sell-banner { flex-direction: column; align-items: flex-start; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  }
+
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<nav class="navbar" id="navbar">
+  <div class="container nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-mark">CB</div>
+      <div class="logo-text">
+        <span class="name">Campus Angaadi</span>
+        <span class="sub">NIT CALICUT</span>
+      </div>
+    </a>
+
+    <div class="nav-links">
+      <a href="#" class="active">Home</a>
+      <a href="#browse">Browse</a>
+      <a href="#official">Official Store</a>
+      <a href="#secondhand">Second-Hand</a>
+      <a href="#sell">Sell</a>
+    </div>
+
+    <div class="nav-search">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" id="searchInput" placeholder="Search books, electronics, snacks...">
+      <kbd>/</kbd>
+    </div>
+
+    <div class="nav-actions">
+      <button class="mobile-menu-btn" aria-label="Menu" id="mobileMenuBtn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Wishlist" id="wishlistBtn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Cart" id="cartBtn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="dot" id="cartDot"></span>
+      </button>
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle theme">
+        <svg class="icon" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <a href="#" class="btn btn-ghost btn-sm">Log in</a>
+      <a href="#" class="btn btn-primary btn-sm">Sign up</a>
+    </div>
+  </div>
+</nav>
+
+<div class="mobile-overlay" id="mobileOverlay"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+  <div class="mobile-drawer-head">
+    <span>Menu</span>
+    <button class="icon-btn" id="closeDrawerBtn" aria-label="Close menu">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <a href="#" class="active">Home</a>
+  <a href="#browse">Browse</a>
+  <a href="#official">Official Store</a>
+  <a href="#secondhand">Second-Hand</a>
+  <a href="#sell">Sell</a>
+  <a href="#" class="btn btn-primary">Sign up</a>
+  <a href="#" class="btn btn-outline">Log in</a>
+</div>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow fade-up" style="animation-delay:0.05s">Live for NIT Calicut students &amp; staff</div>
+      <h1 class="fade-up" style="animation-delay:0.12s">Buy campus essentials.<br>Sell what you don't need.<br><em>Confirm it all on WhatsApp.</em></h1>
+      <p class="lead fade-up" style="animation-delay:0.2s">Official canteen and stationery items alongside verified second-hand listings from your own campus — every order routed to a real person on WhatsApp, no payment gateway confusion.</p>
+      <div class="hero-ctas fade-up" style="animation-delay:0.28s">
+        <a href="#browse" class="btn btn-primary">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Browse Products
+        </a>
+        <a href="#sell" class="btn btn-outline">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Sell an Item
+        </a>
+      </div>
+      <div class="trust-row fade-up" style="animation-delay:0.34s">
+        <div class="trust-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Verified NITC sellers only</div>
+        <div class="trust-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>WhatsApp-confirmed orders</div>
+        <div class="trust-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Campus-only pickup</div>
+      </div>
+      <div class="stats-strip fade-up" style="animation-delay:0.4s">
+        <div class="stat-block"><div class="stat-num" data-count="1240">0</div><div class="stat-label">Products listed</div></div>
+        <div class="stat-block"><div class="stat-num" data-count="860">0</div><div class="stat-label">Verified sellers</div></div>
+        <div class="stat-block"><div class="stat-num accent" data-count="3502">0</div><div class="stat-label">Orders completed</div></div>
+        <div class="stat-block"><div class="stat-num" data-static="12/14">12/14</div><div class="stat-label">WhatsApp lines online</div></div>
+      </div>
+    </div>
+
+    <div class="hero-panel fade-up" style="animation-delay:0.2s">
+      <div class="hero-panel-title">
+        <h3><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Sales team, right now</h3>
+        <div class="live-dot">LIVE</div>
+      </div>
+
+      <div class="wa-contact-row">
+        <img class="wa-avatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=72&h=72&fit=crop&auto=format&q=80" alt="">
+        <div class="wa-info"><div class="wa-name">Anjali — Canteen desk</div><div class="wa-meta">last assigned 2m ago</div></div>
+        <div class="wa-load-wrap"><div class="wa-load-num">3/10</div><div class="wa-bar"><div class="wa-bar-fill" data-fill="30"></div></div></div>
+      </div>
+      <div class="wa-contact-row">
+        <img class="wa-avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=72&h=72&fit=crop&auto=format&q=80" alt="">
+        <div class="wa-info"><div class="wa-name">Rahul — Stationery &amp; Merch</div><div class="wa-meta">last assigned 6m ago</div></div>
+        <div class="wa-load-wrap"><div class="wa-load-num">5/10</div><div class="wa-bar"><div class="wa-bar-fill" data-fill="50"></div></div></div>
+      </div>
+      <div class="wa-contact-row">
+        <img class="wa-avatar" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=72&h=72&fit=crop&auto=format&q=80" alt="">
+        <div class="wa-info"><div class="wa-name">Second-hand Desk 01</div><div class="wa-meta">last assigned 1m ago</div></div>
+        <div class="wa-load-wrap"><div class="wa-load-num">9/10</div><div class="wa-bar"><div class="wa-bar-fill busy" data-fill="90"></div></div></div>
+      </div>
+      <div class="wa-contact-row">
+        <img class="wa-avatar" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=72&h=72&fit=crop&auto=format&q=80" alt="">
+        <div class="wa-info"><div class="wa-name">Second-hand Desk 02</div><div class="wa-meta">last assigned 14m ago</div></div>
+        <div class="wa-load-wrap"><div class="wa-load-num">2/10</div><div class="wa-bar"><div class="wa-bar-fill" data-fill="20"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="browse">
+  <div class="container">
+    <div class="section-head"><div class="section-head-left"><h2>Browse by category</h2></div></div>
+    <div class="chip-row" id="categoryChips">
+      <button class="chip active" data-cat="all">All</button>
+      <button class="chip" data-cat="Food & Snacks"><img src="https://images.unsplash.com/photo-1548907040-4baa419f3ada?w=40&h=40&fit=crop&auto=format&q=80" alt="">Food &amp; Snacks</button>
+      <button class="chip" data-cat="Stationery"><img src="https://images.unsplash.com/photo-1583485088034-697b5bc36b45?w=40&h=40&fit=crop&auto=format&q=80" alt="">Stationery</button>
+      <button class="chip" data-cat="Electronics"><img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=40&h=40&fit=crop&auto=format&q=80" alt="">Electronics</button>
+      <button class="chip" data-cat="Books"><img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=40&h=40&fit=crop&auto=format&q=80" alt="">Books</button>
+      <button class="chip" data-cat="Accessories"><img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=40&h=40&fit=crop&auto=format&q=80" alt="">Accessories</button>
+      <button class="chip" data-cat="Campus Merch"><img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=40&h=40&fit=crop&auto=format&q=80" alt="">Campus Merch</button>
+      <button class="chip" data-cat="Furniture"><img src="https://images.unsplash.com/photo-1592078615290-033ee584e267?w=40&h=40&fit=crop&auto=format&q=80" alt="">Furniture</button>
+      <button class="chip" data-cat="Bicycles"><img src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=40&h=40&fit=crop&auto=format&q=80" alt="">Bicycles</button>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="official">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-head-left"><h2>Official Campus Store</h2><span class="count">42 items</span></div>
+      <a href="#" class="see-all">See all <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+    </div>
+    <div class="grid" id="officialGrid"></div>
+    <div class="empty-state" data-empty-for="officialGrid">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <strong>Nothing here yet</strong>
+      <span>No official items match this category. Try "All" or another filter.</span>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="deal-strip">
+      <div class="deal-strip-text"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Campus Deals — up to <b>40% off</b> on select stationery &amp; merch this week.</div>
+      <div class="deal-timer" id="dealTimer"><span id="t-h">02</span>:<span id="t-m">14</span>:<span id="t-s">36</span> left</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="secondhand">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-head-left"><h2>Second-Hand Marketplace</h2><span class="count">318 items</span></div>
+      <a href="#" class="see-all">See all <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+    </div>
+    <div class="grid" id="secondhandGrid"></div>
+    <div class="empty-state" data-empty-for="secondhandGrid">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <strong>Nothing here yet</strong>
+      <span>No second-hand listings match this category right now.</span>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head"><div class="section-head-left"><h2>Recently added</h2><span class="count">updated moments ago</span></div></div>
+    <div class="grid" id="recentGrid"></div>
+    <div class="empty-state" data-empty-for="recentGrid">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <strong>Nothing here yet</strong>
+      <span>No recent items match this category right now.</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="sell" style="border-bottom:none;">
+  <div class="container">
+    <div class="sell-banner reveal">
+      <div class="sell-banner-left">
+        <h3>Got something to sell?</h3>
+        <p>List your used books, electronics, or furniture in under two minutes. Every listing is reviewed before it goes live, so buyers trust what they see.</p>
+      </div>
+      <div class="sell-banner-right">
+        <a href="#" class="btn btn-primary">List an Item</a>
+        <a href="#" class="btn btn-outline">How it works</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Campus Angaadi</h4>
+        <p>The official and peer-to-peer marketplace for NIT Calicut students and staff. Order online, confirm on WhatsApp, pick up on campus.</p>
+        <div class="footer-badge"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>NIT Calicut Campus Only</div>
+      </div>
+      <div class="footer-col">
+        <h4>Marketplace</h4>
+        <ul><li><a href="#">Official Store</a></li><li><a href="#">Second-Hand Listings</a></li><li><a href="#">Sell an Item</a></li><li><a href="#">Campus Deals</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul><li><a href="#">How ordering works</a></li><li><a href="#">Pickup locations</a></li><li><a href="#">Report a listing</a></li><li><a href="#">Contact sales desk</a></li></ul>
+      </div>
+      <div class="footer-col">
+        <h4>Account</h4>
+        <ul><li><a href="#">Log in</a></li><li><a href="#">Create account</a></li><li><a href="#">My orders</a></li><li><a href="#">My listings</a></li></ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Campus Angaadi, NIT Calicut. Built by students, for students.</span>
+      <span>Terms · Privacy</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+  const categoryColors = {
+    "Food & Snacks": "#ffa116", "Stationery": "#4b9bff", "Electronics": "#a78bfa",
+    "Books": "#2dd4bf", "Campus Merch": "#2cbb5d", "Accessories": "#ffa116",
+    "Bicycles": "#4b9bff", "Furniture": "#9aa0a6", "Beverages": "#ffa116",
+  };
+
+  const officialProducts = [
+    { img: "photo-1509042239860-f550ce710b93", cat: "Food & Snacks", title: "Filter Coffee — Canteen Special", price: 15, original: null, badge: "official", stock: "In Stock", rating: 4.6, reviews: 128 },
+    { img: "photo-1531346878377-a5be20888e57", cat: "Stationery", title: "A4 Ruled Notebook, 200pg", price: 45, original: 60, badge: "official", stock: "In Stock", rating: 4.8, reviews: 64 },
+    { img: "photo-1556821840-3a63f95609a7", cat: "Campus Merch", title: "NITC Hoodie — Charcoal", price: 799, original: 999, badge: "official", stock: "In Stock", rating: 4.9, reviews: 212 },
+    { img: "photo-1583485088034-697b5bc36b45", cat: "Stationery", title: "Gel Pen Set (Pack of 5)", price: 60, original: null, badge: "official", stock: "In Stock", rating: 4.5, reviews: 39 },
+    { img: "photo-1461023058943-07fcbe16d735", cat: "Beverages", title: "Cold Coffee — Large", price: 40, original: null, badge: "official", stock: "Out of Stock", sold: true, rating: 4.4, reviews: 51 },
+    { img: "photo-1553062407-98eeb64c6a62", cat: "Accessories", title: "NITC Logo Backpack", price: 899, original: null, badge: "official", stock: "In Stock", rating: 4.7, reviews: 88 },
+  ];
+
+  const secondhandProducts = [
+    { img: "photo-1496181133206-80ce9b88a853", cat: "Electronics", title: "Dell Inspiron 15, i5 8GB RAM — 2 yrs old", price: 28000, original: 42000, badge: "good", stock: "1 available", seller: "Arjun M.", avatar: "photo-1633332755192-727a05c4013d" },
+    { img: "photo-1544716278-ca5e3f4abd8c", cat: "Books", title: "GATE CSE Made Easy Set (6 books)", price: 900, original: 2100, badge: "likenew", stock: "1 available", seller: "Fathima R.", avatar: "photo-1544005313-94ddf0286df2" },
+    { img: "photo-1546435770-a3e426bf472b", cat: "Electronics", title: "Boat Rockerz 450 Headphones", price: 700, original: 1500, badge: "good", stock: "1 available", seller: "Vishnu K.", avatar: "photo-1500648767791-00dcc994a43e" },
+    { img: "photo-1485965120184-e220f721d03e", cat: "Bicycles", title: "Hero Sprint Geared Cycle", price: 3500, original: null, badge: "used", stock: "1 available", seller: "Aditya S.", avatar: "photo-1519085360753-af0119f7cbe7" },
+    { img: "photo-1587829741301-dc798b83add3", cat: "Electronics", title: "Mechanical Keyboard — Red Switches", price: 1400, original: 2200, badge: "likenew", stock: "1 available", seller: "Meera P.", avatar: "photo-1580489944761-15a19d654956" },
+    { img: "photo-1592078615290-033ee584e267", cat: "Furniture", title: "Study Chair, foldable", price: 600, original: null, badge: "used", stock: "Sold", sold: true, seller: "Kiran V.", avatar: "photo-1560250097-0b93528c311a" },
+  ];
+
+  const recentProducts = [
+    { img: "photo-1511707171634-5f897ff02aa9", cat: "Electronics", title: "Redmi Note 12, 6/128GB", price: 9500, original: 13000, badge: "good", stock: "1 available", seller: "Sana T.", avatar: "photo-1517841905240-472988babdf9" },
+    { img: "photo-1517842645767-c639042777db", cat: "Books", title: "Data Structures Notes — Handwritten", price: 150, original: null, badge: "likenew", stock: "1 available", seller: "Rohan D.", avatar: "photo-1500648767791-00dcc994a43e" },
+    { img: "photo-1548907040-4baa419f3ada", cat: "Food & Snacks", title: "Assorted Chocolate Combo", price: 99, original: null, badge: "official", stock: "In Stock", rating: 4.5, reviews: 22 },
+    { img: "photo-1521369909029-2afed882baee", cat: "Campus Merch", title: "NITC Cap — Navy", price: 249, original: null, badge: "official", stock: "In Stock", rating: 4.6, reviews: 17 },
+  ];
+
+  const badgeMeta = {
+    official: { cls: "pill-official", label: "Official" },
+    new: { cls: "pill-new", label: "New" },
+    likenew: { cls: "pill-likenew", label: "Like New" },
+    good: { cls: "pill-good", label: "Good" },
+    used: { cls: "pill-used", label: "Used" },
+  };
+
+  function unsplash(id, w, h) { return `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`; }
+  function formatPrice(n) { return "₹" + n.toLocaleString("en-IN"); }
+
+  function starRow(rating) {
+    const full = Math.round(rating);
+    let out = "";
+    for (let i = 0; i < 5; i++) {
+      out += i < full
+        ? `<svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/></svg>`
+        : `<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/></svg>`;
+    }
+    return out;
+  }
+
+  function renderCard(p) {
+    const badge = badgeMeta[p.badge];
+    const isSecondhand = p.badge !== "official";
+    const tint = categoryColors[p.cat] || "#9aa0a6";
+
+    return `
+      <div class="card reveal" data-name="${p.title.toLowerCase()}" data-cat="${p.cat}" data-price="${p.price}" data-title="${p.title}">
+        <div class="card-media">
+          <img src="${unsplash(p.img, 500, 375)}" alt="${p.title}" loading="lazy" onload="this.classList.add('loaded'); this.parentElement.classList.add('img-loaded')">
+          <div class="card-media-tint" style="background:${tint}"></div>
+          <div class="card-media-wash"></div>
+          <div class="card-badges">
+            <span class="pill ${badge.cls}">${badge.label}</span>
+            ${isSecondhand ? `<span class="pill pill-secondhand">Second-hand</span>` : ""}
+          </div>
+          <button class="card-fav" aria-label="Save">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+          </button>
+          ${p.original ? `<div class="card-discount">-${Math.round((1 - p.price / p.original) * 100)}%</div>` : ""}
+          ${p.sold ? `<div class="card-sold-overlay"><span>${p.stock === "Out of Stock" ? "OUT OF STOCK" : "SOLD"}</span></div>` : ""}
+        </div>
+        <div class="card-body">
+          <div class="card-cat">${p.cat}</div>
+          <div class="card-title">${p.title}</div>
+          ${p.rating ? `<div class="card-rating"><span class="stars">${starRow(p.rating)}</span>${p.rating} (${p.reviews})</div>` : ""}
+          ${p.seller ? `<div class="card-seller"><img class="seller-avatar" src="${unsplash(p.avatar, 40, 40)}" alt="">${p.seller} · Verified</div>` : ""}
+          <div class="card-price-row">
+            <span class="price">${formatPrice(p.price)}</span>
+            ${p.original ? `<span class="price-original">${formatPrice(p.original)}</span>` : ""}
+          </div>
+          <div class="card-meta">${p.stock}</div>
+          <div class="card-actions">
+            <button class="btn btn-outline addcart-btn" ${p.sold ? "disabled" : ""}>
+              <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Add
+            </button>
+            <button class="btn btn-primary" ${p.sold ? "disabled" : ""}>View</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById("officialGrid").innerHTML = officialProducts.map(renderCard).join("");
+  document.getElementById("secondhandGrid").innerHTML = secondhandProducts.map(renderCard).join("");
+  document.getElementById("recentGrid").innerHTML = recentProducts.map(renderCard).join("");
+
+  /* ===== TOASTS ===== */
+  const toastStack = document.getElementById("toastStack");
+  function showToast(message) {
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<span class="toast-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><span>${message}</span>`;
+    toastStack.appendChild(el);
+    setTimeout(() => {
+      el.classList.add("out");
+      setTimeout(() => el.remove(), 300);
+    }, 2600);
+  }
+
+  /* ===== RIPPLE ON BUTTONS ===== */
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".btn");
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement("span");
+    const size = Math.max(rect.width, rect.height);
+    ripple.className = "ripple";
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+    ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 550);
+  });
+
+  /* ===== CART ===== */
+  let cartCount = 0;
+  const cartDot = document.getElementById("cartDot");
+  const cartBtn = document.getElementById("cartBtn");
+
+  function updateCartDot() {
+    if (cartCount > 0) {
+      cartDot.classList.add("has-count");
+      cartDot.textContent = cartCount > 99 ? "99+" : cartCount;
+    } else {
+      cartDot.classList.remove("has-count");
+      cartDot.textContent = "";
+    }
+    cartDot.classList.remove("bump");
+    void cartDot.offsetWidth;
+    cartDot.classList.add("bump");
+  }
+
+  function flyToCart(fromEl) {
+    const startRect = fromEl.getBoundingClientRect();
+    const endRect = cartBtn.getBoundingClientRect();
+    const dot = document.createElement("div");
+    dot.className = "fly-dot";
+    dot.style.left = (startRect.left + startRect.width / 2 - 7) + "px";
+    dot.style.top = (startRect.top + startRect.height / 2 - 7) + "px";
+    document.body.appendChild(dot);
+
+    const dx = (endRect.left + endRect.width / 2) - (startRect.left + startRect.width / 2);
+    const dy = (endRect.top + endRect.height / 2) - (startRect.top + startRect.height / 2);
+
+    dot.animate([
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(1.1)`, opacity: 1, offset: 0.6 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0.4 }
+    ], { duration: 550, easing: "cubic-bezier(.3,.6,.3,1)" }).onfinish = () => {
+      dot.remove();
+      cartCount++;
+      updateCartDot();
+      cartBtn.classList.remove("shake");
+      void cartBtn.offsetWidth;
+      cartBtn.classList.add("shake");
+    };
+  }
+
+  document.querySelectorAll(".addcart-btn").forEach(btn => {
+    btn.addEventListener("click", function (e) {
+      if (this.disabled) return;
+      const original = this.innerHTML;
+      const card = this.closest(".card");
+      const title = card ? card.getAttribute("data-title") : "Item";
+      this.innerHTML = `<svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Added`;
+      this.style.color = "var(--green)"; this.style.borderColor = "var(--green)";
+      flyToCart(this);
+      showToast(`${title} added to cart`);
+      setTimeout(() => { this.innerHTML = original; this.style.color = ""; this.style.borderColor = ""; }, 1400);
+    });
+  });
+
+  document.querySelectorAll(".card-fav").forEach(btn => {
+    btn.addEventListener("click", function () {
+      this.classList.toggle("active-fav");
+      this.style.background = this.classList.contains("active-fav") ? "var(--red)" : "";
+    });
+  });
+
+  /* ===== CATEGORY FILTER ===== */
+  const emptyStates = {};
+  document.querySelectorAll(".empty-state").forEach(el => {
+    emptyStates[el.getAttribute("data-empty-for")] = el;
+  });
+
+  function applyFilter(cat) {
+    ["officialGrid", "secondhandGrid", "recentGrid"].forEach(gridId => {
+      const grid = document.getElementById(gridId);
+      let visibleCount = 0;
+      grid.querySelectorAll(".card").forEach(card => {
+        const matches = cat === "all" || card.getAttribute("data-cat") === cat;
+        card.classList.toggle("hide-filtered", !matches);
+        if (matches) visibleCount++;
+      });
+      if (emptyStates[gridId]) emptyStates[gridId].classList.toggle("show", visibleCount === 0);
+    });
+  }
+
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", function () {
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      this.classList.add("active");
+      applyFilter(this.getAttribute("data-cat") || "all");
+    });
+  });
+
+  /* ===== SEARCH (also respects active category) ===== */
+  document.getElementById("searchInput").addEventListener("input", function (e) {
+    const q = e.target.value.trim().toLowerCase();
+    const activeCat = document.querySelector(".chip.active")?.getAttribute("data-cat") || "all";
+    document.querySelectorAll(".card").forEach(card => {
+      const name = card.getAttribute("data-name") || "";
+      const catMatch = activeCat === "all" || card.getAttribute("data-cat") === activeCat;
+      const textMatch = !q || name.includes(q);
+      card.classList.toggle("hide-filtered", !(catMatch && textMatch));
+    });
+    ["officialGrid", "secondhandGrid", "recentGrid"].forEach(gridId => {
+      const grid = document.getElementById(gridId);
+      const visible = [...grid.querySelectorAll(".card")].filter(c => !c.classList.contains("hide-filtered")).length;
+      if (emptyStates[gridId]) emptyStates[gridId].classList.toggle("show", visible === 0);
+    });
+  });
+
+  /* ===== LIVE COUNTDOWN TIMER ===== */
+  let dealSeconds = 2 * 3600 + 14 * 60 + 36;
+  const tH = document.getElementById("t-h"), tM = document.getElementById("t-m"), tS = document.getElementById("t-s");
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function renderTimer() {
+    const h = Math.floor(dealSeconds / 3600);
+    const m = Math.floor((dealSeconds % 3600) / 60);
+    const s = dealSeconds % 60;
+    tH.textContent = pad(h); tM.textContent = pad(m); tS.textContent = pad(s);
+  }
+  renderTimer();
+  setInterval(() => {
+    dealSeconds = dealSeconds > 0 ? dealSeconds - 1 : 0;
+    tS.classList.remove("tick"); void tS.offsetWidth; tS.classList.add("tick");
+    renderTimer();
+  }, 1000);
+
+  /* ===== ANIMATED STAT COUNTERS ===== */
+  function animateCount(el) {
+    const target = parseInt(el.getAttribute("data-count"), 10);
+    const duration = 1100;
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(target * eased).toLocaleString("en-IN");
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const statObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll("[data-count]").forEach(animateCount);
+        entry.target.querySelectorAll(".wa-bar-fill").forEach(bar => {
+          bar.style.width = bar.getAttribute("data-fill") + "%";
+        });
+        statObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll(".stats-strip, .hero-panel").forEach(el => statObserver.observe(el));
+
+  /* ===== SCROLL REVEAL ===== */
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add("in-view"), (i % 6) * 60);
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+  document.querySelectorAll(".reveal").forEach(el => revealObserver.observe(el));
+
+  /* ===== NAVBAR SHRINK ON SCROLL ===== */
+  const navbar = document.getElementById("navbar");
+  window.addEventListener("scroll", () => {
+    navbar.classList.toggle("scrolled", window.scrollY > 12);
+  }, { passive: true });
+
+  /* ===== MOBILE DRAWER ===== */
+  const mobileDrawer = document.getElementById("mobileDrawer");
+  const mobileOverlay = document.getElementById("mobileOverlay");
+  function openDrawer() { mobileDrawer.classList.add("open"); mobileOverlay.classList.add("open"); document.body.style.overflow = "hidden"; }
+  function closeDrawer() { mobileDrawer.classList.remove("open"); mobileOverlay.classList.remove("open"); document.body.style.overflow = ""; }
+  document.getElementById("mobileMenuBtn").addEventListener("click", openDrawer);
+  document.getElementById("closeDrawerBtn").addEventListener("click", closeDrawer);
+  mobileOverlay.addEventListener("click", closeDrawer);
+  mobileDrawer.querySelectorAll("a").forEach(a => a.addEventListener("click", closeDrawer));
+
+  /* ===== WISHLIST ICON FEEDBACK ===== */
+  document.getElementById("wishlistBtn").addEventListener("click", function () {
+    this.classList.remove("shake"); void this.offsetWidth; this.classList.add("shake");
+  });
+
+  /* ===== THEME TOGGLE ===== */
+  const themeToggle = document.getElementById("themeToggle");
+  const themeIcon = document.getElementById("themeIcon");
+  const htmlEl = document.documentElement;
+  const sunPath = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  const moonPath = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  themeToggle.addEventListener("click", function () {
+    const isDark = htmlEl.getAttribute("data-theme") === "dark";
+    htmlEl.setAttribute("data-theme", isDark ? "light" : "dark");
+    themeIcon.innerHTML = isDark ? sunPath : moonPath;
+  });
+</script>
+
+</body>
+</html>
