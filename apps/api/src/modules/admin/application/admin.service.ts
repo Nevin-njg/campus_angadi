@@ -1,5 +1,6 @@
 import type {
   AdminUserListQuery,
+  EnrollMediatorInput,
   SalesAnalyticsQuery,
   UpdateAdminUserInput,
   UserRole,
@@ -33,7 +34,10 @@ export class AdminService {
     const target = await this.getUser(id)
     if (id === actor.id && input.status && input.status !== 'ACTIVE')
       throw new AppError(409, 'CANNOT_DISABLE_SELF', 'You cannot disable your own account.')
-    if ((input.role || target.role === 'SUPER_ADMIN') && actor.role !== 'SUPER_ADMIN')
+    if (
+      (input.role || input.canMediateOrders !== undefined || target.role === 'SUPER_ADMIN') &&
+      actor.role !== 'SUPER_ADMIN'
+    )
       throw new AppError(
         403,
         'SUPER_ADMIN_REQUIRED',
@@ -58,6 +62,30 @@ export class AdminService {
       message: `An administrator updated your account. Reason: ${input.reason}`,
       referenceType: 'USER',
       referenceId: id,
+    })
+    return value
+  }
+  async enrollMediator(actor: { id: string; role: UserRole }, input: EnrollMediatorInput) {
+    if (input.access === 'ADMIN_MEDIATOR' && actor.role !== 'SUPER_ADMIN')
+      throw new AppError(
+        403,
+        'SUPER_ADMIN_REQUIRED',
+        'Only a super administrator can grant administrator access.',
+      )
+    const email = input.email.trim().toLowerCase()
+    const existing = await this.repo.getUserByEmail(email)
+    let role: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN' =
+      input.access === 'ADMIN_MEDIATOR' ? 'ADMIN' : 'MODERATOR'
+    if (existing?.role === 'SUPER_ADMIN') role = 'SUPER_ADMIN'
+    else if (existing?.role === 'ADMIN') role = 'ADMIN'
+    const value = await this.repo.enrollMediator(email, role)
+    if (!value) throw new AppError(500, 'MEDIATOR_ENROLLMENT_FAILED', 'Could not add mediator access.')
+    await this.notifications.sendToUser(value.id, {
+      type: 'ACCOUNT',
+      title: 'Mediator access enabled',
+      message: `You can now sign in with ${email} and use the mediator inbox. Reason: ${input.reason}`,
+      referenceType: 'USER',
+      referenceId: value.id,
     })
     return value
   }

@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
+import {
+  AlertIcon,
+  ArrowRightIcon,
+  CartIcon,
+  CheckCircleIcon,
+  MessageIcon,
+  PackageIcon,
+  ShieldIcon,
+  UserIcon,
+} from '../../../components/ui/icons'
 import { adminPlatformApi } from '../api/admin-platform.api'
 
 const money = (n: number) => `₹${n.toLocaleString('en-IN')}`
@@ -10,97 +21,195 @@ export function AdminDashboardPage() {
   const d = q.data
 
   if (q.isLoading) return <LoadingSkeleton variant="dashboard" label="Loading dashboard" />
-  if (!d) return <p className="text-gray-400">Unable to load dashboard.</p>
+  if (!d) {
+    return (
+      <div className="admin-empty-state">
+        <AlertIcon />
+        <strong>Dashboard unavailable</strong>
+        <p>We could not load marketplace metrics. Refresh the page to try again.</p>
+        <button className="button button-primary" onClick={() => void q.refetch()}>
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   const cards = [
-    ['Users', d.users.total, `${d.users.active} active · ${d.users.blocked} blocked`],
-    ['Products', d.products.total, `${d.products.pendingApproval} awaiting review`],
-    ['Orders this month', d.orders.thisMonth, `${d.orders.waitingForDealer} waiting for dealer`],
-    [
-      'Completed sales',
-      money(d.sales.completedValue),
-      `${money(d.sales.thisMonthValue)} this month`,
-    ],
-    ['Active dealers', d.dealers.active, `${d.dealers.atCapacity} at capacity`],
-    ['Open reports', d.reports.open, `${d.reports.inReview} in review`],
+    {
+      title: 'Total users',
+      value: d.users.total,
+      detail: `${d.users.active} active`,
+      alert: `${d.users.blocked} blocked`,
+      icon: UserIcon,
+    },
+    {
+      title: 'Live products',
+      value: d.products.total,
+      detail: 'Across the marketplace',
+      alert: `${d.products.pendingApproval} need review`,
+      icon: PackageIcon,
+    },
+    {
+      title: 'Orders this month',
+      value: d.orders.thisMonth,
+      detail: 'Current month',
+      alert: `${d.orders.waitingForDealer} unassigned`,
+      icon: CartIcon,
+    },
+    {
+      title: 'Completed sales',
+      value: money(d.sales.completedValue),
+      detail: `${money(d.sales.thisMonthValue)} this month`,
+      alert: 'Offline payments',
+      icon: CheckCircleIcon,
+    },
+    {
+      title: 'Active dealers',
+      value: d.dealers.active,
+      detail: 'Available operators',
+      alert: `${d.dealers.atCapacity} at capacity`,
+      icon: MessageIcon,
+    },
+    {
+      title: 'Open reports',
+      value: d.reports.open,
+      detail: `${d.reports.inReview} in review`,
+      alert: 'Safety queue',
+      icon: ShieldIcon,
+    },
   ]
 
   return (
-    <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <section className="admin-dashboard">
+      <div className="admin-dashboard-hero">
         <div>
-          <span className="text-indigo-400 font-bold tracking-wider text-xs uppercase mb-2 block">
-            Operations overview
+          <span className="admin-eyebrow">
+            <span /> Live operations overview
           </span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">Dashboard</h1>
-          <p className="text-gray-400 text-lg">Live marketplace, order, dealer and safety metrics.</p>
+          <h1>Good to see you.</h1>
+          <p>Here’s what is happening across Campus Angadi right now.</p>
+        </div>
+        <div className="admin-dashboard-actions">
+          <Link className="button button-outline" to="/admin/moderation">
+            Review listings
+          </Link>
+          <Link className="button button-primary" to="/admin/products">
+            Add product <ArrowRightIcon />
+          </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cards.map(([title, value, subtitle]) => (
-          <article 
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group hover:border-indigo-500/50 transition-colors duration-300" 
-            key={String(title)}
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform duration-500">
-              <div className="w-24 h-24 rounded-full bg-indigo-500 blur-2xl"></div>
-            </div>
-            <span className="text-gray-400 font-medium text-sm block mb-2">{title}</span>
-            <strong className="text-4xl font-black text-white block mb-2">{value}</strong>
-            <small className="text-gray-500 font-medium">{subtitle}</small>
-          </article>
-        ))}
+      <div className="admin-metric-grid">
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <article className="admin-metric-card" key={card.title}>
+              <div className="admin-metric-head">
+                <span>{card.title}</span>
+                <i>
+                  <Icon />
+                </i>
+              </div>
+              <strong>{card.value}</strong>
+              <div className="admin-metric-foot">
+                <span>{card.detail}</span>
+                <small>{card.alert}</small>
+              </div>
+            </article>
+          )
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-          <div className="p-6 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Recent orders</h2>
-            <Link to="/admin/orders" className="text-sm font-medium text-indigo-400 hover:text-indigo-300">View all &rarr;</Link>
-          </div>
-          <div className="divide-y divide-white/5">
-            {d.recentOrders.map((o) => (
-              <Link 
-                className="flex items-center justify-between p-6 hover:bg-white/[0.02] transition-colors" 
-                key={o.id} 
-                to={`/admin/orders/${o.id}`}
-              >
-                <div>
-                  <strong className="text-white font-medium block">{o.orderNumber}</strong>
-                  <small className="text-gray-400">
-                    {o.itemCount} items · <span className="uppercase text-xs tracking-wider">{o.status.replaceAll('_', ' ')}</span>
-                  </small>
-                </div>
-                <span className="text-white font-bold bg-white/10 px-3 py-1 rounded-full text-sm">{money(o.totalAmount)}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
+      <div className="admin-dashboard-grid">
+        <DashboardList
+          title="Recent orders"
+          eyebrow="Order activity"
+          to="/admin/orders"
+          empty="No orders yet"
+        >
+          {d.recentOrders.map((order) => (
+            <Link className="admin-activity-row" key={order.id} to={`/admin/orders/${order.id}`}>
+              <div className="activity-icon">
+                <CartIcon />
+              </div>
+              <div>
+                <strong>{order.orderNumber}</strong>
+                <small>
+                  {order.itemCount} items · {order.status.replaceAll('_', ' ')}
+                </small>
+              </div>
+              <span>{money(order.totalAmount)}</span>
+              <ArrowRightIcon />
+            </Link>
+          ))}
+        </DashboardList>
 
-        <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-          <div className="p-6 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Recent users</h2>
-            <Link to="/admin/users" className="text-sm font-medium text-indigo-400 hover:text-indigo-300">View all &rarr;</Link>
-          </div>
-          <div className="divide-y divide-white/5">
-            {d.recentUsers.map((u) => (
-              <Link 
-                className="flex items-center justify-between p-6 hover:bg-white/[0.02] transition-colors" 
-                key={u.id} 
-                to={`/admin/users/${u.id}`}
-              >
-                <div>
-                  <strong className="text-white font-medium block">{u.displayName}</strong>
-                  <small className="text-gray-400">{u.email}</small>
-                </div>
-                <span className="text-xs font-bold tracking-wider uppercase bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/20">
-                  {u.role}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <DashboardList
+          title="New community members"
+          eyebrow="Recent users"
+          to="/admin/users"
+          empty="No users yet"
+        >
+          {d.recentUsers.map((user) => (
+            <Link className="admin-activity-row" key={user.id} to={`/admin/users/${user.id}`}>
+              <div className="activity-avatar">{user.displayName.slice(0, 1).toUpperCase()}</div>
+              <div>
+                <strong>{user.displayName}</strong>
+                <small>{user.email}</small>
+              </div>
+              <span className="admin-role-pill">{user.role.replace('_', ' ')}</span>
+              <ArrowRightIcon />
+            </Link>
+          ))}
+        </DashboardList>
+      </div>
+
+      <div className="admin-attention-bar">
+        <div className="attention-icon">
+          <ShieldIcon />
+        </div>
+        <div>
+          <strong>Trust & safety queue</strong>
+          <p>
+            {d.products.pendingApproval + d.reports.open} items currently need an administrator’s
+            attention.
+          </p>
+        </div>
+        <Link className="button button-outline" to="/admin/moderation">
+          Open queue
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+function DashboardList({
+  title,
+  eyebrow,
+  to,
+  empty,
+  children,
+}: {
+  title: string
+  eyebrow: string
+  to: string
+  empty: string
+  children: ReactNode
+}) {
+  const hasChildren = Array.isArray(children) ? children.length > 0 : Boolean(children)
+  return (
+    <section className="admin-dashboard-panel">
+      <header>
+        <div>
+          <span>{eyebrow}</span>
+          <h2>{title}</h2>
+        </div>
+        <Link to={to}>
+          View all <ArrowRightIcon />
+        </Link>
+      </header>
+      <div className="admin-activity-list">
+        {hasChildren ? children : <p className="admin-list-empty">{empty}</p>}
       </div>
     </section>
   )

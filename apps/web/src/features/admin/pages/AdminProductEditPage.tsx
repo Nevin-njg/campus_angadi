@@ -6,21 +6,23 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiClientError } from '../../../lib/api-client'
 import { adminCatalogApi } from '../api/admin-catalog.api'
 import { ChevronLeftIcon, PackageIcon } from '../../../components/ui/icons'
+import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
 
 export function AdminProductEditPage() {
   const { id = '' } = useParams()
   const client = useQueryClient()
+  const confirm = useConfirmation()
   const product = useQuery({
     queryKey: ['admin', 'product', id],
     queryFn: () => adminCatalogApi.product(id),
     enabled: Boolean(id),
   })
-  
+
   const categories = useQuery({
     queryKey: ['admin', 'categories'],
     queryFn: adminCatalogApi.categories,
   })
-  
+
   const [form, setForm] = useState<UpdateOfficialProductInput>({})
   const [imageUrl, setImageUrl] = useState('')
   const [tags, setTags] = useState('')
@@ -63,9 +65,10 @@ export function AdminProductEditPage() {
       setMessage(error instanceof ApiClientError ? error.message : 'Unable to update product.'),
   })
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
+    if (!(await confirm({ title: 'Save product changes?', description: 'The official-store product and its public visibility will be updated.', confirmLabel: 'Save product' }))) return
     update.mutate({
       ...form,
       tags: tags
@@ -78,46 +81,61 @@ export function AdminProductEditPage() {
     })
   }
 
-  const inputClass = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-gray-500 mt-1"
-  const labelClass = "block text-sm font-medium text-gray-300"
+  const inputClass =
+    'w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500 mt-1'
+  const labelClass = 'block text-sm font-medium text-gray-300'
 
-  if (product.isLoading) return (
-    <div className="py-20 flex justify-center">
-      <div className="w-12 h-12 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
-    </div>
-  )
-  
-  if (!product.data || product.isError) return (
-    <div className="py-20 text-center">
-      <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
-        <PackageIcon />
+  if (product.isLoading)
+    return (
+      <div className="py-20 flex justify-center">
+        <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Product not found</h2>
-      <Link to="/admin/products" className="text-indigo-400 hover:text-indigo-300">Return to products</Link>
-    </div>
-  )
+    )
+
+  if (!product.data || product.isError)
+    return (
+      <div className="py-20 text-center">
+        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
+          <PackageIcon />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">Product not found</h2>
+        <Link to="/admin/products" className="text-amber-400 hover:text-amber-300">
+          Return to products
+        </Link>
+      </div>
+    )
 
   return (
     <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
-      <Link className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors" to="/admin/products">
+      <Link
+        className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors"
+        to="/admin/products"
+      >
         <ChevronLeftIcon /> Back to Products
       </Link>
-      
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <span className="text-indigo-400 font-bold tracking-wider text-xs uppercase mb-2 block">
+          <span className="text-amber-400 font-bold tracking-wider text-xs uppercase mb-2 block">
             Official store
           </span>
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">Edit product</h1>
-          <p className="text-gray-400 text-lg">Changes are applied to the live catalogue and homepage eligibility.</p>
+          <p className="text-gray-400 text-lg">
+            Changes are applied to the live catalogue and homepage eligibility.
+          </p>
         </div>
       </div>
 
-      <form className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl" onSubmit={submit}>
+      <form
+        className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl"
+        onSubmit={submit}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10">Basic Details</h2>
-            
+            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10">
+              Basic Details
+            </h2>
+
             <label className={labelClass}>
               Title
               <input
@@ -128,7 +146,7 @@ export function AdminProductEditPage() {
                 onChange={(event) => setForm({ ...form, title: event.target.value })}
               />
             </label>
-            
+
             <label className={labelClass}>
               Category
               <select
@@ -139,7 +157,9 @@ export function AdminProductEditPage() {
               >
                 <option value="">Choose category</option>
                 {(categories.data ?? [])
-                  .filter((category) => category.isActive || category.id === product.data.category.id)
+                  .filter(
+                    (category) => category.isActive || category.id === product.data.category.id,
+                  )
                   .map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
@@ -147,7 +167,7 @@ export function AdminProductEditPage() {
                   ))}
               </select>
             </label>
-            
+
             <label className={labelClass}>
               Description
               <textarea
@@ -161,8 +181,10 @@ export function AdminProductEditPage() {
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10">Pricing & Inventory</h2>
-            
+            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10">
+              Pricing & Inventory
+            </h2>
+
             <div className="grid grid-cols-2 gap-4">
               <label className={labelClass}>
                 Price (₹)
@@ -175,7 +197,7 @@ export function AdminProductEditPage() {
                   onChange={(event) => setForm({ ...form, price: Number(event.target.value) })}
                 />
               </label>
-              
+
               <label className={labelClass}>
                 Original price (₹)
                 <input
@@ -192,7 +214,7 @@ export function AdminProductEditPage() {
                 />
               </label>
             </div>
-            
+
             <label className={labelClass}>
               Stock
               <input
@@ -204,17 +226,21 @@ export function AdminProductEditPage() {
                 onChange={(event) => setForm({ ...form, stock: Number(event.target.value) })}
               />
             </label>
-            
+
             <label className={labelClass}>
               Pickup location
               <input
                 className={inputClass}
                 value={form.pickupLocation ?? ''}
-                onChange={(event) => setForm({ ...form, pickupLocation: event.target.value || null })}
+                onChange={(event) =>
+                  setForm({ ...form, pickupLocation: event.target.value || null })
+                }
               />
             </label>
 
-            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10 mt-8">Media & Tags</h2>
+            <h2 className="text-xl font-bold text-white pb-4 border-b border-white/10 mt-8">
+              Media & Tags
+            </h2>
 
             <label className={labelClass}>
               Primary image URL
@@ -225,37 +251,37 @@ export function AdminProductEditPage() {
                 onChange={(event) => setImageUrl(event.target.value)}
               />
             </label>
-            
+
             {imageUrl && (
               <div className="mt-2 rounded-xl border border-white/10 overflow-hidden bg-black/40 h-32 relative">
                 <img src={imageUrl} alt="Preview" className="w-full h-full object-contain" />
               </div>
             )}
-            
+
             <label className={labelClass}>
               Tags, comma separated
-              <input 
+              <input
                 className={inputClass}
-                value={tags} 
-                onChange={(event) => setTags(event.target.value)} 
+                value={tags}
+                onChange={(event) => setTags(event.target.value)}
               />
             </label>
-            
+
             <div className="flex flex-col gap-4 mt-6 pt-6 border-t border-white/10">
               <label className="flex items-center gap-3 text-white cursor-pointer p-4 bg-black/20 rounded-xl border border-white/5">
                 <input
                   type="checkbox"
-                  className="w-5 h-5 rounded border-white/20 bg-black/40 text-indigo-500 focus:ring-indigo-500/50"
+                  className="w-5 h-5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-amber-500/50"
                   checked={form.isFeatured ?? false}
                   onChange={(event) => setForm({ ...form, isFeatured: event.target.checked })}
                 />
                 <span className="font-medium">Featured priority</span>
               </label>
-              
+
               <label className="flex items-center gap-3 text-white cursor-pointer p-4 bg-black/20 rounded-xl border border-white/5">
                 <input
                   type="checkbox"
-                  className="w-5 h-5 rounded border-white/20 bg-black/40 text-indigo-500 focus:ring-indigo-500/50"
+                  className="w-5 h-5 rounded border-white/20 bg-black/40 text-amber-500 focus:ring-amber-500/50"
                   checked={form.publish ?? false}
                   onChange={(event) => setForm({ ...form, publish: event.target.checked })}
                 />
@@ -266,19 +292,21 @@ export function AdminProductEditPage() {
         </div>
 
         {message ? (
-          <div className={`mt-8 p-4 rounded-xl border text-sm font-medium ${
-            message.includes('successfully') 
-              ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-              : 'bg-red-500/10 border-red-500/20 text-red-400'
-          }`}>
+          <div
+            className={`mt-8 p-4 rounded-xl border text-sm font-medium ${
+              message.includes('successfully')
+                ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
             {message}
           </div>
         ) : null}
 
         <div className="mt-8 pt-8 border-t border-white/10 flex justify-end">
-          <button 
+          <button
             type="submit"
-            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            className="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             disabled={update.isPending}
           >
             {update.isPending ? 'Saving changes…' : 'Save changes'}

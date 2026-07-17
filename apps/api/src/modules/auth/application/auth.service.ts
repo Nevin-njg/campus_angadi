@@ -138,14 +138,15 @@ export class AuthService {
       })
     }
 
-    const role = this.resolveRole(email)
-    let value = await this.users.findOrCreateByEmail(email, role)
+    const configuredRole = this.resolveConfiguredRole(email)
+    let value = await this.users.findByEmail(email)
+    if (!value) value = await this.users.findOrCreateByEmail(email, configuredRole ?? 'USER')
     if (value.user.status !== 'ACTIVE') {
       await this.sessions.revokeAllForUser(value.user.id, 'ACCOUNT_NOT_ACTIVE')
       throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not currently active.')
     }
 
-    value = await this.users.recordSuccessfulLogin(value.user.id, role)
+    value = await this.users.recordSuccessfulLogin(value.user.id, configuredRole ?? value.user.role)
     const sessionId = randomUUID()
     const tokens = this.tokenService.createTokenPair(value.user.id, value.user.role, sessionId)
 
@@ -237,9 +238,9 @@ export class AuthService {
     return email
   }
 
-  private resolveRole(email: string): UserRole {
+  private resolveConfiguredRole(email: string): UserRole | null {
     if (this.options.superAdminEmails.includes(email)) return 'SUPER_ADMIN'
     if (this.options.adminEmails.includes(email)) return 'ADMIN'
-    return 'USER'
+    return null
   }
 }

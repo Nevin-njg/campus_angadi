@@ -46,6 +46,8 @@ import { createRateLimitStoreFactory } from '../core/rate-limit/rate-limit-store
 import { CleanupService } from '../modules/operations/application/cleanup.service.js'
 import { CleanupScheduler } from '../modules/operations/application/cleanup.scheduler.js'
 import { IndexInspectionService } from '../modules/operations/application/index-inspection.service.js'
+import { ChatService } from '../modules/chat/application/chat.service.js'
+import { CloudinaryAudioStorage } from '../modules/chat/infrastructure/cloudinary-audio-storage.js'
 
 export function createCompositionRoot() {
   const metrics = new MetricsRegistry()
@@ -131,6 +133,13 @@ export function createCompositionRoot() {
   const cartService = new CartService(carts, checkoutCatalog, cartMapper)
   const orders = new MongooseOrderRepository()
   const orderService = new OrderService(orders, carts, checkoutCatalog, env.APP_NAME, notifications)
+  const chatAudioStorage = new CloudinaryAudioStorage(
+    env.CLOUDINARY_CLOUD_NAME,
+    env.CLOUDINARY_API_KEY,
+    env.CLOUDINARY_API_SECRET,
+    env.CLOUDINARY_FOLDER,
+  )
+  const chatService = new ChatService(chatAudioStorage, env.CHAT_AUDIO_MAX_BYTES)
   const dealers = new MongooseDealerRepository()
   const dealerService = new DealerService(dealers)
   const notificationService = new NotificationService(notifications)
@@ -165,6 +174,8 @@ export function createCompositionRoot() {
     redis,
     metrics,
     rateLimitStoreFactory,
+    tokenService,
+    users,
     authService,
     profileService,
     categoryService,
@@ -174,6 +185,7 @@ export function createCompositionRoot() {
     listingService,
     cartService,
     orderService,
+    chatService,
     dealerService,
     notificationService,
     reportService,

@@ -1,26 +1,36 @@
-import type { ProductCondition, ProductSort, ProductType } from '@campusbaza/contracts'
+import type { ProductCondition, ProductListQuery, ProductSort } from '@campusbaza/contracts'
 import { useQuery } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { SearchIcon } from '../../../components/ui/icons'
+import { FilterIcon, PackageIcon, SearchIcon, ShieldIcon } from '../../../components/ui/icons'
 import { catalogApi } from '../api/catalog.api'
-import { ProductGrid, ProductGridSkeleton } from '../components/ProductGrid'
+import { ProductGrid, ProductGridSkeleton } from './ProductGrid'
 
-export function ProductsPage() {
+interface StorefrontPageProps {
+  kind: 'official' | 'second-hand'
+}
+
+export function StorefrontPage({ kind }: StorefrontPageProps) {
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState(params.get('q') ?? '')
+  const official = kind === 'official'
   useEffect(() => setSearch(params.get('q') ?? ''), [params])
 
   const query = {
     q: params.get('q') || undefined,
     category: params.get('category') || undefined,
-    productType: (params.get('productType') || undefined) as ProductType | undefined,
-    condition: (params.get('condition') || undefined) as ProductCondition | undefined,
+    productType: official ? 'NEW' : 'SECOND_HAND',
+    sellerType: official ? 'ADMIN' : 'USER',
+    condition: official
+      ? undefined
+      : ((params.get('condition') || undefined) as ProductCondition | undefined),
+    minPrice: Number(params.get('minPrice')) || undefined,
+    maxPrice: Number(params.get('maxPrice')) || undefined,
     sort: (params.get('sort') || 'latest') as ProductSort,
     page: Number(params.get('page') || 1),
     limit: 12,
-  }
+  } satisfies Partial<ProductListQuery>
   const categories = useQuery({ queryKey: ['categories'], queryFn: catalogApi.categories })
   const products = useQuery({
     queryKey: ['products', query],
@@ -41,26 +51,41 @@ export function ProductsPage() {
   }
 
   return (
-    <section className="catalog-page section">
-      <div className="container">
-        <div className="catalog-page-head">
+    <div className="storefront-page">
+      <section className="storefront-hero">
+        <div className="container storefront-hero-inner">
           <div>
-            <span className="section-kicker">Marketplace</span>
-            <h1>Browse products</h1>
-            <p>Official campus products and approved second-hand listings.</p>
+            <span className="storefront-label">
+              {official ? <ShieldIcon /> : <PackageIcon />}
+              {official ? 'Official Campus Store' : 'Community Marketplace'}
+            </span>
+            <h1>{official ? 'Official campus essentials' : 'Second-hand campus finds'}</h1>
+            <p>
+              {official
+                ? 'Verified merchandise, supplies and everyday essentials managed by the Campus Angadi team.'
+                : 'Approved pre-loved books, electronics and hostel essentials from the NITC community.'}
+            </p>
           </div>
-          <form className="catalog-search" onSubmit={submitSearch}>
+          <form className="storefront-search" onSubmit={submitSearch}>
             <SearchIcon />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search products"
+              placeholder={official ? 'Search official products' : 'Search second-hand products'}
+              aria-label={`Search ${official ? 'official' : 'second-hand'} products`}
             />
             <button className="button button-primary">Search</button>
           </form>
         </div>
-        <div className="catalog-layout">
-          <aside className="catalog-filters">
+      </section>
+
+      <section className="section storefront-catalog">
+        <div className="container catalog-layout">
+          <aside className="catalog-filters storefront-filters">
+            <div className="storefront-filter-title">
+              <FilterIcon />
+              <strong>Filters</strong>
+            </div>
             <label>
               Category
               <select
@@ -75,39 +100,55 @@ export function ProductsPage() {
                 ))}
               </select>
             </label>
+            {!official ? (
+              <label>
+                Condition
+                <select
+                  value={query.condition ?? ''}
+                  onChange={(event) => update('condition', event.target.value || undefined)}
+                >
+                  <option value="">Any condition</option>
+                  <option value="LIKE_NEW">Like new</option>
+                  <option value="GOOD">Good</option>
+                  <option value="FAIR">Fair</option>
+                  <option value="USED">Used</option>
+                  <option value="OPEN_BOX">Open box</option>
+                </select>
+              </label>
+            ) : null}
             <label>
-              Product type
-              <select
-                value={query.productType ?? ''}
-                onChange={(event) => update('productType', event.target.value || undefined)}
-              >
-                <option value="">All products</option>
-                <option value="NEW">Official</option>
-                <option value="SECOND_HAND">Second-Hand</option>
-              </select>
+              Minimum price
+              <input
+                type="number"
+                min="0"
+                inputMode="numeric"
+                value={params.get('minPrice') ?? ''}
+                onChange={(event) => update('minPrice', event.target.value || undefined)}
+                placeholder="₹0"
+              />
             </label>
             <label>
-              Condition
-              <select
-                value={query.condition ?? ''}
-                onChange={(event) => update('condition', event.target.value || undefined)}
-              >
-                <option value="">Any condition</option>
-                <option value="NEW">New</option>
-                <option value="LIKE_NEW">Like new</option>
-                <option value="GOOD">Good</option>
-                <option value="FAIR">Fair</option>
-                <option value="USED">Used</option>
-                <option value="OPEN_BOX">Open box</option>
-              </select>
+              Maximum price
+              <input
+                type="number"
+                min="0"
+                inputMode="numeric"
+                value={params.get('maxPrice') ?? ''}
+                onChange={(event) => update('maxPrice', event.target.value || undefined)}
+                placeholder="Any price"
+              />
             </label>
             <button className="button button-outline" onClick={() => setParams({})}>
               Clear filters
             </button>
           </aside>
+
           <div className="catalog-results">
-            <div className="catalog-toolbar">
-              <span>{products.data?.meta.total ?? 0} products</span>
+            <div className="catalog-toolbar storefront-toolbar">
+              <span>
+                <strong>{products.data?.meta.total ?? 0}</strong>{' '}
+                {official ? 'products' : 'listings'}
+              </span>
               <label>
                 Sort
                 <select value={query.sort} onChange={(event) => update('sort', event.target.value)}>
@@ -119,16 +160,19 @@ export function ProductsPage() {
                 </select>
               </label>
             </div>
+
             {products.isLoading ? (
               <ProductGridSkeleton count={8} />
             ) : products.isError ? (
               <div className="catalog-empty">
-                <strong>Unable to load products.</strong>
-                <span>Please try again.</span>
+                <PackageIcon />
+                <strong>Unable to load products</strong>
+                <span>Please try again shortly.</span>
               </div>
             ) : (
               <ProductGrid products={products.data?.items ?? []} />
             )}
+
             {(products.data?.meta.totalPages ?? 0) > 1 ? (
               <div className="pagination">
                 <button
@@ -150,7 +194,7 @@ export function ProductsPage() {
             ) : null}
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   )
 }

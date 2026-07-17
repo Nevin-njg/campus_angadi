@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
+  AssignOrderModeratorInput,
   CheckoutInput,
   CheckoutResult,
   DealerAssignmentHistory,
@@ -18,7 +19,7 @@ import { AppError } from '../../../core/errors/app-error.js'
 import { CartModel } from '../../cart/infrastructure/cart.model.js'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { ProductModel } from '../../products/infrastructure/product.models.js'
-import { UserModel } from '../../users/infrastructure/user.models.js'
+import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
 import {
   DealerAssignmentHistoryModel,
   DealerModel,
@@ -190,7 +191,7 @@ export class MongooseOrderRepository implements OrderRepository {
           const orderId = String(order._id)
           const dealer = await this.acquireAutomaticDealer(session)
           const initialStatus: OrderStatus = dealer
-            ? 'AWAITING_WHATSAPP_CONFIRMATION'
+            ? 'AWAITING_TEAM_CONFIRMATION'
             : 'WAITING_FOR_DEALER_ASSIGNMENT'
           if (dealer) {
             await OrderModel.updateOne(
@@ -201,6 +202,9 @@ export class MongooseOrderRepository implements OrderRepository {
                   assignedDealerId: dealer._id,
                   assignedDealerName: dealer.displayName,
                   assignedDealerPhone: dealer.phoneNumber,
+                  assignedModeratorId: dealer.mediatorUserId,
+                  assignedModeratorName: dealer.displayName,
+                  moderatorAssignedAt: new Date(),
                   dealerAssignedAt: new Date(),
                   dealerReleased: false,
                 },
@@ -291,8 +295,11 @@ export class MongooseOrderRepository implements OrderRepository {
     return document ? await this.hydrateOrder(document) : null
   }
 
-  async listAdmin(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>> {
-    const filter: Record<string, unknown> = {}
+  async listAdmin(
+    query: AdminOrderListQuery,
+    moderatorId?: string,
+  ): Promise<PaginatedResult<OrderDetail>> {
+    const filter: Record<string, unknown> = moderatorId ? { assignedModeratorId: moderatorId } : {}
     if (query.status) filter.status = query.status
     if (query.sellerType) filter.sellerType = query.sellerType
     if (query.dealerId) filter.assignedDealerId = query.dealerId
@@ -305,8 +312,11 @@ export class MongooseOrderRepository implements OrderRepository {
     return this.list(filter, query.page, query.limit)
   }
 
-  async findAdminById(orderId: string): Promise<OrderDetail | null> {
-    const document = await OrderModel.findById(orderId).lean<Record<string, unknown>>()
+  async findAdminById(orderId: string, moderatorId?: string): Promise<OrderDetail | null> {
+    const document = await OrderModel.findOne({
+      _id: orderId,
+      ...(moderatorId ? { assignedModeratorId: moderatorId } : {}),
+    }).lean<Record<string, unknown>>()
     return document ? this.hydrateOrder(document) : null
   }
 
@@ -356,7 +366,7 @@ export class MongooseOrderRepository implements OrderRepository {
         const previousStatus = order.status as OrderStatus
         const newStatus: OrderStatus =
           previousStatus === 'WAITING_FOR_DEALER_ASSIGNMENT'
-            ? 'AWAITING_WHATSAPP_CONFIRMATION'
+            ? 'AWAITING_TEAM_CONFIRMATION'
             : previousStatus
         await OrderModel.updateOne(
           { _id: orderId },
@@ -365,6 +375,9 @@ export class MongooseOrderRepository implements OrderRepository {
               assignedDealerId: dealer._id,
               assignedDealerName: dealer.displayName,
               assignedDealerPhone: dealer.phoneNumber,
+              assignedModeratorId: dealer.mediatorUserId,
+              assignedModeratorName: dealer.displayName,
+              moderatorAssignedAt: new Date(),
               dealerAssignedAt: new Date(),
               dealerReleased: false,
               status: newStatus,
@@ -421,18 +434,49 @@ export class MongooseOrderRepository implements OrderRepository {
     return order
   }
 
-  async recordWhatsappRedirect(orderId: string, buyerId: string): Promise<OrderDetail | null> {
-    const document = await OrderModel.findOneAndUpdate(
+  async assignModerator(
+    orderId: string,
+    _actorId: string,
+    input: AssignOrderModeratorInput,
+  ): Promise<OrderDetail> {
+    const moderator = await UserModel.findOne({
+      _id: input.moderatorId,
+      status: 'ACTIVE',
+      $or: [
+        { role: 'MODERATOR' },
+        { canMediateOrders: true, role: { $in: ['ADMIN', 'SUPER_ADMIN'] } },
+      ],
+    }).lean<Record<string, unknown>>()
+    if (!moderator) {
+      throw new AppError(400, 'MODERATOR_NOT_AVAILABLE', 'Choose an active moderator account.')
+    }
+    const profile = await UserProfileModel.findOne({ userId: moderator._id }).lean<
+      Record<string, unknown>
+    >()
+    const displayName =
+      (profile?.displayName as string | undefined) ??
+      (profile?.fullName as string | undefined) ??
+      String(moderator.email).split('@')[0] ??
+      'Moderator'
+    const updated = await OrderModel.findOneAndUpdate(
+      { _id: orderId, status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] } },
       {
-        _id: orderId,
-        buyerId,
-        assignedDealerId: { $ne: null },
-        status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+        $set: {
+          assignedModeratorId: moderator._id,
+          assignedModeratorName: displayName,
+          moderatorAssignedAt: new Date(),
+        },
       },
-      { $inc: { whatsappRedirectCount: 1 }, $set: { whatsappRedirectedAt: new Date() } },
       { new: true },
     ).lean<Record<string, unknown>>()
-    return document ? this.hydrateOrder(document) : null
+    if (!updated) {
+      throw new AppError(
+        409,
+        'ORDER_NOT_ASSIGNABLE',
+        'The order is unavailable or its conversation is already closed.',
+      )
+    }
+    return this.hydrateOrder(updated)
   }
 
   async transition(
@@ -521,22 +565,40 @@ export class MongooseOrderRepository implements OrderRepository {
   }
 
   private async acquireSpecificDealer(dealerId: string, session: ClientSession) {
-    return DealerModel.findOneAndUpdate(
+    const dealer = await DealerModel.findOneAndUpdate(
       {
         _id: dealerId,
         isActive: true,
         deletedAt: null,
+        mediatorUserId: { $ne: null },
         $expr: { $lt: ['$currentOpenOrders', '$maxOpenOrders'] },
       },
       { $inc: { currentOpenOrders: 1 }, $set: { lastAssignedAt: new Date() } },
       { new: true, session },
     ).lean<Record<string, unknown>>()
+    if (!dealer) return null
+    const mediator = await UserModel.exists({
+      _id: dealer.mediatorUserId,
+      status: 'ACTIVE',
+      $or: [
+        { role: 'MODERATOR' },
+        { canMediateOrders: true, role: { $in: ['ADMIN', 'SUPER_ADMIN'] } },
+      ],
+    }).session(session)
+    if (mediator) return dealer
+    await DealerModel.updateOne(
+      { _id: dealer._id, currentOpenOrders: { $gt: 0 } },
+      { $inc: { currentOpenOrders: -1 }, $set: { isActive: false } },
+      { session },
+    )
+    return null
   }
 
   private async acquireAutomaticDealer(session: ClientSession, excludeId?: string) {
     const candidates = await DealerModel.find({
       isActive: true,
       deletedAt: null,
+      mediatorUserId: { $ne: null },
       ...(excludeId ? { _id: { $ne: excludeId } } : {}),
       $expr: { $lt: ['$currentOpenOrders', '$maxOpenOrders'] },
     })
@@ -549,6 +611,47 @@ export class MongooseOrderRepository implements OrderRepository {
       if (acquired) return acquired
     }
     return null
+  }
+
+  private async acquireAutomaticModerator(session: ClientSession) {
+    const candidates = await UserModel.find({
+      status: 'ACTIVE',
+      $or: [
+        { role: 'MODERATOR' },
+        { canMediateOrders: true, role: { $in: ['ADMIN', 'SUPER_ADMIN'] } },
+      ],
+    })
+      .sort({ createdAt: 1 })
+      .session(session)
+      .lean<Record<string, unknown>[]>()
+    if (!candidates.length) return null
+    const candidateIds = candidates.map((candidate) => candidate._id)
+    const workloads = await OrderModel.aggregate<{ _id: Types.ObjectId; count: number }>([
+      {
+        $match: {
+          assignedModeratorId: { $in: candidateIds },
+          status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+        },
+      },
+      { $group: { _id: '$assignedModeratorId', count: { $sum: 1 } } },
+    ]).session(session)
+    const workloadById = new Map(workloads.map((entry) => [String(entry._id), entry.count]))
+    candidates.sort(
+      (left, right) =>
+        (workloadById.get(String(left._id)) ?? 0) - (workloadById.get(String(right._id)) ?? 0),
+    )
+    const selected = candidates[0]!
+    const profile = await UserProfileModel.findOne({ userId: selected._id })
+      .session(session)
+      .lean<Record<string, unknown>>()
+    return {
+      _id: selected._id,
+      displayName:
+        (profile?.displayName as string | undefined) ??
+        (profile?.fullName as string | undefined) ??
+        String(selected.email).split('@')[0] ??
+        'Moderator',
+    }
   }
 
   private async restoreStock(items: Record<string, unknown>[], session: ClientSession) {
@@ -669,12 +772,14 @@ export class MongooseOrderRepository implements OrderRepository {
         ? {
             id: objectIdToString(document.assignedDealerId) ?? '',
             displayName: String(document.assignedDealerName),
-            phoneNumber: String(document.assignedDealerPhone),
           }
         : null,
-      whatsappRedirectCount: Number(document.whatsappRedirectCount ?? 0),
-      whatsappRedirectedAt: document.whatsappRedirectedAt
-        ? (document.whatsappRedirectedAt as Date).toISOString()
+      assignedModeratorId: objectIdToString(document.assignedModeratorId),
+      assignedModerator: document.assignedModeratorId
+        ? {
+            id: objectIdToString(document.assignedModeratorId) ?? '',
+            displayName: String(document.assignedModeratorName),
+          }
         : null,
       createdAt: (document.createdAt as Date).toISOString(),
       updatedAt: (document.updatedAt as Date).toISOString(),

@@ -21,7 +21,7 @@ const section = (key: 'FEATURED' | 'OFFICIAL' | 'SECOND_HAND' | 'RECENT') => ({
 })
 
 describe('HomePage', () => {
-  it('describes the privacy-safe WhatsApp assisted order flow and live catalogue sections', async () => {
+  it('describes the private mediated order flow and live catalogue sections', async () => {
     vi.mocked(catalogApi.homepage).mockResolvedValue({
       categories: [],
       sections: {
@@ -39,9 +39,9 @@ describe('HomePage', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('WhatsApp-assisted ordering')).toBeInTheDocument()
-    expect(screen.getByText('Privacy-safe communication')).toBeInTheDocument()
-    expect(await screen.findByText('Featured on Campus Angaadi')).toBeInTheDocument()
+    expect(screen.getByText('In-app order support')).toBeInTheDocument()
+    expect(screen.getByText('Private mediated chat')).toBeInTheDocument()
+    expect(await screen.findByText('Featured on Campus Angadi')).toBeInTheDocument()
     expect(screen.getByText('Official Campus Store')).toBeInTheDocument()
   })
 })

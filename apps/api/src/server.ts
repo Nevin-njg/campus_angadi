@@ -1,6 +1,7 @@
 import { createApp } from './app/create-app.js'
 import { createCompositionRoot } from './app/composition-root.js'
 import { connectMongo, disconnectMongo } from './infrastructure/database/mongoose.connection.js'
+import { attachChatSocket } from './modules/chat/presentation/chat.socket.js'
 
 const root = createCompositionRoot()
 let shuttingDown = false
@@ -21,6 +22,14 @@ async function start(): Promise<void> {
       `${root.env.APP_NAME} API started`,
     )
   })
+  const chatSocket = attachChatSocket(server, {
+    chat: root.chatService,
+    tokens: root.tokenService,
+    users: root.users,
+    logger: root.logger,
+    allowedOrigins: root.env.CORS_ALLOWED_ORIGINS,
+    environment: root.env.NODE_ENV,
+  })
 
   server.requestTimeout = 30_000
   server.headersTimeout = 35_000
@@ -40,9 +49,7 @@ async function start(): Promise<void> {
     forceTimer.unref()
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        server.close((error) => (error ? reject(error) : resolve()))
-      })
+      await new Promise<void>((resolve) => chatSocket.close(() => resolve()))
       await disconnectMongo()
       if (root.redis) await root.redis.quit()
       clearTimeout(forceTimer)

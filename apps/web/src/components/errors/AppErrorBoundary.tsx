@@ -16,7 +16,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Campus Angaadi interface error', error, info)
+    console.error('Campus Angadi interface error', error, info)
   }
 
   override render() {
@@ -28,7 +28,7 @@ export class AppErrorBoundary extends Component<Props, State> {
             <h1>The page could not be displayed.</h1>
             <p>Reload the page. Your saved marketplace data has not been removed.</p>
             <button className="button button-primary" onClick={() => window.location.reload()}>
-              Reload Campus Angaadi
+              Reload Campus Angadi
             </button>
           </div>
         </main>

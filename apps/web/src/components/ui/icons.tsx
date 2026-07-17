@@ -19,17 +19,6 @@ export const SearchIcon = (props: IconProps) => (
     <path d="m20 20-4-4" />
   </svg>
 )
-export const MoonIcon = (props: IconProps) => (
-  <svg {...base} {...props}>
-    <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" />
-  </svg>
-)
-export const SunIcon = (props: IconProps) => (
-  <svg {...base} {...props}>
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-  </svg>
-)
 export const MenuIcon = (props: IconProps) => (
   <svg {...base} {...props}>
     <path d="M4 6h16M4 12h16M4 18h16" />
@@ -259,6 +248,18 @@ export const LayersIcon = (props: IconProps) => (
 export const PhoneIcon = (props: IconProps) => (
   <svg {...base} {...props}>
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+)
+export const MicIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8" />
+  </svg>
+)
+export const PhoneOffIcon = (props: IconProps) => (
+  <svg {...base} {...props}>
+    <path d="M10.7 13.3a16 16 0 0 0 3.4 2.7l1.3-1.3a2 2 0 0 1 2.1-.5 13 13 0 0 0 2.8.7 2 2 0 0 1 1.7 2v3a2 2 0 0 1-2.2 2 20 20 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 20 20 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9" />
+    <path d="m2 2 20 20" />
   </svg>
 )
 export const CalendarIcon = (props: IconProps) => (

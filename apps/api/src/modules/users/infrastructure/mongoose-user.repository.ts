@@ -10,6 +10,8 @@ function mapUser(document: Record<string, unknown>): UserRecord {
     role: document.role as UserRecord['role'],
     status: document.status as UserRecord['status'],
     canSell: Boolean(document.canSell),
+    canMediateOrders:
+      Boolean(document.canMediateOrders) || document.role === 'MODERATOR',
     profileCompleted: Boolean(document.profileCompleted),
     createdAt: document.createdAt as Date,
     updatedAt: document.updatedAt as Date,
@@ -60,6 +62,7 @@ export class MongooseUserRepository implements UserRepository {
           emailVerified: true,
           status: 'ACTIVE',
           canSell: true,
+          canMediateOrders: role === 'MODERATOR',
           profileCompleted: false,
           createdAt: now,
         },
@@ -77,7 +80,15 @@ export class MongooseUserRepository implements UserRepository {
     const now = new Date()
     const user = await UserModel.findByIdAndUpdate(
       userId,
-      { $set: { lastLoginAt: now, lastActiveAt: now, role } },
+      {
+        $set: {
+          emailVerified: true,
+          lastLoginAt: now,
+          lastActiveAt: now,
+          role,
+          ...(role === 'MODERATOR' ? { canMediateOrders: true } : {}),
+        },
+      },
       { new: true },
     ).lean<Record<string, unknown>>()
     if (!user) throw new Error('User no longer exists')

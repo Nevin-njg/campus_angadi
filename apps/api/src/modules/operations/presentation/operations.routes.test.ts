@@ -48,7 +48,7 @@ describe('Operations Routes', () => {
       const expressApp = express()
       expressApp.use(express.json())
       expressApp.use('/operations', router)
-      
+
       // Error handling middleware to catch AppError
       expressApp.use((err: any, req: Request, res: Response, next: NextFunction) => {
         if (err instanceof AppError) {
@@ -57,7 +57,7 @@ describe('Operations Routes', () => {
           res.status(500).json({ error: 'INTERNAL_ERROR' })
         }
       })
-      
+
       return expressApp
     }
 
@@ -76,7 +76,7 @@ describe('Operations Routes', () => {
         cleanupEnabled: true,
         cleanupIntervalMinutes: 60,
       })
-      
+
       const expressApp = express()
       expressApp.use('/operations', appNotAdmin)
       expressApp.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -87,9 +87,9 @@ describe('Operations Routes', () => {
       expect(response.status).toBe(403)
       expect(response.body.error).toBe('INSUFFICIENT_PERMISSION')
     })
-    
+
     it('should deny access if not authenticated', async () => {
-       const appUnauth = createOperationsRouter({
+      const appUnauth = createOperationsRouter({
         authenticate: (req: Request, res: Response, next: NextFunction) => next(),
         cleanup: mockCleanup,
         indexes: mockIndexes,
@@ -99,7 +99,7 @@ describe('Operations Routes', () => {
         cleanupEnabled: true,
         cleanupIntervalMinutes: 60,
       })
-      
+
       const expressApp = express()
       expressApp.use('/operations', appUnauth)
       expressApp.use((err: any, req: Request, res: Response, next: NextFunction) => {

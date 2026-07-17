@@ -29,15 +29,16 @@ export function MyOrdersPage() {
           <span className="section-kicker">Purchases</span>
           <h1>My orders</h1>
         </div>
-        <Link className="button button-primary" to="/products">
-          Browse products
+        <Link className="button button-primary" to="/official-store">
+          Shop official store
         </Link>
       </div>
       {created ? (
         <div className="success-banner">
           <strong>Your orders were created.</strong>
           <span>
-            Each seller group has its own order number. A dealer will be assigned in Part 5.
+            Each seller group has its own order number and a private Campus Angadi support
+            conversation.
           </span>
         </div>
       ) : null}

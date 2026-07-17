@@ -15,7 +15,7 @@ function createSubject() {
   const email = new FakeEmailSender()
   const tokens = new TokenService('a'.repeat(48), 'b'.repeat(48), '15m', '30d')
   const auth = new AuthService(users, sessions, otpStore, email, tokens, {
-    appName: 'Campus Angaadi',
+    appName: 'Campus Angadi',
     allowedEmailDomains: ['campusbaza.example.edu'],
     adminEmails: ['admin@campusbaza.example.edu'],
     superAdminEmails: ['owner@campusbaza.example.edu'],
@@ -82,6 +82,20 @@ describe('AuthService', () => {
       },
     )
     expect(result.user.role).toBe('ADMIN')
+  })
+
+  it('preserves roles promoted through the administrator console', async () => {
+    const { auth, users, email } = createSubject()
+    const address = 'moderator@campusbaza.example.edu'
+    await users.findOrCreateByEmail(address, 'MODERATOR')
+
+    await auth.requestOtp(address)
+    const result = await auth.verifyOtp(address, email.messages.at(-1)!.code, {
+      ipAddress: null,
+      userAgent: null,
+    })
+
+    expect(result.user.role).toBe('MODERATOR')
   })
 
   it('rotates refresh tokens and revokes the session when an old token is reused', async () => {

@@ -48,8 +48,8 @@ export function ProductDetailsPage() {
           <PackageIcon />
           <strong>Product unavailable</strong>
           <span>This listing may have been removed, sold or hidden.</span>
-          <Link className="button button-primary" to="/products">
-            Browse products
+          <Link className="button button-primary" to="/">
+            Back to stores
           </Link>
         </div>
       </section>

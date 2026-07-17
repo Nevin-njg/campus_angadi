@@ -23,7 +23,7 @@ export function VerifyOtpPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     }
   }, [user, navigate])
   const [resendAt, setResendAt] = useState(() =>
@@ -94,7 +94,7 @@ export function VerifyOtpPage() {
             <ShieldIcon />
             <div>
               <strong>Never share your code</strong>
-              <span>Campus Angaadi staff will never ask for it through WhatsApp.</span>
+              <span>Campus Angadi staff will never ask for this code through chat or a call.</span>
             </div>
           </div>
         </div>

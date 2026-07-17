@@ -79,8 +79,6 @@ function order(status: OrderStatus = 'PENDING'): OrderDetail {
     pickupLocation: 'Main block',
     assignedDealerId: null,
     assignedDealer: null,
-    whatsappRedirectCount: 0,
-    whatsappRedirectedAt: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     fullName: 'Buyer',
@@ -124,15 +122,6 @@ class OrderFake implements OrderRepository {
     return this.current
   }
   async assignDealer() {
-    return this.current
-  }
-  async recordWhatsappRedirect() {
-    if (!this.current.assignedDealer) return null
-    this.current = {
-      ...this.current,
-      whatsappRedirectCount: this.current.whatsappRedirectCount + 1,
-      whatsappRedirectedAt: new Date().toISOString(),
-    }
     return this.current
   }
   async transition(_id: string, expected: OrderStatus, status: OrderStatus) {
@@ -223,53 +212,5 @@ describe('OrderService', () => {
     await expect(
       service.updateStatus('order-1', 'admin', { status: 'COMPLETED', note: null }),
     ).rejects.toMatchObject({ code: 'INVALID_ORDER_TRANSITION' })
-  })
-
-  it('generates a tracked WhatsApp continuation for an assigned dealer', async () => {
-    const orders = new OrderFake()
-    orders.current = {
-      ...order('AWAITING_WHATSAPP_CONFIRMATION'),
-      assignedDealerId: 'dealer-1',
-      assignedDealer: {
-        id: 'dealer-1',
-        displayName: 'Sales One',
-        phoneNumber: '+919900000001',
-      },
-      items: [
-        {
-          id: 'item',
-          productId: 'product',
-          productName: 'Notebook',
-          productSlug: 'notebook',
-          productImageUrl: null,
-          sellerId: 'admin',
-          productType: 'NEW',
-          quantity: 2,
-          unitPrice: 100,
-          totalPrice: 200,
-        },
-      ],
-      totalAmount: 200,
-    }
-    const service = new OrderService(
-      orders,
-      new CartFake({ id: 'cart', userId: 'buyer', items: [], updatedAt: new Date() }),
-      new CatalogFake([]),
-    )
-    const result = await service.continueOnWhatsapp('order-1', 'buyer')
-    expect(result.url).toContain('https://wa.me/919900000001')
-    expect(result.message).toContain('CBZ-1')
-    expect(result.redirectCount).toBe(1)
-  })
-
-  it('does not generate WhatsApp continuation before dealer assignment', async () => {
-    const service = new OrderService(
-      new OrderFake(),
-      new CartFake({ id: 'cart', userId: 'buyer', items: [], updatedAt: new Date() }),
-      new CatalogFake([]),
-    )
-    await expect(service.continueOnWhatsapp('order-1', 'buyer')).rejects.toMatchObject({
-      code: 'DEALER_NOT_ASSIGNED',
-    })
   })
 })

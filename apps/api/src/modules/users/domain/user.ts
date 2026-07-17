@@ -13,6 +13,7 @@ export interface UserRecord {
   role: UserRole
   status: UserStatus
   canSell: boolean
+  canMediateOrders: boolean
   profileCompleted: boolean
   createdAt: Date
   updatedAt: Date
@@ -47,6 +48,7 @@ export function toAuthUser(value: UserWithProfile): AuthUser {
     role: value.user.role,
     status: value.user.status,
     canSell: value.user.canSell,
+    canMediateOrders: value.user.canMediateOrders,
     profileCompleted: value.user.profileCompleted,
     profile: {
       fullName: value.profile.fullName,

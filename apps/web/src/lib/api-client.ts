@@ -89,7 +89,11 @@ export async function apiRequestEnvelope<T>(
       ...(body === undefined ? {} : { body: isFormData ? body : JSON.stringify(body) }),
     })
   } catch {
-    throw new ApiClientError(0, 'NETWORK_ERROR', 'Unable to reach the server. Check your connection.')
+    throw new ApiClientError(
+      0,
+      'NETWORK_ERROR',
+      'Unable to reach the server. Check your connection.',
+    )
   }
 
   if (

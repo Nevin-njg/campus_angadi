@@ -19,7 +19,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true })
+      void navigate('/', { replace: true })
     }
   }, [user, navigate])
   const form = useForm<RequestOtpInput>({
@@ -63,8 +63,8 @@ export function LoginPage() {
             <em>No password to remember.</em>
           </h1>
           <p>
-            Only addresses from domains configured by your campus administrator can access
-            Campus Angaadi.
+            Sign in with an email domain approved by the Campus Angadi team. Local testing can
+            include Gmail without changing the production access policy.
           </p>
           <div className="auth-trust">
             <ShieldIcon />
@@ -83,14 +83,14 @@ export function LoginPage() {
           <div className="auth-icon">
             <MailIcon />
           </div>
-          <h2>Sign in to Campus Angaadi</h2>
-          <p>Enter your approved college email. We’ll send a six-digit login code.</p>
+          <h2>Sign in to Campus Angadi</h2>
+          <p>Enter your approved email. We’ll send a six-digit login code.</p>
           <form onSubmit={(event) => void submit(event)} noValidate>
             <FormField
-              label="College email"
+              label="Email address"
               type="email"
               autoComplete="email"
-              placeholder="you@campusbaza.example.edu"
+              placeholder="you@gmail.com"
               error={form.formState.errors.email?.message}
               {...form.register('email')}
             />
@@ -104,8 +104,7 @@ export function LoginPage() {
             </Button>
           </form>
           <p className="auth-footnote">
-            No password, social login, or public Gmail access. Domain rules are enforced by the
-            backend.
+            No password or social login. Approved domain rules are enforced by the backend.
           </p>
           <Link className="back-link" to="/">
             ← Return to homepage

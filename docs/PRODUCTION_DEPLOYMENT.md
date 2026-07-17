@@ -1,6 +1,6 @@
-# Campus Angaadi production deployment
+# Campus Angadi production deployment
 
-Campus Angaadi is deployed without Docker. The recommended production topology is:
+Campus Angadi is deployed without Docker. The recommended production topology is:
 
 - Node.js 22 LTS for the API
 - a static web host or Nginx for `apps/web/dist`
@@ -37,7 +37,19 @@ COOKIE_SAME_SITE=lax
 
 METRICS_ENABLED=true
 METRICS_TOKEN=<long-random-secret>
+
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CHAT_AUDIO_MAX_BYTES=8000000
+
+# Web build-time variables
+VITE_API_URL=https://api.campusbaza.example.edu/api/v1
+VITE_WEBRTC_ICE_SERVERS_JSON=[{"urls":"stun:stun.example.edu:3478"},{"urls":"turns:turn.example.edu:5349","username":"short-lived-user","credential":"short-lived-credential"}]
 ```
+
+Configure a TURN service for reliable audio calls across campus, mobile, and restrictive networks.
+Prefer short-lived TURN credentials issued by your infrastructure provider.
 
 Generate unrelated secrets for OTP hashing, access tokens, refresh tokens, and metrics. Do not reuse a
 password or commit the environment file.
@@ -73,7 +85,7 @@ Example systemd unit:
 
 ```ini
 [Unit]
-Description=Campus Angaadi API
+Description=Campus Angadi API
 After=network.target
 
 [Service]
@@ -119,12 +131,14 @@ server {
     client_max_body_size 45m;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_read_timeout 35s;
     }
 }

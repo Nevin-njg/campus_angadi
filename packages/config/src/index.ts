@@ -1,7 +1,7 @@
 export const DEFAULT_BRAND = {
-  appName: 'Campus Angaadi',
+  appName: 'Campus Angadi',
   brandMark: 'CA',
-  campusDisplayName: 'Your Campus',
+  campusDisplayName: 'NIT Calicut',
 } as const
 
 export const DEFAULT_HOMEPAGE_LIMITS = {

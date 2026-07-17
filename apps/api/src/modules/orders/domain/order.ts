@@ -1,6 +1,7 @@
 import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
+  AssignOrderModeratorInput,
   CheckoutInput,
   CheckoutResult,
   OrderDetail,
@@ -31,14 +32,18 @@ export interface OrderRepository {
   ): Promise<CheckoutResult>
   listOwned(buyerId: string, query: OrderListQuery): Promise<PaginatedResult<OrderDetail>>
   findOwnedById(orderId: string, buyerId: string): Promise<OrderDetail | null>
-  listAdmin(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>>
-  findAdminById(orderId: string): Promise<OrderDetail | null>
+  listAdmin(query: AdminOrderListQuery, moderatorId?: string): Promise<PaginatedResult<OrderDetail>>
+  findAdminById(orderId: string, moderatorId?: string): Promise<OrderDetail | null>
   assignDealer(
     orderId: string,
     actorId: string,
     input: AssignOrderDealerInput,
   ): Promise<OrderDetail>
-  recordWhatsappRedirect(orderId: string, buyerId: string): Promise<OrderDetail | null>
+  assignModerator(
+    orderId: string,
+    actorId: string,
+    input: AssignOrderModeratorInput,
+  ): Promise<OrderDetail>
   transition(
     orderId: string,
     expectedStatus: OrderStatus,

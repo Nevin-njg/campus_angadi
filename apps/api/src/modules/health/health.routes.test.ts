@@ -17,7 +17,7 @@ describe('Health Routes', () => {
     app = express()
     app.use(express.json())
     app.use('/', createHealthRouter(mockHealth))
-    
+
     // Simple error handler to catch asyncHandler errors
     app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
       res.status(500).json({ success: false, message: 'Internal Server Error' })
@@ -30,7 +30,7 @@ describe('Health Routes', () => {
       expect(response.status).toBe(200)
       expect(response.body).toMatchObject({
         success: true,
-        message: 'Campus Angaadi API is healthy.',
+        message: 'Campus Angadi API is healthy.',
         data: { service: 'campusbaza-api', status: 'ok' },
       })
       expect(response.body.data).toHaveProperty('timestamp')
@@ -43,8 +43,8 @@ describe('Health Routes', () => {
       expect(response.status).toBe(200)
       expect(response.body).toMatchObject({
         success: true,
-        message: 'Campus Angaadi API is ready.',
-        data: { mongo: true, redis: true, status: 'ready' }
+        message: 'Campus Angadi API is ready.',
+        data: { mongo: true, redis: true, status: 'ready' },
       })
     })
 
@@ -54,8 +54,8 @@ describe('Health Routes', () => {
       expect(response.status).toBe(503)
       expect(response.body).toMatchObject({
         success: false,
-        message: 'Campus Angaadi API dependencies are not ready.',
-        data: { mongo: false, redis: true, status: 'not-ready' }
+        message: 'Campus Angadi API dependencies are not ready.',
+        data: { mongo: false, redis: true, status: 'not-ready' },
       })
     })
 
@@ -65,8 +65,8 @@ describe('Health Routes', () => {
       expect(response.status).toBe(503)
       expect(response.body).toMatchObject({
         success: false,
-        message: 'Campus Angaadi API dependencies are not ready.',
-        data: { mongo: true, redis: false, status: 'not-ready' }
+        message: 'Campus Angadi API dependencies are not ready.',
+        data: { mongo: true, redis: false, status: 'not-ready' },
       })
     })
 
@@ -77,8 +77,8 @@ describe('Health Routes', () => {
       expect(response.status).toBe(200)
       expect(response.body).toMatchObject({
         success: true,
-        message: 'Campus Angaadi API is ready.',
-        data: { mongo: true, redis: 'not-required', status: 'ready' }
+        message: 'Campus Angadi API is ready.',
+        data: { mongo: true, redis: 'not-required', status: 'ready' },
       })
       expect(mockHealth.redis).not.toHaveBeenCalled()
     })

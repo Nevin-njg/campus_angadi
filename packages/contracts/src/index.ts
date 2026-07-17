@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const userRoleSchema = z.enum(['USER', 'ADMIN', 'SUPER_ADMIN'])
+export const userRoleSchema = z.enum(['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'])
 export const userStatusSchema = z.enum(['ACTIVE', 'BLOCKED', 'DELETED'])
 
 export const userProfileSchema = z.object({
@@ -22,6 +22,7 @@ export const authUserSchema = z.object({
   role: userRoleSchema,
   status: userStatusSchema,
   canSell: z.boolean(),
+  canMediateOrders: z.boolean(),
   profileCompleted: z.boolean(),
   profile: userProfileSchema,
   createdAt: z.string(),
@@ -501,6 +502,8 @@ export const dealerWorkingHoursSchema = z
 
 export const dealerSchema = z.object({
   id: z.string(),
+  mediatorUserId: z.string().nullable(),
+  mediatorEmail: z.string().email().nullable(),
   displayName: z.string(),
   phoneNumber: z.string(),
   isActive: z.boolean(),
@@ -518,11 +521,16 @@ export const dealerSchema = z.object({
 export const assignedDealerSchema = dealerSchema.pick({
   id: true,
   displayName: true,
-  phoneNumber: true,
+})
+
+export const assignedModeratorSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
 })
 
 export const createDealerInputSchema = z
   .object({
+    mediatorUserId: z.string().trim().regex(/^[a-f\d]{24}$/i),
     displayName: z.string().trim().min(2).max(80),
     phoneNumber: z
       .string()
@@ -542,6 +550,7 @@ export const createDealerInputSchema = z
 
 export const updateDealerInputSchema = z
   .object({
+    mediatorUserId: z.string().trim().regex(/^[a-f\d]{24}$/i).optional(),
     displayName: z.string().trim().min(2).max(80).optional(),
     phoneNumber: z
       .string()
@@ -585,18 +594,44 @@ export const assignOrderDealerInputSchema = z
   })
   .strict()
 
-export const whatsappContinuationSchema = z.object({
-  url: z.string().url(),
-  message: z.string(),
-  dealer: assignedDealerSchema,
-  redirectCount: z.number().int().positive(),
-  redirectedAt: z.string(),
+export const assignOrderModeratorInputSchema = z.object({ moderatorId: z.string().min(1) }).strict()
+
+export const chatMessageTypeSchema = z.enum(['TEXT', 'AUDIO', 'SYSTEM'])
+
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  orderId: z.string(),
+  senderId: z.string(),
+  senderKind: z.enum(['BUYER', 'TEAM']),
+  senderName: z.string(),
+  type: chatMessageTypeSchema,
+  text: z.string().nullable(),
+  audioUrl: z.string().url().nullable(),
+  audioDurationSeconds: z.number().nonnegative().nullable(),
+  clientId: z.string().nullable(),
+  readAt: z.string().nullable(),
+  createdAt: z.string(),
 })
+
+export const chatMessagesPageSchema = z.object({
+  messages: z.array(chatMessageSchema),
+  nextCursor: z.string().nullable(),
+  assignedDealer: assignedDealerSchema.nullable(),
+  assignedModerator: assignedModeratorSchema.nullable(),
+  canChat: z.boolean(),
+})
+
+export const sendChatMessageInputSchema = z
+  .object({
+    text: z.string().trim().min(1).max(2000),
+    clientId: z.string().trim().min(1).max(100).optional(),
+  })
+  .strict()
 
 export const orderStatusSchema = z.enum([
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
-  'AWAITING_WHATSAPP_CONFIRMATION',
+  'AWAITING_TEAM_CONFIRMATION',
   'CONTACTED',
   'CONFIRMED',
   'PREPARING',
@@ -643,8 +678,8 @@ export const orderSummarySchema = z.object({
   pickupLocation: z.string(),
   assignedDealerId: z.string().nullable(),
   assignedDealer: assignedDealerSchema.nullable(),
-  whatsappRedirectCount: z.number().int().nonnegative(),
-  whatsappRedirectedAt: z.string().nullable(),
+  assignedModeratorId: z.string().nullable(),
+  assignedModerator: assignedModeratorSchema.nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -756,6 +791,7 @@ export const adminUserSummarySchema = z.object({
   role: userRoleSchema,
   status: userStatusSchema,
   canSell: z.boolean(),
+  canMediateOrders: z.boolean(),
   profileCompleted: z.boolean(),
   listingCount: z.number().int().nonnegative(),
   orderCount: z.number().int().nonnegative(),
@@ -782,6 +818,10 @@ export const adminUserListQuerySchema = z
       .enum(['true', 'false'])
       .transform((value) => value === 'true')
       .optional(),
+    canMediateOrders: z
+      .enum(['true', 'false'])
+      .transform((value) => value === 'true')
+      .optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
   })
@@ -791,8 +831,17 @@ export const updateAdminUserInputSchema = z
   .object({
     status: userStatusSchema.optional(),
     canSell: z.boolean().optional(),
+    canMediateOrders: z.boolean().optional(),
     role: userRoleSchema.optional(),
     internalNotes: z.string().trim().max(2000).nullable().optional(),
+    reason: z.string().trim().min(2).max(500),
+  })
+  .strict()
+
+export const enrollMediatorInputSchema = z
+  .object({
+    email: z.string().trim().email().max(254),
+    access: z.enum(['MEDIATOR', 'ADMIN_MEDIATOR']),
     reason: z.string().trim().min(2).max(500),
   })
   .strict()
@@ -930,7 +979,7 @@ export const notificationListQuerySchema = z
 export const sendNotificationInputSchema = z
   .object({
     userId: z.string().nullable().optional(),
-    audience: z.enum(['USER', 'ADMIN', 'ALL']).optional(),
+    audience: z.enum(['USER', 'MODERATOR', 'ADMIN', 'ALL']).optional(),
     type: notificationTypeSchema.default('SYSTEM'),
     title: z.string().trim().min(2).max(120),
     message: z.string().trim().min(2).max(1000),
@@ -986,7 +1035,6 @@ export const platformSettingsSchema = publicSettingsSchema.extend({
   allowNewListings: z.boolean(),
   allowOrders: z.boolean(),
   maintenanceMessage: z.string().nullable(),
-  whatsappMessageTemplate: z.string(),
 })
 export const updatePlatformSettingsInputSchema = platformSettingsSchema.partial().strict()
 
@@ -1101,18 +1149,24 @@ export type CheckoutResult = z.infer<typeof checkoutResultSchema>
 export type DealerWorkingHours = z.infer<typeof dealerWorkingHoursSchema>
 export type Dealer = z.infer<typeof dealerSchema>
 export type AssignedDealer = z.infer<typeof assignedDealerSchema>
+export type AssignedModerator = z.infer<typeof assignedModeratorSchema>
 export type CreateDealerInput = z.infer<typeof createDealerInputSchema>
 export type UpdateDealerInput = z.infer<typeof updateDealerInputSchema>
 export type DealerListQuery = z.infer<typeof dealerListQuerySchema>
 export type DealerAssignmentHistory = z.infer<typeof dealerAssignmentHistorySchema>
 export type AssignOrderDealerInput = z.infer<typeof assignOrderDealerInputSchema>
-export type WhatsappContinuation = z.infer<typeof whatsappContinuationSchema>
+export type AssignOrderModeratorInput = z.infer<typeof assignOrderModeratorInputSchema>
+export type ChatMessageType = z.infer<typeof chatMessageTypeSchema>
+export type ChatMessage = z.infer<typeof chatMessageSchema>
+export type ChatMessagesPage = z.infer<typeof chatMessagesPageSchema>
+export type SendChatMessageInput = z.infer<typeof sendChatMessageInputSchema>
 
 export type AdminDashboard = z.infer<typeof adminDashboardSchema>
 export type AdminUserSummary = z.infer<typeof adminUserSummarySchema>
 export type AdminUserDetail = z.infer<typeof adminUserDetailSchema>
 export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>
 export type UpdateAdminUserInput = z.infer<typeof updateAdminUserInputSchema>
+export type EnrollMediatorInput = z.infer<typeof enrollMediatorInputSchema>
 export type SalesPeriod = z.infer<typeof salesPeriodSchema>
 export type SalesAnalyticsQuery = z.infer<typeof salesAnalyticsQuerySchema>
 export type SalesAnalytics = z.infer<typeof salesAnalyticsSchema>

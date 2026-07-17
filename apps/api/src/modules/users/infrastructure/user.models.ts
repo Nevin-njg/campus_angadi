@@ -18,7 +18,7 @@ const userSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ['USER', 'ADMIN', 'SUPER_ADMIN'],
+      enum: ['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'],
       required: true,
       default: 'USER',
     },
@@ -32,6 +32,11 @@ const userSchema = new Schema(
       type: Boolean,
       required: true,
       default: true,
+    },
+    canMediateOrders: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
     profileCompleted: {
       type: Boolean,
@@ -59,6 +64,7 @@ const userSchema = new Schema(
 )
 
 userSchema.index({ status: 1, role: 1 })
+userSchema.index({ status: 1, canMediateOrders: 1, role: 1 })
 userSchema.index({ lastActiveAt: -1 })
 
 const profileSchema = new Schema(
@@ -119,23 +125,14 @@ const profileSchema = new Schema(
   },
 )
 
-export type UserDocumentShape =
-  mongoose.InferSchemaType<typeof userSchema>
+export type UserDocumentShape = mongoose.InferSchemaType<typeof userSchema>
 
-export type ProfileDocumentShape =
-  mongoose.InferSchemaType<typeof profileSchema>
+export type ProfileDocumentShape = mongoose.InferSchemaType<typeof profileSchema>
 
 export const UserModel: mongoose.Model<UserDocumentShape> =
-  (mongoose.models.User as
-    | mongoose.Model<UserDocumentShape>
-    | undefined) ??
+  (mongoose.models.User as mongoose.Model<UserDocumentShape> | undefined) ??
   mongoose.model<UserDocumentShape>('User', userSchema)
 
 export const UserProfileModel: mongoose.Model<ProfileDocumentShape> =
-  (mongoose.models.UserProfile as
-    | mongoose.Model<ProfileDocumentShape>
-    | undefined) ??
-  mongoose.model<ProfileDocumentShape>(
-    'UserProfile',
-    profileSchema,
-  )
+  (mongoose.models.UserProfile as mongoose.Model<ProfileDocumentShape> | undefined) ??
+  mongoose.model<ProfileDocumentShape>('UserProfile', profileSchema)

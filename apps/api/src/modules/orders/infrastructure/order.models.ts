@@ -3,7 +3,7 @@ import mongoose, { Schema, model, type InferSchemaType, type Model } from 'mongo
 const orderStatuses = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
-  'AWAITING_WHATSAPP_CONFIRMATION',
+  'AWAITING_TEAM_CONFIRMATION',
   'CONTACTED',
   'CONFIRMED',
   'PREPARING',
@@ -38,8 +38,9 @@ const orderSchema = new Schema(
     assignedDealerPhone: { type: String, default: null },
     dealerAssignedAt: { type: Date, default: null },
     dealerReleased: { type: Boolean, required: true, default: false },
-    whatsappRedirectCount: { type: Number, required: true, default: 0, min: 0 },
-    whatsappRedirectedAt: { type: Date, default: null },
+    assignedModeratorId: { type: Schema.Types.ObjectId, default: null, ref: 'User' },
+    assignedModeratorName: { type: String, default: null },
+    moderatorAssignedAt: { type: Date, default: null },
     stockRestored: { type: Boolean, required: true, default: false },
     cancelledAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
@@ -51,6 +52,7 @@ orderSchema.index({ sellerId: 1, createdAt: -1 })
 orderSchema.index({ status: 1, createdAt: -1 })
 orderSchema.index({ sellerType: 1, status: 1, createdAt: -1 })
 orderSchema.index({ assignedDealerId: 1, status: 1, createdAt: -1 })
+orderSchema.index({ assignedModeratorId: 1, status: 1, createdAt: -1 })
 
 const orderItemSchema = new Schema(
   {

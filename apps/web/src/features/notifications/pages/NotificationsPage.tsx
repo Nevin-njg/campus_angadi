@@ -20,19 +20,22 @@ export function NotificationsPage() {
       await c.invalidateQueries({ queryKey: ['notifications', 'unread'] })
     },
   })
+  const unread = q.data?.items.filter((item) => !item.read).length ?? 0
   return (
-    <section>
+    <section className="container notifications-page">
       <div className="page-title-row">
         <div>
           <span className="section-kicker">Account updates</span>
           <h1>Notifications</h1>
           <p>Order, product, report and account messages.</p>
         </div>
-        <button className="button button-outline" onClick={() => all.mutate()}>
-          Mark all read
+        <button className="button button-outline" disabled={!unread || all.isPending} onClick={() => all.mutate()}>
+          {all.isPending ? 'Updating…' : `Mark all read${unread ? ` (${unread})` : ''}`}
         </button>
       </div>
       <div className="notification-list">
+        {q.isLoading ? <div className="catalog-empty"><strong>Loading notifications…</strong></div> : null}
+        {q.isError ? <div className="catalog-empty"><strong>Could not load notifications</strong><span>{q.error.message}</span></div> : null}
         {q.data?.items.map((x) => (
           <button
             className={`notification-card ${x.read ? '' : 'unread'}`}
@@ -47,7 +50,7 @@ export function NotificationsPage() {
             <small>{new Date(x.createdAt).toLocaleString()}</small>
           </button>
         ))}
-        {!q.data?.items.length ? (
+        {!q.isLoading && !q.isError && !q.data?.items.length ? (
           <div className="catalog-empty">
             <strong>No notifications</strong>
             <span>You are all caught up.</span>

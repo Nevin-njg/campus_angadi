@@ -1,6 +1,7 @@
 import '../../modules/audit/infrastructure/audit-log.model.js'
 import '../../modules/auth/infrastructure/session.model.js'
 import '../../modules/cart/infrastructure/cart.model.js'
+import '../../modules/chat/infrastructure/chat-message.model.js'
 import '../../modules/categories/infrastructure/category.model.js'
 import '../../modules/dealers/infrastructure/dealer.models.js'
 import '../../modules/homepage/infrastructure/homepage.model.js'

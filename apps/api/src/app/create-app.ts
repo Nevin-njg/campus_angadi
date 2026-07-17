@@ -5,6 +5,7 @@ import { rateLimit } from 'express-rate-limit'
 import helmet from 'helmet'
 import pinoHttp from 'pino-http'
 import { AppError } from '../core/errors/app-error.js'
+import { isOriginAllowed } from '../core/http/origin-policy.js'
 import { errorHandler, notFoundHandler } from '../core/middleware/error-handler.js'
 import { createMetricsRouter } from '../core/observability/metrics.routes.js'
 import { rateLimitStoreOption } from '../core/rate-limit/rate-limit-store.factory.js'
@@ -54,6 +55,7 @@ import { createMarketplaceGate } from '../modules/settings/presentation/marketpl
 import { createAdminCoreRouter } from '../modules/admin/presentation/admin.routes.js'
 import { requireRoles } from '../core/middleware/authenticate.js'
 import { createOperationsRouter } from '../modules/operations/presentation/operations.routes.js'
+import { createChatRouter } from '../modules/chat/presentation/chat.routes.js'
 import type { CompositionRoot } from './composition-root.js'
 
 export function createApp(root: CompositionRoot) {
@@ -71,7 +73,7 @@ export function createApp(root: CompositionRoot) {
   )
   const corsOptions: cors.CorsOptions = {
     origin(origin, callback) {
-      if (!origin || root.env.CORS_ALLOWED_ORIGINS.includes(origin.toLowerCase())) {
+      if (!origin || isOriginAllowed(origin, root.env.CORS_ALLOWED_ORIGINS, root.env.NODE_ENV)) {
         callback(null, true)
         return
       }
@@ -170,13 +172,14 @@ export function createApp(root: CompositionRoot) {
     createMarketplaceGate(root.settingsService, 'ORDERS'),
     createOrderRouter(root.orderService, root.authenticate, root.rateLimitStoreFactory),
   )
+  api.use('/chat', createChatRouter(root.chatService, root.authenticate))
   api.use('/notifications', createNotificationRouter(root.notificationService, root.authenticate))
   api.use('/reports', createReportRouter(root.reportService, root.authenticate))
   api.use('/settings', createSettingsRouter(root.settingsService))
   api.use(
     '/admin',
     root.authenticate,
-    requireRoles('ADMIN', 'SUPER_ADMIN'),
+    requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     createAdminAuditMiddleware(root.auditService),
   )
   api.use('/admin', createAdminCoreRouter(root.adminService, root.authenticate))

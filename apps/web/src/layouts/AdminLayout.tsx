@@ -1,103 +1,207 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { Navbar } from '../components/layout/Navbar'
-import { MessageIcon, PackageIcon, ShieldIcon, UserIcon } from '../components/ui/icons'
+import { useState } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { BrandLogo } from '../components/layout/BrandLogo'
+import {
+  ActivityIcon,
+  AlertIcon,
+  BellIcon,
+  CartIcon,
+  CloseIcon,
+  FileTextIcon,
+  LayersIcon,
+  LogOutIcon,
+  MenuIcon,
+  MessageIcon,
+  PackageIcon,
+  SettingsIcon,
+  ShieldIcon,
+  ShoppingBagIcon,
+  UserIcon,
+} from '../components/ui/icons'
 import { SkipLink } from '../components/accessibility/SkipLink'
 import { useAuthStore } from '../features/auth/store/use-auth-store'
+import { useConfirmation } from '../components/feedback/ConfirmationProvider'
+
+const navigation = [
+  {
+    label: 'Overview',
+    items: [
+      { to: '/admin/dashboard', label: 'Dashboard', icon: ActivityIcon },
+      { to: '/admin/sales', label: 'Sales analytics', icon: CartIcon },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    items: [
+      { to: '/admin/orders', label: 'Orders', icon: ShoppingBagIcon },
+      { to: '/admin/products', label: 'Products', icon: PackageIcon },
+      { to: '/admin/categories', label: 'Categories', icon: LayersIcon },
+      { to: '/admin/homepage', label: 'Homepage', icon: FileTextIcon },
+      { to: '/admin/dealers', label: 'Order mediators', icon: MessageIcon },
+    ],
+  },
+  {
+    label: 'Trust & safety',
+    items: [
+      { to: '/admin/moderation', label: 'Moderation', icon: ShieldIcon },
+      { to: '/admin/reports', label: 'Reports', icon: AlertIcon },
+      { to: '/admin/users', label: 'Users', icon: UserIcon },
+      { to: '/admin/notifications', label: 'Notifications', icon: BellIcon },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { to: '/admin/audit-logs', label: 'Audit logs', icon: FileTextIcon },
+      { to: '/admin/settings', label: 'Settings', icon: SettingsIcon },
+    ],
+  },
+]
+
+const routeTitles: Record<string, string> = {
+  dashboard: 'Dashboard',
+  users: 'Users',
+  products: 'Products',
+  categories: 'Categories',
+  homepage: 'Homepage',
+  moderation: 'Moderation',
+  orders: 'Orders',
+  mediator: 'Mediator inbox',
+  dealers: 'Order mediators',
+  sales: 'Sales analytics',
+  reports: 'Reports',
+  notifications: 'Notifications',
+  'audit-logs': 'Audit logs',
+  settings: 'Settings',
+  operations: 'Operations',
+}
 
 export function AdminLayout() {
+  const [menuOpen, setMenuOpen] = useState(false)
   const user = useAuthStore((state) => state.user)
-  
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-      isActive 
-        ? 'bg-indigo-600/20 text-indigo-400 font-medium shadow-[0_0_15px_rgba(79,70,229,0.15)] border border-indigo-500/30' 
-        : 'text-gray-400 hover:text-white hover:bg-white/5'
-    }`
+  const logout = useAuthStore((state) => state.logout)
+  const confirm = useConfirmation()
+  const location = useLocation()
+  const routeKey = location.pathname.split('/')[2] || 'dashboard'
+  const title = routeTitles[routeKey] ?? 'Admin console'
+  const displayName = user?.profile.displayName ?? user?.email.split('@')[0] ?? 'Administrator'
+  const moderator = user?.role === 'MODERATOR'
+  const mediator = moderator || Boolean(user?.canMediateOrders)
+  const visibleNavigation = moderator
+    ? [
+        {
+          label: 'Mediator workspace',
+          items: [{ to: '/admin/mediator', label: 'Mediator inbox', icon: MessageIcon }],
+        },
+      ]
+    : navigation
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-[#111827] to-black text-gray-100 flex flex-col font-sans">
+    <div className="admin-app-shell">
       <SkipLink />
-      {/* Keeping Navbar but ensuring it adapts to dark mode if possible or wraps correctly */}
-      <div className="bg-gray-900 border-b border-gray-800">
-        <Navbar />
-      </div>
-      
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-72 flex-shrink-0 bg-white/5 backdrop-blur-xl border-r border-white/10 overflow-y-auto hidden md:flex flex-col" aria-label="Administration navigation">
-          <div className="p-8 pb-4">
-            <h2 className="text-xs uppercase tracking-[0.2em] font-bold text-gray-500 mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-              Admin Control
-            </h2>
-            <nav className="flex flex-col gap-2">
-              <NavLink to="/admin/dashboard" className={navLinkClass}>
-                <UserIcon className="w-5 h-5 opacity-80" />
-                Dashboard
-              </NavLink>
-              <NavLink to="/admin/users" className={navLinkClass}>
-                <UserIcon className="w-5 h-5 opacity-80" />
-                Users
-              </NavLink>
-              <NavLink to="/admin/products" className={navLinkClass}>
-                <PackageIcon className="w-5 h-5 opacity-80" />
-                Products
-              </NavLink>
-              <NavLink to="/admin/categories" className={navLinkClass}>
-                <PackageIcon className="w-5 h-5 opacity-80" />
-                Categories
-              </NavLink>
-              <NavLink to="/admin/homepage" className={navLinkClass}>
-                <UserIcon className="w-5 h-5 opacity-80" />
-                Homepage
-              </NavLink>
-              <NavLink to="/admin/moderation" className={navLinkClass}>
-                <PackageIcon className="w-5 h-5 opacity-80" />
-                Moderation
-              </NavLink>
-              <NavLink to="/admin/orders" className={navLinkClass}>
-                <PackageIcon className="w-5 h-5 opacity-80" />
-                Orders
-              </NavLink>
-              <NavLink to="/admin/dealers" className={navLinkClass}>
-                <MessageIcon className="w-5 h-5 opacity-80" />
-                WhatsApp dealers
-              </NavLink>
-              <NavLink to="/admin/sales" className={navLinkClass}>
-                <PackageIcon className="w-5 h-5 opacity-80" />
-                Sales
-              </NavLink>
-              <NavLink to="/admin/reports" className={navLinkClass}>
-                <MessageIcon className="w-5 h-5 opacity-80" />
-                Reports
-              </NavLink>
-              <NavLink to="/admin/notifications" className={navLinkClass}>
-                <MessageIcon className="w-5 h-5 opacity-80" />
-                Notifications
-              </NavLink>
-              <NavLink to="/admin/audit-logs" className={navLinkClass}>
-                <ShieldIcon className="w-5 h-5 opacity-80" />
-                Audit logs
-              </NavLink>
-              <NavLink to="/admin/settings" className={navLinkClass}>
-                <UserIcon className="w-5 h-5 opacity-80" />
-                Settings
-              </NavLink>
-              {user?.role === 'SUPER_ADMIN' ? (
-                <NavLink to="/admin/operations" className={navLinkClass}>
-                  <ShieldIcon className="w-5 h-5 opacity-80" />
-                  Operations
-                </NavLink>
-              ) : null}
-            </nav>
+      <button
+        className={`admin-drawer-overlay ${menuOpen ? 'open' : ''}`}
+        onClick={() => setMenuOpen(false)}
+        aria-label="Close admin navigation"
+      />
+      <aside
+        className={`admin-command-sidebar ${menuOpen ? 'open' : ''}`}
+        aria-label="Administration navigation"
+      >
+        <div className="admin-brand-row">
+          <BrandLogo />
+          <button className="icon-button admin-sidebar-close" onClick={() => setMenuOpen(false)}>
+            <CloseIcon />
+            <span className="sr-only">Close navigation</span>
+          </button>
+        </div>
+
+        <div className="admin-workspace-badge">
+          <span className="admin-live-dot" />
+          <div>
+            <strong>{moderator ? 'Mediator workspace' : mediator ? 'Admin + mediator' : 'Admin workspace'}</strong>
+            <small>
+              {moderator ? 'Assigned conversations only' : 'Marketplace is operational'}
+            </small>
           </div>
-        </aside>
-        
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10" id="main-content" tabIndex={-1}>
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+        </div>
+
+        {!moderator && mediator ? (
+          <div className="admin-nav-group admin-workspace-switcher">
+            <span>Workspaces</span>
+            <NavLink to="/admin/dashboard"><ShieldIcon /><span>Admin page</span></NavLink>
+            <NavLink to="/admin/mediator"><MessageIcon /><span>Mediator page</span></NavLink>
           </div>
+        ) : null}
+
+        <nav className="admin-command-nav">
+          {visibleNavigation.map((group) => (
+            <div className="admin-nav-group" key={group.label}>
+              <span>{group.label}</span>
+              {group.items.map((item) => {
+                const Icon = item.icon
+                return (
+                  <NavLink key={item.to} to={item.to} onClick={() => setMenuOpen(false)}>
+                    <Icon />
+                    <span>{item.label}</span>
+                  </NavLink>
+                )
+              })}
+            </div>
+          ))}
+          {user?.role === 'SUPER_ADMIN' ? (
+            <div className="admin-nav-group">
+              <span>Infrastructure</span>
+              <NavLink to="/admin/operations" onClick={() => setMenuOpen(false)}>
+                <ActivityIcon />
+                <span>Operations</span>
+              </NavLink>
+            </div>
+          ) : null}
+        </nav>
+
+        <div className="admin-sidebar-profile">
+          <div className="admin-avatar">{displayName.slice(0, 1).toUpperCase()}</div>
+          <div>
+            <strong>{displayName}</strong>
+            <small>{user?.role?.replace('_', ' ')}</small>
+          </div>
+          <button onClick={async () => {
+            if (await confirm({ title: 'Sign out of the admin workspace?', description: 'Your current admin session will end on this device.', confirmLabel: 'Sign out' })) await logout()
+          }} aria-label="Sign out">
+            <LogOutIcon />
+          </button>
+        </div>
+      </aside>
+
+      <div className="admin-workspace">
+        <header className="admin-topbar">
+          <div className="admin-topbar-leading">
+            <button className="icon-button admin-menu-button" onClick={() => setMenuOpen(true)}>
+              <MenuIcon />
+              <span className="sr-only">Open admin navigation</span>
+            </button>
+            <div>
+              <span>Campus Angadi / Admin</span>
+              <strong>{title}</strong>
+            </div>
+          </div>
+          <div className="admin-topbar-actions">
+            <Link className="button button-outline" to="/">
+              View storefront
+            </Link>
+            {!moderator ? (
+              <Link className="icon-button" to="/admin/notifications" aria-label="Notifications">
+                <BellIcon />
+              </Link>
+            ) : null}
+            <div className="admin-topbar-avatar" title={displayName}>
+              {displayName.slice(0, 1).toUpperCase()}
+            </div>
+          </div>
+        </header>
+        <main className="admin-main" id="main-content" tabIndex={-1}>
+          <Outlet />
         </main>
       </div>
     </div>

@@ -17,9 +17,9 @@ const csv = z.string().transform((value) =>
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    APP_NAME: z.string().min(1).default('Campus Angaadi'),
+    APP_NAME: z.string().min(1).default('Campus Angadi'),
     BRAND_MARK: z.string().min(1).max(8).default('CA'),
-    CAMPUS_DISPLAY_NAME: z.string().min(1).default('Your Campus'),
+    CAMPUS_DISPLAY_NAME: z.string().min(1).default('NIT Calicut'),
     WEB_URL: z.string().url().default('http://localhost:5173'),
     API_URL: z.string().url().default('http://localhost:5000'),
     API_PORT: z.coerce.number().int().positive().default(5000),
@@ -62,7 +62,7 @@ const envSchema = z
     SMTP_SECURE: booleanFromString.default(false),
     SMTP_USER: z.string().optional().default(''),
     SMTP_PASSWORD: z.string().optional().default(''),
-    SMTP_FROM_NAME: z.string().min(1).default('Campus Angaadi'),
+    SMTP_FROM_NAME: z.string().min(1).default('Campus Angadi'),
     SMTP_FROM_EMAIL: z.string().email(),
     JWT_ACCESS_SECRET: z.string().min(32),
     JWT_REFRESH_SECRET: z.string().min(32),
@@ -88,6 +88,7 @@ const envSchema = z
       .max(15_000_000)
       .default(5_000_000),
     PRODUCT_IMAGE_MAX_COUNT: z.coerce.number().int().min(1).max(8).default(8),
+    CHAT_AUDIO_MAX_BYTES: z.coerce.number().int().min(500_000).max(20_000_000).default(8_000_000),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production' && value.OTP_STORE !== 'redis') {

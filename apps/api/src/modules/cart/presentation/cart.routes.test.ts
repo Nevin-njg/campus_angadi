@@ -35,7 +35,8 @@ describe('Cart Routes', () => {
       if (err instanceof AppError) {
         res.status(err.statusCode).json({ success: false, message: err.message, code: err.code })
       } else {
-        console.log(err); res.status(500).json({ success: false, message: 'Internal error' })
+        console.log(err)
+        res.status(500).json({ success: false, message: 'Internal error' })
       }
     })
   })
@@ -111,9 +112,7 @@ describe('Cart Routes', () => {
       const mockCart = { items: [{ productId: 'prod-1', quantity: 5 }] }
       mockService.update.mockResolvedValue(mockCart as any)
 
-      const response = await request(app)
-        .patch('/cart/items/prod-1')
-        .send({ quantity: 5 })
+      const response = await request(app).patch('/cart/items/prod-1').send({ quantity: 5 })
 
       expect(response.status).toBe(200)
       expect(response.body).toEqual({

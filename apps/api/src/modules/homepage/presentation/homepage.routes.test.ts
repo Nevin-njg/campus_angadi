@@ -24,9 +24,11 @@ describe('Homepage Routes', () => {
     beforeEach(() => {
       app.use('/homepage', createHomepageRouter(mockService as unknown as HomepageService))
       // Error handler to prevent express from sending HTML error pages
-      app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-        res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
-      })
+      app.use(
+        (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+          res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
+        },
+      )
     })
 
     it('GET /homepage should return public homepage data', async () => {
@@ -47,7 +49,7 @@ describe('Homepage Routes', () => {
 
   describe('createAdminHomepageRouter', () => {
     const mockUser = { id: 'admin-123', email: 'admin@test.com', role: 'ADMIN' }
-    
+
     // Mock authenticate middleware
     const authenticate = (req: any, res: any, next: any) => {
       req.auth = { user: mockUser }
@@ -55,11 +57,16 @@ describe('Homepage Routes', () => {
     }
 
     beforeEach(() => {
-      app.use('/admin/homepage', createAdminHomepageRouter(mockService as unknown as HomepageService, authenticate))
+      app.use(
+        '/admin/homepage',
+        createAdminHomepageRouter(mockService as unknown as HomepageService, authenticate),
+      )
       // Error handler
-      app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-        res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
-      })
+      app.use(
+        (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+          res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
+        },
+      )
     })
 
     describe('GET /admin/homepage', () => {
@@ -86,20 +93,32 @@ describe('Homepage Routes', () => {
           req.auth = { user: { ...mockUser, role: 'USER' } }
           next()
         }
-        nonAdminApp.use('/admin/homepage', createAdminHomepageRouter(mockService as unknown as HomepageService, nonAdminAuth))
-        nonAdminApp.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-          res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
-        })
+        nonAdminApp.use(
+          '/admin/homepage',
+          createAdminHomepageRouter(mockService as unknown as HomepageService, nonAdminAuth),
+        )
+        nonAdminApp.use(
+          (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+            res.status(err.statusCode || 500).json({ error: err.message, issues: err.issues })
+          },
+        )
 
         const response = await request(nonAdminApp).get('/admin/homepage')
-        
+
         expect(response.status).toBe(403) // Forbidden, as requireRoles should throw
       })
     })
 
     describe('PUT /admin/homepage/:section', () => {
       it('should update section and return updated data', async () => {
-        const mockData = { key: 'FEATURED', limit: 10, manualProductIds: ['p1', 'p2'], products: [], manualCount: 2, automaticCount: 0 }
+        const mockData = {
+          key: 'FEATURED',
+          limit: 10,
+          manualProductIds: ['p1', 'p2'],
+          products: [],
+          manualCount: 2,
+          automaticCount: 0,
+        }
         mockService.updateSelection!.mockResolvedValue(mockData as any)
 
         const response = await request(app)
@@ -112,7 +131,11 @@ describe('Homepage Routes', () => {
           message: 'Homepage section updated.',
           data: mockData,
         })
-        expect(mockService.updateSelection).toHaveBeenCalledWith('FEATURED', ['p1', 'p2'], 'admin-123')
+        expect(mockService.updateSelection).toHaveBeenCalledWith(
+          'FEATURED',
+          ['p1', 'p2'],
+          'admin-123',
+        )
       })
 
       it('should fail validation with invalid section param', async () => {
@@ -134,7 +157,14 @@ describe('Homepage Routes', () => {
 
     describe('DELETE /admin/homepage/:section', () => {
       it('should reset section and return updated data', async () => {
-        const mockData = { key: 'FEATURED', limit: 10, manualProductIds: [], products: [], manualCount: 0, automaticCount: 0 }
+        const mockData = {
+          key: 'FEATURED',
+          limit: 10,
+          manualProductIds: [],
+          products: [],
+          manualCount: 0,
+          automaticCount: 0,
+        }
         mockService.resetSelection!.mockResolvedValue(mockData as any)
 
         const response = await request(app).delete('/admin/homepage/FEATURED')

@@ -2,6 +2,8 @@ import mongoose, { Schema, model, type InferSchemaType, type Model } from 'mongo
 
 const workingHoursSchema = new Schema(
   {
+    mediatorUserId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    mediatorEmail: { type: String, required: true, trim: true, lowercase: true },
     timeZone: { type: String, required: true, default: 'Asia/Kolkata' },
     startTime: { type: String, required: true, default: '00:00' },
     endTime: { type: String, required: true, default: '23:59' },
@@ -26,6 +28,7 @@ const dealerSchema = new Schema(
   { timestamps: true, versionKey: false },
 )
 dealerSchema.index({ phoneNumber: 1 }, { unique: true })
+dealerSchema.index({ mediatorUserId: 1 }, { unique: true, sparse: true })
 dealerSchema.index({ isActive: 1, deletedAt: 1, currentOpenOrders: 1, lastAssignedAt: 1 })
 
 const dealerAssignmentHistorySchema = new Schema(
@@ -54,7 +57,8 @@ export const DealerModel: Model<DealerDocumentShape> =
   (mongoose.models.Dealer as Model<DealerDocumentShape> | undefined) ??
   model<DealerDocumentShape>('Dealer', dealerSchema)
 export const DealerAssignmentHistoryModel: Model<DealerAssignmentHistoryDocumentShape> =
-  (mongoose.models.DealerAssignmentHistory as Model<DealerAssignmentHistoryDocumentShape> | undefined) ??
+  (mongoose.models.DealerAssignmentHistory as
+    Model<DealerAssignmentHistoryDocumentShape> | undefined) ??
   model<DealerAssignmentHistoryDocumentShape>(
     'DealerAssignmentHistory',
     dealerAssignmentHistorySchema,

@@ -8,9 +8,12 @@ import type {
 import { describe, expect, it } from 'vitest'
 import type { DealerRepository } from '../domain/dealer.js'
 import { DealerService } from './dealer.service.js'
+import { UserModel } from '../../users/infrastructure/user.models.js'
 
 const dealer: Dealer = {
   id: 'dealer-1',
+  mediatorUserId: '507f1f77bcf86cd799439011',
+  mediatorEmail: 'mediator@example.com',
   displayName: 'Sales One',
   phoneNumber: '+919900000001',
   isActive: true,
@@ -39,6 +42,9 @@ class DealerRepositoryFake implements DealerRepository {
   async findById() {
     return dealer
   }
+  async findByMediatorUserId() {
+    return null
+  }
   async create(input: CreateDealerInput) {
     void input
     return dealer
@@ -55,10 +61,21 @@ class DealerRepositoryFake implements DealerRepository {
 
 describe('DealerService', () => {
   it('creates and lists sales dealers', async () => {
+    await UserModel.create({
+      _id: dealer.mediatorUserId,
+      email: dealer.mediatorEmail,
+      emailVerified: true,
+      role: 'MODERATOR',
+      status: 'ACTIVE',
+      canSell: true,
+      canMediateOrders: true,
+      profileCompleted: false,
+    })
     const service = new DealerService(new DealerRepositoryFake())
     expect((await service.list({ page: 1, limit: 20 })).items).toHaveLength(1)
     expect(
       await service.create({
+        mediatorUserId: dealer.mediatorUserId!,
         displayName: dealer.displayName,
         phoneNumber: dealer.phoneNumber,
         isActive: true,

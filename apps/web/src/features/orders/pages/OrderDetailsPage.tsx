@@ -4,6 +4,7 @@ import { ChevronLeftIcon, MessageIcon, PackageIcon } from '../../../components/u
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { ordersApi } from '../api/orders.api'
 import { OrderStatusBadge } from '../components/OrderStatusBadge'
+import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -12,22 +13,16 @@ function price(value: number) {
     maximumFractionDigits: 0,
   }).format(value)
 }
-const cancellable = ['PENDING', 'WAITING_FOR_DEALER_ASSIGNMENT', 'AWAITING_WHATSAPP_CONFIRMATION']
+const cancellable = ['PENDING', 'WAITING_FOR_DEALER_ASSIGNMENT', 'AWAITING_TEAM_CONFIRMATION']
 
 export function OrderDetailsPage() {
   const { id = '' } = useParams()
   const client = useQueryClient()
+  const confirm = useConfirmation()
   const order = useQuery({
     queryKey: ['order', id],
     queryFn: () => ordersApi.detail(id),
     enabled: Boolean(id),
-  })
-  const whatsapp = useMutation({
-    mutationFn: () => ordersApi.continueWhatsapp(id),
-    onSuccess: (result) => {
-      window.location.assign(result.url)
-      void client.invalidateQueries({ queryKey: ['order', id] })
-    },
   })
   const cancel = useMutation({
     mutationFn: () => ordersApi.cancel(id, { reason: 'Cancelled from My Orders' }),
@@ -137,7 +132,7 @@ export function OrderDetailsPage() {
               ) : null}
             </dl>
           </section>
-          <section className="detail-panel whatsapp-panel">
+          <section className="detail-panel chat-assistance-panel">
             <h2>Sales assistance</h2>
             {data.assignedDealer ? (
               <>
@@ -145,23 +140,17 @@ export function OrderDetailsPage() {
                   <MessageIcon />
                   <div>
                     <strong>{data.assignedDealer.displayName}</strong>
-                    <small>Your assigned Campus Angaadi sales contact</small>
+                    <small>Your assigned Campus Angadi dealer</small>
                   </div>
                 </div>
-                <p>Continue on WhatsApp to confirm payment, availability and campus pickup.</p>
-                <button
-                  className="button button-whatsapp"
-                  disabled={whatsapp.isPending}
-                  onClick={() => whatsapp.mutate()}
-                >
+                <p>
+                  Chat privately with our team about availability, payment and campus pickup. The
+                  seller is never added to this conversation.
+                </p>
+                <Link className="button button-primary" to={`/account/orders/${id}/chat`}>
                   <MessageIcon />
-                  {whatsapp.isPending ? 'Preparing WhatsApp…' : 'Continue on WhatsApp'}
-                </button>
-                {data.whatsappRedirectedAt ? (
-                  <small>
-                    Last opened {new Date(data.whatsappRedirectedAt).toLocaleString('en-IN')}
-                  </small>
-                ) : null}
+                  Open secure chat
+                </Link>
               </>
             ) : (
               <p>
@@ -169,13 +158,14 @@ export function OrderDetailsPage() {
                 assign a sales contact shortly.
               </p>
             )}
-            {whatsapp.isError ? <div className="form-error">{whatsapp.error.message}</div> : null}
           </section>
           {cancellable.includes(data.status) ? (
             <button
               className="button button-outline danger-text"
               disabled={cancel.isPending}
-              onClick={() => cancel.mutate()}
+              onClick={async () => {
+                if (await confirm({ title: 'Cancel this order?', description: 'The Campus Angadi team will stop processing this order and reserved stock may be released.', confirmLabel: 'Cancel order', tone: 'danger' })) cancel.mutate()
+              }}
             >
               {cancel.isPending ? 'Cancelling…' : 'Cancel order'}
             </button>

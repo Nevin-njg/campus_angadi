@@ -28,7 +28,7 @@ describe('Product Routes', () => {
     const admin = await UserModel.create({
       email: 'admin@campus.edu',
       role: 'ADMIN',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
     })
     testAdminId = admin._id.toString()
 
@@ -36,7 +36,7 @@ describe('Product Routes', () => {
       name: 'Electronics',
       slug: 'electronics',
       isActive: true,
-      displayOrder: 1
+      displayOrder: 1,
     })
     testCategoryId = cat._id.toString()
 
@@ -56,7 +56,7 @@ describe('Product Routes', () => {
       isFeatured: false,
       viewCount: 0,
       completedOrderCount: 0,
-      approvedAt: new Date()
+      approvedAt: new Date(),
     })
     testProductId = prod._id.toString()
 
@@ -74,7 +74,11 @@ describe('Product Routes', () => {
     }
 
     app.use('/products', createProductRouter(service))
-    app.use('/admin/products', authenticate, createAdminProductRouter(service, (req, res, next) => next()))
+    app.use(
+      '/admin/products',
+      authenticate,
+      createAdminProductRouter(service, (req, res, next) => next()),
+    )
     app.use(errorHandler)
   })
 
@@ -102,7 +106,7 @@ describe('Product Routes', () => {
     const response = await request(app)
       .get('/admin/products')
       .set('Authorization', 'Bearer admin-token')
-    
+
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
     expect(response.body.data.length).toBeGreaterThan(0)
@@ -118,7 +122,7 @@ describe('Product Routes', () => {
         categoryId: testCategoryId,
         price: 500,
         stock: 5,
-        images: []
+        images: [],
       })
 
     if (response.status !== 201) console.log(JSON.stringify(response.body, null, 2))
@@ -137,7 +141,7 @@ describe('Product Routes', () => {
         categoryId: testCategoryId,
         price: -10, // Invalid negative price
         stock: 5,
-        images: []
+        images: [],
       })
 
     expect(response.status).toBe(400)

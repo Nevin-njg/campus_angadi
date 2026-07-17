@@ -34,7 +34,7 @@ function createTestRoot(): CompositionRoot {
     new FakeEmailSender(),
     tokens,
     {
-      appName: 'Campus Angaadi',
+      appName: 'Campus Angadi',
       allowedEmailDomains: ['campusbaza.example.edu'],
       adminEmails: [],
       superAdminEmails: [],
@@ -110,7 +110,7 @@ function createTestRoot(): CompositionRoot {
   return {
     env: {
       NODE_ENV: 'test',
-      APP_NAME: 'Campus Angaadi',
+      APP_NAME: 'Campus Angadi',
       BRAND_MARK: 'CV',
       CAMPUS_DISPLAY_NAME: 'Test Campus',
       WEB_URL: 'http://localhost:5173',
@@ -153,7 +153,7 @@ function createTestRoot(): CompositionRoot {
       SMTP_SECURE: false,
       SMTP_USER: '',
       SMTP_PASSWORD: '',
-      SMTP_FROM_NAME: 'Campus Angaadi',
+      SMTP_FROM_NAME: 'Campus Angadi',
       SMTP_FROM_EMAIL: 'no-reply@campusbaza.example.edu',
       JWT_ACCESS_SECRET: 'a'.repeat(48),
       JWT_REFRESH_SECRET: 'b'.repeat(48),
@@ -197,7 +197,7 @@ function createTestRoot(): CompositionRoot {
     },
     settingsService: {
       getPublic: async () => ({
-        appName: 'Campus Angaadi',
+        appName: 'Campus Angadi',
         brandMark: 'CV',
         campusDisplayName: 'Test Campus',
         supportEmail: null,
@@ -222,7 +222,7 @@ function createTestRoot(): CompositionRoot {
   }
 }
 
-describe('Campus Angaadi API application', () => {
+describe('Campus Angadi API application', () => {
   it('returns the health contract without external dependencies', async () => {
     const response = await request(createApp(createTestRoot())).get('/api/v1/health')
     expect(response.status).toBe(200)

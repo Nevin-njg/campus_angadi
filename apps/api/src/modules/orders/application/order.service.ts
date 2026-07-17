@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
+  AssignOrderModeratorInput,
   CancelOrderInput,
   CheckoutInput,
   CheckoutResult,
@@ -10,7 +11,7 @@ import type {
   OrderStatus,
   PaginatedResult,
   UpdateOrderStatusInput,
-  WhatsappContinuation,
+  UserRole,
 } from '@campusbaza/contracts'
 import { AppError } from '../../../core/errors/app-error.js'
 import type { CartRepository, CheckoutCatalogRepository } from '../../cart/domain/cart.js'
@@ -20,7 +21,7 @@ import type { NotificationRepository } from '../../notifications/domain/notifica
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   WAITING_FOR_DEALER_ASSIGNMENT: ['CANCELLED', 'REJECTED'],
-  AWAITING_WHATSAPP_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONTACTED: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
@@ -33,7 +34,7 @@ const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 const USER_CANCELLABLE: readonly OrderStatus[] = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
-  'AWAITING_WHATSAPP_CONFIRMATION',
+  'AWAITING_TEAM_CONFIRMATION',
 ]
 
 export class OrderService {
@@ -41,7 +42,7 @@ export class OrderService {
     private readonly orders: OrderRepository,
     private readonly carts: CartRepository,
     private readonly catalog: CheckoutCatalogRepository,
-    private readonly appName = 'Campus Angaadi',
+    private readonly appName = 'Campus Angadi',
     private readonly notifications: NotificationRepository | null = null,
   ) {}
 
@@ -143,12 +144,18 @@ export class OrderService {
     return updated
   }
 
-  listAdmin(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>> {
-    return this.orders.listAdmin(query)
+  listAdmin(
+    query: AdminOrderListQuery,
+    actor?: { id: string; role: UserRole },
+  ): Promise<PaginatedResult<OrderDetail>> {
+    return this.orders.listAdmin(query, actor?.role === 'MODERATOR' ? actor.id : undefined)
   }
 
-  async getAdmin(orderId: string): Promise<OrderDetail> {
-    const order = await this.orders.findAdminById(orderId)
+  async getAdmin(orderId: string, actor?: { id: string; role: UserRole }): Promise<OrderDetail> {
+    const order = await this.orders.findAdminById(
+      orderId,
+      actor?.role === 'MODERATOR' ? actor.id : undefined,
+    )
     if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
     return order
   }
@@ -165,50 +172,16 @@ export class OrderService {
     return order
   }
 
-  async continueOnWhatsapp(orderId: string, buyerId: string): Promise<WhatsappContinuation> {
-    const order = await this.orders.recordWhatsappRedirect(orderId, buyerId)
-    if (!order) {
-      const current = await this.orders.findOwnedById(orderId, buyerId)
-      if (!current) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
-      if (!current.assignedDealer) {
-        throw new AppError(
-          409,
-          'DEALER_NOT_ASSIGNED',
-          'A sales dealer has not been assigned yet. Please check again shortly.',
-        )
-      }
-      throw new AppError(
-        409,
-        'WHATSAPP_UNAVAILABLE',
-        'WhatsApp continuation is not available for this order.',
-      )
-    }
-    const dealer = order.assignedDealer
-    if (!dealer || !order.whatsappRedirectedAt) {
-      throw new AppError(409, 'DEALER_NOT_ASSIGNED', 'A sales dealer has not been assigned yet.')
-    }
-    const items = order.items.map((item) => `${item.quantity} × ${item.productName}`).join(', ')
-    const message = [
-      `Hello, I would like to confirm my ${this.appName} order.`,
-      '',
-      `Order ID: ${order.orderNumber}`,
-      `Customer: ${order.fullName}`,
-      `Phone: ${order.phoneNumber}`,
-      `Products: ${items}`,
-      `Total amount: ₹${order.totalAmount.toLocaleString('en-IN')}`,
-      `Pickup location: ${order.pickupLocation}`,
-      ...(order.preferredPickupTime ? [`Preferred time: ${order.preferredPickupTime}`] : []),
-      '',
-      'Please confirm the availability and next steps for this order.',
-    ].join('\n')
-    const phone = dealer.phoneNumber.replace(/\D/g, '')
-    return {
-      url: `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      message,
-      dealer,
-      redirectCount: order.whatsappRedirectCount,
-      redirectedAt: order.whatsappRedirectedAt,
-    }
+  async assignModerator(orderId: string, actorId: string, input: AssignOrderModeratorInput) {
+    const order = await this.orders.assignModerator(orderId, actorId, input)
+    await this.notifications?.sendToUser(input.moderatorId, {
+      type: 'ORDER',
+      title: 'Conversation assigned',
+      message: `You are assigned to assist with order ${order.orderNumber}.`,
+      referenceType: 'ORDER',
+      referenceId: order.id,
+    })
+    return order
   }
 
   async updateStatus(

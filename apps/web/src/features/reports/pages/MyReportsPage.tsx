@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useState, type FormEvent } from 'react'
 import { reportsApi } from '../api/reports.api'
+import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
 export function MyReportsPage() {
   const [params] = useSearchParams()
   const c = useQueryClient()
+  const confirm = useConfirmation()
   const [form, setForm] = useState<CreateReportInput>({
     targetType: params.get('targetType') === 'USER' ? 'USER' : 'PRODUCT',
     targetId: params.get('targetId') ?? '',
@@ -26,10 +28,10 @@ export function MyReportsPage() {
     },
     onError: (e) => setMsg(e.message),
   })
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault()
     setMsg('')
-    m.mutate(form)
+    if (await confirm({ title: 'Submit this safety report?', description: 'Campus Angadi administrators will receive the report and its description for review.', confirmLabel: 'Submit report' })) m.mutate(form)
   }
   return (
     <section>

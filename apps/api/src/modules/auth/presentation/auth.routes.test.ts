@@ -25,7 +25,7 @@ describe('Auth Routes', () => {
     COOKIE_SECURE: false,
     COOKIE_SAME_SITE: 'lax' as const,
     COOKIE_DOMAIN: '',
-    OTP_SEND_MAX_PER_HOUR: 10
+    OTP_SEND_MAX_PER_HOUR: 10,
   } as any
 
   beforeEach(() => {
@@ -35,24 +35,17 @@ describe('Auth Routes', () => {
     otpStore = new InMemoryOtpStore()
     tokens = new TokenService('access-secret', 'refresh-secret', '15m', '7d')
 
-    authService = new AuthService(
-      users,
-      sessions,
-      otpStore,
-      emailSender,
-      tokens,
-      {
-        appName: 'TestApp',
-        allowedEmailDomains: ['campus.edu'],
-        adminEmails: [],
-        superAdminEmails: [],
-        otpLength: 6,
-        otpExpiryMinutes: 5,
-        otpResendCooldownSeconds: 0, // No cooldown for testing
-        otpMaxAttempts: 3,
-        otpHashSecret: 'hash-secret'
-      }
-    )
+    authService = new AuthService(users, sessions, otpStore, emailSender, tokens, {
+      appName: 'TestApp',
+      allowedEmailDomains: ['campus.edu'],
+      adminEmails: [],
+      superAdminEmails: [],
+      otpLength: 6,
+      otpExpiryMinutes: 5,
+      otpResendCooldownSeconds: 0, // No cooldown for testing
+      otpMaxAttempts: 3,
+      otpHashSecret: 'hash-secret',
+    })
 
     app = express()
     app.use(express.json())
@@ -90,16 +83,14 @@ describe('Auth Routes', () => {
   })
 
   it('POST /auth/otp/verify verifies OTP and sets cookie', async () => {
-    await request(app)
-      .post('/auth/otp/request')
-      .send({ email: 'student@campus.edu' })
-    
+    await request(app).post('/auth/otp/request').send({ email: 'student@campus.edu' })
+
     const code = emailSender.messages[0].code
-    
+
     const response = await request(app)
       .post('/auth/otp/verify')
       .send({ email: 'student@campus.edu', code })
-      
+
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)
     expect(response.body.data.accessToken).toBeDefined()
@@ -107,14 +98,12 @@ describe('Auth Routes', () => {
   })
 
   it('POST /auth/otp/verify fails with invalid code', async () => {
-    await request(app)
-      .post('/auth/otp/request')
-      .send({ email: 'student@campus.edu' })
-      
+    await request(app).post('/auth/otp/request').send({ email: 'student@campus.edu' })
+
     const response = await request(app)
       .post('/auth/otp/verify')
       .send({ email: 'student@campus.edu', code: '000000' })
-      
+
     expect(response.status).toBe(401)
     expect(response.body.error.code).toBe('OTP_INVALID_OR_EXPIRED')
   })

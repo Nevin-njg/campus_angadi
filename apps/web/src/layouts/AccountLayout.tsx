@@ -1,18 +1,20 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
-import { AlertIcon, LogOutIcon, MessageIcon, PackageIcon, UserIcon } from '../components/ui/icons'
+import { LogOutIcon, MessageIcon, PackageIcon, UserIcon } from '../components/ui/icons'
 import { useAuthStore } from '../features/auth/store/use-auth-store'
 import { SkipLink } from '../components/accessibility/SkipLink'
+import { useConfirmation } from '../components/feedback/ConfirmationProvider'
 
 export function AccountLayout() {
   const logout = useAuthStore((state) => state.logout)
+  const confirm = useConfirmation()
   return (
     <div className="site-shell">
       <SkipLink />
       <Navbar />
       <div className="container account-shell">
         <aside className="account-sidebar" aria-label="Account navigation">
-          <p className="account-sidebar-title">My Campus Angaadi</p>
+          <p className="account-sidebar-title">My Campus Angadi</p>
           <NavLink to="/account/profile">
             <UserIcon />
             Profile
@@ -25,15 +27,13 @@ export function AccountLayout() {
             <PackageIcon />
             My listings
           </NavLink>
-          <NavLink to="/account/notifications">
-            <AlertIcon />
-            Notifications
-          </NavLink>
           <NavLink to="/account/reports">
             <MessageIcon />
             My reports
           </NavLink>
-          <button onClick={() => void logout()}>
+          <button onClick={async () => {
+            if (await confirm({ title: 'Sign out of Campus Angadi?', description: 'You will need to verify your email again before accessing your account.', confirmLabel: 'Sign out' })) await logout()
+          }}>
             <LogOutIcon />
             Sign out
           </button>

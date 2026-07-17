@@ -7,6 +7,7 @@ import { AlertIcon, PackageIcon } from '../../../components/ui/icons'
 import { ApiClientError } from '../../../lib/api-client'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { listingsApi } from '../api/listings.api'
+import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
 
 const conditionOptions: Array<{ value: SecondHandCondition; label: string }> = [
   { value: 'LIKE_NEW', label: 'Like new' },
@@ -50,6 +51,7 @@ export function ListingFormPage() {
   const { id } = useParams()
   const editing = Boolean(id)
   const navigate = useNavigate()
+  const confirm = useConfirmation()
   const user = useAuthStore((state) => state.user)
   const [form, setForm] = useState<ListingFormState>(initialForm)
   const [files, setFiles] = useState<File[]>([])
@@ -132,16 +134,23 @@ export function ListingFormPage() {
 
   function selectFiles(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? [])
-    if (keepImageIds.length + selected.length > 8) {
+    const existingKeys = new Set(files.map((file) => fileKey(file)))
+    const additions = selected.filter((file) => !existingKeys.has(fileKey(file)))
+    if (keepImageIds.length + files.length + additions.length > 8) {
       setMessage('A listing can contain at most 8 images.')
       event.target.value = ''
       return
     }
-    setFiles(selected)
+    setFiles((current) => [...current, ...additions])
     setMessage('')
+    event.target.value = ''
   }
 
-  function submit(event: FormEvent) {
+  function removeSelectedFile(target: File) {
+    setFiles((current) => current.filter((file) => fileKey(file) !== fileKey(target)))
+  }
+
+  async function submit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
     if (!form.title.trim() || !form.categoryId || form.description.trim().length < 10) {
@@ -152,7 +161,7 @@ export function ListingFormPage() {
       setMessage('Enter a valid price and quantity.')
       return
     }
-    mutation.mutate()
+    if (await confirm({ title: editing ? 'Submit these listing changes?' : 'Submit this item for review?', description: 'The Campus Angadi moderation team will review the listing before it appears publicly.', confirmLabel: editing ? 'Submit changes' : 'Submit listing' })) mutation.mutate()
   }
 
   const existingImages = listing.data?.images ?? []
@@ -372,10 +381,22 @@ export function ListingFormPage() {
                   <div className="listing-image-tile new-image" key={preview.url}>
                     <img src={preview.url} alt={preview.file.name} />
                     <span>New upload</span>
+                    <button
+                      type="button"
+                      className="listing-image-remove"
+                      onClick={() => removeSelectedFile(preview.file)}
+                      aria-label={`Remove ${preview.file.name}`}
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
             ) : null}
+            <div className="listing-image-count" aria-live="polite">
+              <strong>{keepImageIds.length + files.length} / 8</strong>
+              <span>images selected</span>
+            </div>
             <label className="file-drop-field">
               <input
                 type="file"
@@ -410,4 +431,8 @@ export function ListingFormPage() {
       ) : null}
     </section>
   )
+}
+
+function fileKey(file: File) {
+  return `${file.name}:${file.size}:${file.lastModified}`
 }

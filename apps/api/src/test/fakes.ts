@@ -34,6 +34,7 @@ export class InMemoryUserRepository implements UserRepository {
     const existing = await this.findByEmail(email)
     if (existing) {
       existing.user.role = role
+      if (role === 'MODERATOR') existing.user.canMediateOrders = true
       this.records.set(existing.user.id, structuredClone(existing))
       return existing
     }
@@ -46,6 +47,7 @@ export class InMemoryUserRepository implements UserRepository {
       role,
       status: 'ACTIVE',
       canSell: true,
+      canMediateOrders: role === 'MODERATOR',
       profileCompleted: false,
       createdAt: now,
       updatedAt: now,
@@ -75,6 +77,7 @@ export class InMemoryUserRepository implements UserRepository {
     const value = this.records.get(userId)
     if (!value) throw new Error('Missing user')
     value.user.role = role
+    if (role === 'MODERATOR') value.user.canMediateOrders = true
     value.user.lastLoginAt = new Date()
     value.user.lastActiveAt = new Date()
     value.user.updatedAt = new Date()

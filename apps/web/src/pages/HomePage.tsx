@@ -6,7 +6,6 @@ import {
   CheckIcon,
   MessageIcon,
   PackageIcon,
-  SearchIcon,
   ShieldIcon,
 } from '../components/ui/icons'
 import { catalogApi } from '../features/products/api/catalog.api'
@@ -19,34 +18,29 @@ export function HomePage() {
   return (
     <>
       <section className="hero-section">
+        <div className="hero-ambient hero-ambient-one" />
+        <div className="hero-ambient hero-ambient-two" />
         <div className="container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow">
               <span />
-              Marketplace for your campus community
+              Made at NIT Calicut, for NIT Calicut
             </span>
             <h1>
-              Buy campus essentials.
-              <br />
-              Sell what you no longer need.
-              <br />
-              <em>Confirm orders on WhatsApp.</em>
+              Your campus has
+              <br /> everything you need.
+              <br /> <em>Find it here.</em>
             </h1>
             <p>
-              Campus Angaadi brings official products and approved second-hand listings together, with
-              every order handled by a trusted sales-team member.
+              Shop verified essentials, discover great second-hand finds, and sell to people you
+              already share a campus with. Simple, safe, and unmistakably NITC.
             </p>
-            <div className="flex flex-wrap gap-4 mt-8">
-              <Link className="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 border border-transparent rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-lg hover:shadow-xl hover:-translate-y-0.5 overflow-hidden" to="/official-store">
-                <span className="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-64 group-hover:h-56 opacity-10"></span>
-                <span className="relative flex items-center gap-2">Official Store</span>
+            <div className="hero-actions">
+              <Link className="button button-primary button-large" to="/official-store">
+                Shop official store <ArrowRightIcon />
               </Link>
-              <Link className="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white transition-all duration-300 bg-gradient-to-r from-purple-600 to-pink-600 border border-transparent rounded-xl hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:-translate-y-0.5 overflow-hidden" to="/second-hand-store">
-                <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
-                <span className="relative flex items-center gap-2">Second-hand Store</span>
-              </Link>
-              <Link className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 transition-all duration-200 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200 shadow-sm hover:shadow dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700" to="/products">
-                <SearchIcon /> <span className="ml-2">Browse All</span>
+              <Link className="button button-outline button-large" to="/second-hand-store">
+                Shop second-hand
               </Link>
             </div>
             <div className="trust-row">
@@ -64,11 +58,63 @@ export function HomePage() {
               </span>
             </div>
           </div>
-          <div className="support-panel">
+          <div className="hero-market-card">
+            <div className="hero-market-topline">
+              <span>LIVE ON CAMPUS</span>
+              <small>Updated now</small>
+            </div>
+            <div className="hero-market-visual">
+              <div className="market-tile market-tile-main">
+                <span className="market-icon">
+                  <PackageIcon />
+                </span>
+                <small>Featured find</small>
+                <strong>
+                  Everything campus,
+                  <br />
+                  one marketplace.
+                </strong>
+                <Link to="/official-store">
+                  Shop official store <ArrowRightIcon />
+                </Link>
+              </div>
+              <div className="market-tile market-tile-mini">
+                <span>OFFICIAL</span>
+                <strong>
+                  Campus
+                  <br />
+                  essentials
+                </strong>
+              </div>
+              <div className="market-tile market-tile-mini warm">
+                <span>PRE-LOVED</span>
+                <strong>
+                  Better deals.
+                  <br />
+                  Less waste.
+                </strong>
+              </div>
+            </div>
+            <div className="hero-market-proof">
+              <div>
+                <strong>Verified</strong>
+                <span>NITC community</span>
+              </div>
+              <div>
+                <strong>Reviewed</strong>
+                <span>Safer listings</span>
+              </div>
+              <div>
+                <strong>Local</strong>
+                <span>Easy pickup</span>
+              </div>
+            </div>
+          </div>
+          <div className="support-panel hero-support-panel">
             <div className="support-panel-head">
               <div>
                 <MessageIcon />
-                <strong>WhatsApp-assisted ordering</strong>
+                <strong>In-app order support</strong>
               </div>
               <span>AVAILABLE</span>
             </div>
@@ -76,14 +122,14 @@ export function HomePage() {
               <span className="status-orb" />
               <div>
                 <strong>Sales team assignment</strong>
-                <p>Each saved order will be routed to an available Campus Angaadi dealer.</p>
+                <p>Every saved order is routed to an available Campus Angadi dealer.</p>
               </div>
             </div>
             <div className="support-status">
               <ShieldIcon />
               <div>
-                <strong>Privacy-safe communication</strong>
-                <p>Dealer identities and workload remain private until an order is assigned.</p>
+                <strong>Private mediated chat</strong>
+                <p>Buyers speak only with the Campus Angadi team—never directly with sellers.</p>
               </div>
             </div>
             <div className="support-status">
@@ -97,36 +143,25 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="section" id="browse">
-        <div className="container">
-          <div className="section-heading">
-            <div>
-              <span className="section-kicker">Browse</span>
-              <h2>Shop by category</h2>
-            </div>
-            <Link to="/products">
-              View all <ArrowRightIcon />
-            </Link>
-          </div>
-          {homepage.isLoading ? (
-            <div className="category-row">
-              <span>Loading categories…</span>
-            </div>
-          ) : (
-            <div className="category-row">
-              {(data?.categories ?? []).map((category) => (
-                <Link key={category.id} to={`/products?category=${category.slug}`}>
-                  {category.name}
-                </Link>
-              ))}
-              {!data?.categories.length ? <span>No categories published yet.</span> : null}
-            </div>
-          )}
+      <section className="market-strip" aria-label="Marketplace highlights">
+        <div className="container market-strip-inner">
+          <span>
+            <ShieldIcon /> NITC email verified
+          </span>
+          <span>
+            <PackageIcon /> Official + student listings
+          </span>
+          <span>
+            <MessageIcon /> Human-assisted ordering
+          </span>
+          <span>
+            <CheckIcon /> No hidden platform fee
+          </span>
         </div>
       </section>
 
       <HomepageSection
-        title="Featured on Campus Angaadi"
+        title="Featured on Campus Angadi"
         kicker="Selected for you"
         products={data?.sections.FEATURED.products ?? []}
         loading={homepage.isLoading}
@@ -137,6 +172,7 @@ export function HomePage() {
         kicker="Administration"
         products={data?.sections.OFFICIAL.products ?? []}
         loading={homepage.isLoading}
+        storePath="/official-store"
       />
       <HomepageSection
         id="secondhand"
@@ -144,7 +180,7 @@ export function HomePage() {
         kicker="Community"
         products={data?.sections.SECOND_HAND.products ?? []}
         loading={homepage.isLoading}
-        muted
+        storePath="/second-hand-store"
       />
       <HomepageSection
         title="Recently added"
@@ -158,7 +194,7 @@ export function HomePage() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">Simple workflow</span>
-              <h2>How Campus Angaadi orders work</h2>
+              <h2>From “I need it” to “got it”</h2>
             </div>
           </div>
           <div className="steps-grid">
@@ -166,7 +202,7 @@ export function HomePage() {
               'Find a product',
               'Create the order',
               'Get a dealer',
-              'Confirm on WhatsApp',
+              'Chat with our team',
               'Collect on campus',
             ].map((step, index) => (
               <div className="step-card" key={step}>
@@ -188,26 +224,28 @@ function HomepageSection({
   kicker,
   products,
   loading,
-  muted = false,
+  storePath,
 }: {
   id?: string
   title: string
   kicker: string
   products?: ProductSummary[]
   loading: boolean
-  muted?: boolean
+  storePath?: string
 }) {
   return (
-    <section className={`section ${muted ? 'section-muted' : ''}`} id={id}>
+    <section className="section" id={id}>
       <div className="container">
         <div className="section-heading">
           <div>
             <span className="section-kicker">{kicker}</span>
             <h2>{title}</h2>
           </div>
-          <Link to="/products">
-            See all <ArrowRightIcon />
-          </Link>
+          {storePath ? (
+            <Link to={storePath}>
+              See all <ArrowRightIcon />
+            </Link>
+          ) : null}
         </div>
         {loading ? (
           <ProductGridSkeleton count={4} />

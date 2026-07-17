@@ -24,7 +24,10 @@ describe('Admin Routes', () => {
       next()
     }
 
-    const router = createAdminCoreRouter(mockAdminService as unknown as AdminService, mockAuthMiddleware)
+    const router = createAdminCoreRouter(
+      mockAdminService as unknown as AdminService,
+      mockAuthMiddleware,
+    )
 
     app = express()
     app.use(express.json())
@@ -49,7 +52,9 @@ describe('Admin Routes', () => {
     })
 
     it('should handle service errors', async () => {
-      mockAdminService.dashboard.mockRejectedValue(new AppError(500, 'INTERNAL_ERROR', 'Service failed'))
+      mockAdminService.dashboard.mockRejectedValue(
+        new AppError(500, 'INTERNAL_ERROR', 'Service failed'),
+      )
 
       const response = await request(app).get('/admin/dashboard')
 
@@ -104,7 +109,9 @@ describe('Admin Routes', () => {
     })
 
     it('should handle not found error', async () => {
-      mockAdminService.getUser.mockRejectedValue(new AppError(404, 'USER_NOT_FOUND', 'User not found.'))
+      mockAdminService.getUser.mockRejectedValue(
+        new AppError(404, 'USER_NOT_FOUND', 'User not found.'),
+      )
 
       const response = await request(app).get('/admin/users/unknown')
 
@@ -120,9 +127,7 @@ describe('Admin Routes', () => {
       const mockUpdatedUser = { id: 'user2', role: 'ADMIN' }
       mockAdminService.updateUser.mockResolvedValue(mockUpdatedUser)
 
-      const response = await request(app)
-        .patch('/admin/users/user2')
-        .send(updateData)
+      const response = await request(app).patch('/admin/users/user2').send(updateData)
 
       expect(response.status).toBe(200)
       expect(response.body).toEqual({

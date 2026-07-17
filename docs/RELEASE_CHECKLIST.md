@@ -1,4 +1,4 @@
-# Campus Angaadi release checklist
+# Campus Angadi release checklist
 
 ## Automated gate
 
@@ -33,7 +33,7 @@
 - [ ] multi-seller checkout creates correctly grouped orders
 - [ ] dealer capacity and least-load assignment work under concurrent checkout
 - [ ] no available dealer preserves the order in the waiting state
-- [ ] WhatsApp URL and tracked redirect work
+- [ ] Buyer-to-team chat, voice notes and audio-call signaling work
 - [ ] completion/cancellation releases dealer workload exactly once
 - [ ] blocking a user revokes active sessions
 - [ ] marketplace listing/order switches are enforced by the API

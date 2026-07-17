@@ -16,6 +16,8 @@ export function mapDealer(document: Record<string, unknown>): Dealer {
   const hours = document.workingHours as Record<string, unknown>
   return {
     id: String(document._id),
+    mediatorUserId: document.mediatorUserId ? String(document.mediatorUserId) : null,
+    mediatorEmail: document.mediatorEmail ? String(document.mediatorEmail) : null,
     displayName: String(document.displayName),
     phoneNumber: String(document.phoneNumber),
     isActive: Boolean(document.isActive),
@@ -73,12 +75,22 @@ export class MongooseDealerRepository implements DealerRepository {
     return document ? mapDealer(document) : null
   }
 
-  async create(input: CreateDealerInput): Promise<Dealer> {
+  async findByMediatorUserId(userId: string): Promise<Dealer | null> {
+    const document = await DealerModel.findOne({ mediatorUserId: userId, deletedAt: null }).lean<
+      Record<string, unknown>
+    >()
+    return document ? mapDealer(document) : null
+  }
+
+  async create(input: CreateDealerInput & { mediatorEmail: string }): Promise<Dealer> {
     const document = await DealerModel.create({ ...input, notes: input.notes ?? null })
     return mapDealer(document.toObject())
   }
 
-  async update(id: string, input: UpdateDealerInput): Promise<Dealer | null> {
+  async update(
+    id: string,
+    input: UpdateDealerInput & { mediatorEmail?: string },
+  ): Promise<Dealer | null> {
     const document = await DealerModel.findOneAndUpdate(
       { _id: id, deletedAt: null },
       { $set: input },

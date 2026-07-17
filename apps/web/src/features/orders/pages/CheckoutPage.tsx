@@ -8,6 +8,7 @@ import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { cartApi } from '../../cart/api/cart.api'
 import { ordersApi } from '../api/orders.api'
+import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -20,6 +21,7 @@ function price(value: number) {
 export function CheckoutPage() {
   const navigate = useNavigate()
   const client = useQueryClient()
+  const confirm = useConfirmation()
   const user = useAuthStore((state) => state.user)
   const cart = useQuery({ queryKey: ['cart'], queryFn: cartApi.get })
   const form = useForm<CheckoutInput>({
@@ -57,8 +59,8 @@ export function CheckoutPage() {
         <div className="container catalog-empty">
           <CartIcon />
           <strong>Your cart is empty</strong>
-          <Link className="button button-primary" to="/products">
-            Browse products
+          <Link className="button button-primary" to="/">
+            Choose a store
           </Link>
         </div>
       </section>
@@ -71,8 +73,8 @@ export function CheckoutPage() {
           <span className="section-kicker">Order details</span>
           <h1>Checkout</h1>
           <p className="page-lead">
-            Confirm your campus contact and pickup details. Products from different sellers will
-            become separate orders automatically.
+            Confirm your campus contact and pickup details. Products from different sellers become
+            separate orders, each coordinated privately by a Campus Angadi team member.
           </p>
           {cart.data.issues.length ? (
             <div className="cart-issues">
@@ -85,7 +87,9 @@ export function CheckoutPage() {
           ) : null}
           <form
             className="checkout-form"
-            onSubmit={(event) => void form.handleSubmit((values) => checkout.mutate(values))(event)}
+            onSubmit={(event) => void form.handleSubmit(async (values) => {
+              if (await confirm({ title: 'Place this order?', description: `You are placing ${cart.data.items.length} cart item${cart.data.items.length === 1 ? '' : 's'} for ${price(cart.data.subtotal)}. Campus Angadi will coordinate pickup through your mediator.`, confirmLabel: 'Place order' })) checkout.mutate(values)
+            })(event)}
           >
             <label>
               Full name

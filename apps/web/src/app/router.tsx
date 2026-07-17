@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '../features/auth/components/ProtectedRoute'
 import { LoadingSkeleton } from '../components/ui/LoadingSkeleton'
 import { AccountLayout } from '../layouts/AccountLayout'
@@ -26,11 +26,6 @@ const VerifyOtpPage = lazy(() =>
 const ProfilePage = lazy(() =>
   import('../features/profile/pages/ProfilePage').then((module) => ({
     default: module.ProfilePage,
-  })),
-)
-const ProductsPage = lazy(() =>
-  import('../features/products/pages/ProductsPage').then((module) => ({
-    default: module.ProductsPage,
   })),
 )
 const OfficialStorePage = lazy(() =>
@@ -64,6 +59,16 @@ const MyOrdersPage = lazy(() =>
 const OrderDetailsPage = lazy(() =>
   import('../features/orders/pages/OrderDetailsPage').then((module) => ({
     default: module.OrderDetailsPage,
+  })),
+)
+const UserOrderChatPage = lazy(() =>
+  import('../features/chat/pages/OrderChatPage').then((module) => ({
+    default: module.UserOrderChatPage,
+  })),
+)
+const AdminOrderChatPage = lazy(() =>
+  import('../features/chat/pages/OrderChatPage').then((module) => ({
+    default: module.AdminOrderChatPage,
   })),
 )
 const MyListingsPage = lazy(() =>
@@ -196,17 +201,24 @@ function page(node: ReactNode) {
   )
 }
 
+function administratorPage(node: ReactNode) {
+  return <ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}>{page(node)}</ProtectedRoute>
+}
+
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
       { path: '/', element: page(<HomePage />) },
-      { path: '/products', element: page(<ProductsPage />) },
       { path: '/products/:slug', element: page(<ProductDetailsPage />) },
       { path: '/official-store', element: page(<OfficialStorePage />) },
       { path: '/second-hand-store', element: page(<SecondHandStorePage />) },
       { path: '/cart', element: <ProtectedRoute>{page(<CartPage />)}</ProtectedRoute> },
       { path: '/checkout', element: <ProtectedRoute>{page(<CheckoutPage />)}</ProtectedRoute> },
+      {
+        path: '/notifications',
+        element: <ProtectedRoute>{page(<NotificationsPage />)}</ProtectedRoute>,
+      },
       { path: '/unauthorized', element: page(<UnauthorizedPage />) },
     ],
   },
@@ -223,41 +235,44 @@ export const router = createBrowserRouter([
       { path: 'profile', element: page(<ProfilePage />) },
       { path: 'orders', element: page(<MyOrdersPage />) },
       { path: 'orders/:id', element: page(<OrderDetailsPage />) },
+      { path: 'orders/:id/chat', element: page(<UserOrderChatPage />) },
       { path: 'listings', element: page(<MyListingsPage />) },
       { path: 'listings/new', element: page(<ListingFormPage />) },
       { path: 'listings/:id', element: page(<ListingDetailsPage />) },
       { path: 'listings/:id/edit', element: page(<ListingFormPage />) },
-      { path: 'notifications', element: page(<NotificationsPage />) },
+      { path: 'notifications', element: <Navigate to="/notifications" replace /> },
       { path: 'reports', element: page(<MyReportsPage />) },
     ],
   },
   {
     path: '/admin',
     element: (
-      <ProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}>
+      <ProtectedRoute roles={['MODERATOR', 'ADMIN', 'SUPER_ADMIN']}>
         <AdminLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: page(<AdminDashboardPage />) },
-      { path: 'dashboard', element: page(<AdminDashboardPage />) },
-      { path: 'users', element: page(<AdminUsersPage />) },
-      { path: 'users/:id', element: page(<AdminUserDetailPage />) },
-      { path: 'sales', element: page(<AdminSalesPage />) },
-      { path: 'reports', element: page(<AdminReportsPage />) },
-      { path: 'notifications', element: page(<AdminNotificationsPage />) },
-      { path: 'audit-logs', element: page(<AdminAuditPage />) },
-      { path: 'settings', element: page(<AdminSettingsPage />) },
-      { path: 'operations', element: page(<AdminOperationsPage />) },
-      { path: 'products', element: page(<AdminProductsPage />) },
-      { path: 'products/:id/edit', element: page(<AdminProductEditPage />) },
-      { path: 'categories', element: page(<AdminCategoriesPage />) },
-      { path: 'homepage', element: page(<AdminHomepagePage />) },
-      { path: 'moderation', element: page(<AdminModerationPage />) },
-      { path: 'moderation/:id', element: page(<AdminModerationDetailPage />) },
+      { index: true, element: <Navigate to="orders" replace /> },
+      { path: 'dashboard', element: administratorPage(<AdminDashboardPage />) },
+      { path: 'users', element: administratorPage(<AdminUsersPage />) },
+      { path: 'users/:id', element: administratorPage(<AdminUserDetailPage />) },
+      { path: 'sales', element: administratorPage(<AdminSalesPage />) },
+      { path: 'reports', element: administratorPage(<AdminReportsPage />) },
+      { path: 'notifications', element: administratorPage(<AdminNotificationsPage />) },
+      { path: 'audit-logs', element: administratorPage(<AdminAuditPage />) },
+      { path: 'settings', element: administratorPage(<AdminSettingsPage />) },
+      { path: 'operations', element: administratorPage(<AdminOperationsPage />) },
+      { path: 'products', element: administratorPage(<AdminProductsPage />) },
+      { path: 'products/:id/edit', element: administratorPage(<AdminProductEditPage />) },
+      { path: 'categories', element: administratorPage(<AdminCategoriesPage />) },
+      { path: 'homepage', element: administratorPage(<AdminHomepagePage />) },
+      { path: 'moderation', element: administratorPage(<AdminModerationPage />) },
+      { path: 'moderation/:id', element: administratorPage(<AdminModerationDetailPage />) },
       { path: 'orders', element: page(<AdminOrdersPage />) },
+      { path: 'mediator', element: page(<AdminOrdersPage />) },
       { path: 'orders/:id', element: page(<AdminOrderDetailPage />) },
-      { path: 'dealers', element: page(<AdminDealersPage />) },
+      { path: 'orders/:id/chat', element: page(<AdminOrderChatPage />) },
+      { path: 'dealers', element: administratorPage(<AdminDealersPage />) },
     ],
   },
   { path: '*', element: page(<NotFoundPage />) },

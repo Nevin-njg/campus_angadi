@@ -9,6 +9,7 @@ import type {
   PlatformSettings,
   OperationsStatus,
   CleanupResult,
+  EnrollMediatorInput,
   IndexDrift,
   Report,
   ReportListQuery,
@@ -38,6 +39,8 @@ export const adminPlatformApi = {
   user: (id: string) => apiRequest<AdminUserDetail>(`/admin/users/${id}`),
   updateUser: (id: string, input: UpdateAdminUserInput) =>
     apiRequest<AdminUserDetail>(`/admin/users/${id}`, { method: 'PATCH', body: input }),
+  enrollMediator: (input: EnrollMediatorInput) =>
+    apiRequest<AdminUserDetail>('/admin/mediators', { method: 'POST', body: input }),
   sales: (q: SalesAnalyticsQuery) => apiRequest<SalesAnalytics>(`/admin/sales${qs(q)}`),
   reports: (q: ReportListQuery) => paged<Report>(`/admin/reports${qs(q)}`),
   updateReport: (id: string, input: UpdateReportInput) =>

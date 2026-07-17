@@ -29,7 +29,7 @@ export function PublicLayout() {
           </div>
         </div>
         <div className="container footer-bottom">
-          © 2026 Campus Angaadi. Built for campus communities.
+          © 2026 Campus Angadi. Built for campus communities.
         </div>
       </footer>
     </div>
