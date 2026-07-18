@@ -4,6 +4,44 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
+  /* Neutral light counterpart to the original LeetCode-style dark theme. */
+  --bg-page: #f7f7f8;
+  --bg-card: #ffffff;
+  --bg-elevated: #f2f2f3;
+  --bg-hover: #ececee;
+  --bg-input: #ffffff;
+  --border: #d4d4d6;
+  --border-soft: #e6e6e8;
+  --text-primary: #262626;
+  --text-secondary: #5f5f5f;
+  --text-tertiary: #858585;
+  --accent: #ffa116;
+  --accent-text: #b85c00;
+  --accent-hover: #e88b00;
+  --accent-deep: #c76f00;
+  --accent-contrast: #17181a;
+  --accent-soft: rgba(255, 161, 22, 0.13);
+  --accent-glow: rgba(255, 161, 22, 0.2);
+  --green: #148a3d;
+  --green-soft: rgba(20, 138, 61, 0.11);
+  --red: #d9342b;
+  --red-soft: rgba(217, 52, 43, 0.11);
+  --blue: #0a6ed1;
+  --gray-soft: rgba(95, 95, 95, 0.1);
+  --surface-elevated: #ffffff;
+  --text-muted: #5f5f5f;
+  --shadow: 0 14px 38px rgba(0, 0, 0, 0.08);
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+html.dark,
+html.admin-dark {
   color-scheme: dark;
   --bg-page: #1a1a1a;
   --bg-card: #262626;
@@ -16,7 +54,10 @@
   --text-secondary: #b3b3b3;
   --text-tertiary: #8c8c8c;
   --accent: #ffa116;
+  --accent-text: #ffa116;
   --accent-hover: #ffb83d;
+  --accent-deep: #e98708;
+  --accent-contrast: #17181a;
   --accent-soft: rgba(255, 161, 22, 0.12);
   --accent-glow: rgba(255, 161, 22, 0.2);
   --green: #2cbb5d;
@@ -28,12 +69,6 @@
   --surface-elevated: #262626;
   --text-muted: #b3b3b3;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 20px;
-  --font-display: "Fraunces", Georgia, serif;
-  --font-ui: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
 }
 
 * {
@@ -57,6 +92,7 @@
   background: var(--accent-hover);
 }
 html {
+  background: var(--bg-page);
   scroll-behavior: smooth;
   scroll-padding-top: 88px;
 }
@@ -73,7 +109,7 @@ body {
 }
 ::selection {
   background: var(--accent);
-  color: #1a1a1a;
+  color: var(--accent-contrast);
 }
 button,
 input,
@@ -157,8 +193,8 @@ select:focus-visible {
   display: grid;
   place-items: center;
   border-radius: 11px;
-  background: linear-gradient(145deg, var(--accent), #e98708);
-  color: #17181a;
+  background: linear-gradient(145deg, var(--accent), var(--accent-deep));
+  color: var(--accent-contrast);
   box-shadow: 0 4px 14px var(--accent-glow);
   font: 700 14px var(--font-display);
   transition: transform 0.25s ease;
@@ -217,7 +253,7 @@ select:focus-visible {
   background: var(--bg-hover);
 }
 .desktop-nav a.active {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .nav-actions {
   display: flex;
@@ -239,6 +275,24 @@ select:focus-visible {
 .icon-button:hover {
   background: var(--bg-hover);
   transform: translateY(-1px);
+}
+.theme-toggle {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-card) 86%, transparent);
+  color: var(--text-secondary);
+}
+.theme-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  color: var(--accent-text);
+}
+.theme-toggle svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 180ms ease;
+}
+.theme-toggle:hover svg {
+  transform: rotate(8deg) scale(1.04);
 }
 .mobile-menu-button {
   display: none;
@@ -281,7 +335,7 @@ select:focus-visible {
 }
 .button-primary {
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 .button-primary:hover:not(:disabled) {
@@ -415,7 +469,7 @@ select:focus-visible {
   padding: 6px 11px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font: 600 10.5px var(--font-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -435,7 +489,7 @@ select:focus-visible {
 }
 .hero-copy h1 em,
 .auth-visual h1 em {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 500;
 }
 .hero-copy > p {
@@ -467,7 +521,7 @@ select:focus-visible {
 .hero-search > svg {
   width: 18px;
   height: 18px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .hero-search input {
   min-width: 0;
@@ -495,7 +549,7 @@ select:focus-visible {
   text-underline-offset: 3px;
 }
 .hero-quick-links a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration-color: currentColor;
 }
 .hero-actions {
@@ -565,7 +619,7 @@ select:focus-visible {
   padding: 9px;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .status-orb {
   position: relative;
@@ -608,7 +662,7 @@ select:focus-visible {
   font: 500 11px var(--font-mono);
 }
 .section-kicker {
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 10px var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -708,14 +762,14 @@ select:focus-visible {
 }
 .product-pill.official {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .product-pill.official::before {
   background: var(--accent);
 }
 .product-pill.second-hand {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .product-pill.second-hand::before {
   background: var(--accent);
@@ -736,7 +790,7 @@ select:focus-visible {
   background: var(--bg-card);
 }
 .step-card > span {
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 11px var(--font-mono);
 }
 .step-card > strong {
@@ -778,7 +832,7 @@ select:focus-visible {
   font-size: 12px;
 }
 .footer-grid > div:not(:first-child) a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .footer-bottom {
   margin-top: 34px;
@@ -789,9 +843,22 @@ select:focus-visible {
 }
 
 .auth-page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1.06fr) minmax(430px, 0.94fr);
+}
+.auth-theme-control {
+  position: fixed;
+  z-index: 20;
+  top: 20px;
+  right: 20px;
+}
+.auth-theme-control .theme-toggle {
+  background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  box-shadow: 0 8px 24px
+    color-mix(in srgb, var(--text-primary) 10%, transparent);
+  backdrop-filter: blur(12px);
 }
 .auth-visual {
   position: relative;
@@ -875,7 +942,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 13px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .auth-icon.small {
   width: 39px;
@@ -971,7 +1038,7 @@ select:focus-visible {
   font-size: 11px;
 }
 .back-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .resend-button {
   width: 100%;
@@ -979,7 +1046,7 @@ select:focus-visible {
   padding: 8px;
   border: 0;
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   font-size: 11.5px;
   font-weight: 700;
@@ -1005,7 +1072,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 14px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   font: 700 17px var(--font-display);
   animation: loaderPulse 1.2s ease infinite;
 }
@@ -1096,7 +1163,7 @@ select:focus-visible {
   padding: 6px 10px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 9px var(--font-mono);
 }
 .completion-pill.complete {
@@ -1233,7 +1300,7 @@ select:focus-visible {
   padding: 11px;
   border-radius: 14px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .status-page h1 {
   margin: 17px 0 5px;
@@ -1427,7 +1494,7 @@ select:focus-visible {
   font-weight: 600;
 }
 .section-heading > a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .category-row a {
   flex: 0 0 auto;
@@ -1441,7 +1508,7 @@ select:focus-visible {
   transition: 0.16s ease;
 }
 .category-row a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: var(--accent);
   transform: translateY(-1px);
 }
@@ -1518,7 +1585,7 @@ select:focus-visible {
   padding: 4px 8px;
   border-radius: 7px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   font: 700 11px var(--font-mono);
 }
 .catalog-card-body {
@@ -1544,7 +1611,7 @@ select:focus-visible {
   -webkit-box-orient: vertical;
 }
 .catalog-card-title:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .catalog-price-row {
   display: flex;
@@ -1825,7 +1892,7 @@ select:focus-visible {
 }
 .product-detail-price strong {
   font: 700 30px var(--font-mono);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .product-detail-price del {
   color: var(--text-tertiary);
@@ -1863,7 +1930,7 @@ select:focus-visible {
   background: var(--accent-soft);
 }
 .product-notice svg {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .product-notice p {
   margin: 3px 0 0;
@@ -1973,7 +2040,7 @@ select:focus-visible {
 }
 .admin-row-actions button:hover,
 .text-button:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .danger-link {
   color: var(--red) !important;
@@ -2032,7 +2099,7 @@ select:focus-visible {
 .homepage-tabs button.active {
   border-color: var(--accent);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .homepage-editor-grid {
   grid-template-columns: 1fr 1fr;
@@ -2066,7 +2133,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 7px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 11px var(--font-mono);
 }
 .admin-search-input {
@@ -2102,7 +2169,7 @@ select:focus-visible {
   color: var(--text-tertiary);
 }
 .candidate-row b {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 11px;
 }
 .candidate-row:disabled {
@@ -2294,7 +2361,7 @@ select:focus-visible {
   padding: 9px;
   border-radius: 10px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .listing-form-section-title h2,
 .listing-form-section h2 {
@@ -2414,7 +2481,7 @@ select:focus-visible {
   font-size: 11px;
 }
 .listing-image-count strong {
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 12px var(--font-mono);
 }
 .file-drop-field {
@@ -2556,7 +2623,7 @@ select:focus-visible {
 }
 .status-pending_approval {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .status-approved {
   background: var(--green-soft);
@@ -2564,7 +2631,7 @@ select:focus-visible {
 }
 .status-changes_requested {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .status-rejected,
 .status-deleted {
@@ -2573,7 +2640,7 @@ select:focus-visible {
 }
 .status-hidden {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .status-sold {
   background: var(--gray-soft);
@@ -2590,7 +2657,7 @@ select:focus-visible {
   background: var(--accent-soft);
 }
 .moderation-message svg {
-  color: var(--accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 .moderation-message p {
@@ -2638,7 +2705,7 @@ select:focus-visible {
 .listing-detail-price {
   display: block;
   margin-bottom: 14px;
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 26px var(--font-mono);
 }
 .listing-facts-card dl,
@@ -2746,7 +2813,7 @@ select:focus-visible {
 .moderation-detail-head .back-link {
   display: inline-block;
   margin-bottom: 10px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -2841,7 +2908,7 @@ select:focus-visible {
   border: 2px solid var(--bg-page);
   border-radius: 999px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   font: 700 9px var(--font-mono);
 }
 .catalog-card-actions {
@@ -2892,7 +2959,7 @@ select:focus-visible {
 }
 .quantity-control button:hover:not(:disabled) {
   background: var(--bg-hover);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .quantity-control button:disabled {
   opacity: 0.35;
@@ -3223,7 +3290,7 @@ select:focus-visible {
 .order-filter-row button:hover {
   border-color: var(--accent);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .orders-list {
   display: grid;
@@ -3255,7 +3322,7 @@ select:focus-visible {
   display: grid;
 }
 .order-card-head small {
-  color: var(--accent);
+  color: var(--accent-text);
   font: 600 10px var(--font-mono);
 }
 .order-card-products {
@@ -3295,7 +3362,7 @@ select:focus-visible {
   padding: 5px 9px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 9px var(--font-mono);
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -3315,7 +3382,7 @@ select:focus-visible {
 .order-status-badge.status-waiting_for_dealer_assignment,
 .order-status-badge.status-awaiting_team_confirmation {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .compact-empty {
   min-height: 260px;
@@ -3325,7 +3392,7 @@ select:focus-visible {
   align-items: center;
   gap: 5px;
   margin-bottom: 16px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -3495,7 +3562,7 @@ select:focus-visible {
   border-bottom: 0;
 }
 .admin-table a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @media (max-width: 1000px) {
@@ -3577,7 +3644,7 @@ select:focus-visible {
   background: var(--bg-elevated);
 }
 .assigned-dealer-row > svg {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .assigned-dealer-row div {
   display: grid;
@@ -3635,7 +3702,7 @@ select:focus-visible {
   place-items: center;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .dealer-card-main {
   min-width: 0;
@@ -3877,7 +3944,7 @@ select:focus-visible {
 }
 .notification-card div > span {
   font: 600 9px var(--font-mono);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .notification-card p {
   color: var(--text-secondary);
@@ -4021,7 +4088,7 @@ select:focus-visible {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   font-weight: 700;
   transition: transform 0.15s ease;
 }
@@ -4097,7 +4164,7 @@ select:focus-visible {
 /* Campus Angadi product polish */
 ::selection {
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
 }
 body {
   background-image:
@@ -4120,12 +4187,12 @@ body {
 }
 .desktop-nav a:last-child {
   margin-left: 4px;
-  color: #17181a;
+  color: var(--accent-contrast);
   background: var(--accent);
 }
 .desktop-nav a:last-child:hover,
 .desktop-nav a:last-child.active {
-  color: #17181a;
+  color: var(--accent-contrast);
   background: var(--accent-hover);
 }
 .button-large {
@@ -4238,15 +4305,15 @@ body {
       rgba(255, 255, 255, 0.18),
       transparent 28%
     ),
-    linear-gradient(145deg, var(--accent), #d97900);
-  color: #17181a;
+    linear-gradient(145deg, var(--accent), var(--accent-deep));
+  color: var(--accent-contrast);
 }
 .market-tile-main::after {
   content: "A";
   position: absolute;
   top: -48px;
   right: -12px;
-  color: rgba(23, 24, 26, 0.1);
+  color: color-mix(in srgb, var(--accent-contrast) 12%, transparent);
   font: 700 210px/1 var(--font-display);
 }
 .market-icon {
@@ -4257,9 +4324,9 @@ body {
   height: 48px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(23, 24, 26, 0.22);
+  border: 1px solid color-mix(in srgb, var(--accent-contrast) 24%, transparent);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--accent-contrast) 18%, transparent);
 }
 .market-tile-main > small {
   margin-top: auto;
@@ -4301,13 +4368,13 @@ body {
   background: linear-gradient(145deg, var(--accent-soft), var(--bg-elevated));
 }
 .market-tile-mini > span {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .market-tile-mini.warm {
   background: linear-gradient(145deg, var(--accent-soft), var(--bg-elevated));
 }
 .market-tile-mini.warm > span {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .market-tile-mini strong {
   font-size: 18px;
@@ -4384,7 +4451,7 @@ body {
 }
 .market-strip-inner svg {
   width: 15px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .section {
   padding-block: 72px;
@@ -4405,7 +4472,7 @@ body {
   transition: 0.2s ease;
 }
 .category-row a:hover {
-  color: #17181a;
+  color: var(--accent-contrast);
   border-color: var(--accent);
   background: var(--accent);
   transform: translateY(-2px);
@@ -4446,6 +4513,33 @@ body {
 
 /* Full-size administration workspace */
 .admin-app-shell {
+  color-scheme: dark;
+  --bg-page: #1a1a1a;
+  --bg-card: #262626;
+  --bg-elevated: #2c2c2c;
+  --bg-hover: #333333;
+  --bg-input: #262626;
+  --border: #3f3f3f;
+  --border-soft: #303030;
+  --text-primary: #f2f2f2;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #8c8c8c;
+  --accent: #ffa116;
+  --accent-text: #ffa116;
+  --accent-hover: #ffb83d;
+  --accent-deep: #e98708;
+  --accent-contrast: #17181a;
+  --accent-soft: rgba(255, 161, 22, 0.12);
+  --accent-glow: rgba(255, 161, 22, 0.2);
+  --green: #2cbb5d;
+  --green-soft: rgba(44, 187, 93, 0.13);
+  --red: #ef4743;
+  --red-soft: rgba(239, 71, 67, 0.14);
+  --blue: #0a84ff;
+  --gray-soft: rgba(140, 140, 140, 0.14);
+  --surface-elevated: #262626;
+  --text-muted: #b3b3b3;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
   min-height: 100vh;
   display: flex;
   background:
@@ -4543,7 +4637,7 @@ body {
   transform: translateX(2px);
 }
 .admin-nav-group a.active {
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: color-mix(in srgb, var(--accent) 28%, transparent);
   background: var(--accent-soft);
   box-shadow: inset 3px 0 var(--accent);
@@ -4563,8 +4657,8 @@ body {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: linear-gradient(145deg, var(--accent), #dc7d00);
-  color: #17181a;
+  background: linear-gradient(145deg, var(--accent), var(--accent-deep));
+  color: var(--accent-contrast);
   font: 800 13px var(--font-ui);
 }
 .admin-avatar {
@@ -4672,7 +4766,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 9px var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -4761,7 +4855,7 @@ body {
   color: var(--metric-color, var(--accent));
 }
 .tone-orange {
-  --metric-color: var(--accent);
+  --metric-color: var(--accent-text);
   --metric-soft: var(--accent-soft);
 }
 .tone-green {
@@ -4794,7 +4888,7 @@ body {
   border-bottom: 1px solid var(--border-soft);
 }
 .admin-dashboard-panel header span {
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 8px var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -4812,7 +4906,7 @@ body {
   font-weight: 700;
 }
 .admin-dashboard-panel header > a:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .admin-dashboard-panel header svg {
   width: 14px;
@@ -4870,7 +4964,7 @@ body {
 .activity-icon {
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 .activity-icon svg {
@@ -4908,7 +5002,7 @@ body {
   place-items: center;
   border-radius: 11px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
 }
 .admin-attention-bar strong {
   font-size: 12px;
@@ -5183,7 +5277,7 @@ body {
 .product-pill.official,
 .product-pill.second-hand,
 .product-pill.condition {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 .product-pill.official::before,
@@ -5197,7 +5291,7 @@ body {
 }
 .market-tile-mini > span,
 .market-tile-mini.warm > span {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .admin-metric-card {
   --metric-color: var(--accent) !important;
@@ -5211,7 +5305,7 @@ body {
 }
 .admin-app-shell button[class*="bg-amber-600"] {
   background: var(--accent) !important;
-  color: #17181a !important;
+  color: var(--accent-contrast) !important;
 }
 .admin-app-shell button[class*="bg-amber-600"]:hover {
   background: var(--accent-hover) !important;
@@ -5254,7 +5348,7 @@ body {
   place-items: center;
   border-radius: 13px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
 }
 .chat-header strong,
 .chat-header span {
@@ -5303,7 +5397,7 @@ body {
 }
 .chat-call-button:hover:not(:disabled) {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
   transform: translateY(-1px);
 }
 .chat-call-button:disabled {
@@ -5323,7 +5417,7 @@ body {
 }
 .chat-privacy-note svg {
   width: 14px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .chat-call-banner {
   display: grid;
@@ -5340,7 +5434,7 @@ body {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #17181a;
+  color: var(--accent-contrast);
   background: var(--accent);
   animation: call-pulse 1.7s infinite;
 }
@@ -5407,7 +5501,7 @@ body {
   height: 34px;
   padding: 8px;
   border-radius: 10px;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 .chat-welcome strong {
@@ -5437,7 +5531,7 @@ body {
   place-items: center;
   border-radius: 8px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
   font: 800 8px var(--font-ui);
 }
 .chat-bubble {
@@ -5452,12 +5546,12 @@ body {
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   border-radius: 14px 14px 4px 14px;
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
 }
 .chat-bubble > strong {
   display: block;
   margin-bottom: 4px;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 9px;
 }
 .chat-bubble p {
@@ -5475,7 +5569,7 @@ body {
   text-align: right;
 }
 .chat-bubble-row.mine .chat-bubble > small {
-  color: rgba(23, 24, 26, 0.6);
+  color: color-mix(in srgb, var(--accent-contrast) 64%, transparent);
 }
 .chat-audio {
   display: flex;
@@ -5528,7 +5622,7 @@ body {
 }
 .chat-locked svg {
   width: 14px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .chat-inline-error {
   color: var(--red);
@@ -5577,7 +5671,7 @@ body {
 .chat-send-button {
   border-color: var(--accent);
   background: var(--accent);
-  color: #17181a;
+  color: var(--accent-contrast);
 }
 .chat-send-button:disabled,
 .chat-record-button:disabled {
@@ -5596,7 +5690,7 @@ body {
 .chat-error-state > svg {
   width: 36px;
   height: 36px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .chat-error-state p {
   margin: 0;
@@ -5702,7 +5796,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font: 700 10px var(--font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5742,7 +5836,7 @@ body {
   width: 19px;
   height: 19px;
   margin-left: 5px;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .storefront-search input {
   min-width: 0;
@@ -5776,7 +5870,7 @@ body {
   font-size: 13px;
 }
 .storefront-filter-title svg {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .storefront-toolbar {
   min-height: 58px;
@@ -5784,7 +5878,7 @@ body {
   border-radius: 12px;
 }
 .storefront-toolbar > span strong {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @media (max-width: 900px) {
@@ -5882,5 +5976,38 @@ body {
   }
   .confirmation-actions .button {
     width: 100%;
+  }
+}
+
+/* User-facing theme refinements */
+html:not(.dark):not(.admin-dark) .navbar,
+html:not(.dark):not(.admin-dark) .mobile-drawer,
+html:not(.dark):not(.admin-dark) .content-card,
+html:not(.dark):not(.admin-dark) .catalog-card,
+html:not(.dark):not(.admin-dark) .support-panel,
+html:not(.dark):not(.admin-dark) .hero-market-card {
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.08);
+}
+
+html:not(.dark):not(.admin-dark) .hero-section,
+html:not(.dark):not(.admin-dark) .auth-visual {
+  background-color: color-mix(in srgb, var(--bg-page) 94%, white);
+}
+
+html:not(.dark):not(.admin-dark) .catalog-card-media,
+html:not(.dark):not(.admin-dark) .product-gallery-main,
+html:not(.dark):not(.admin-dark) .cart-item-media {
+  background: var(--bg-elevated);
+}
+
+html:not(.dark):not(.admin-dark) .button-outline,
+html:not(.dark):not(.admin-dark) .icon-button {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 600px) {
+  .auth-theme-control {
+    top: 14px;
+    right: 14px;
   }
 }

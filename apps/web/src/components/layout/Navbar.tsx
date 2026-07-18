@@ -5,6 +5,7 @@ import { useAuthStore } from "../../features/auth/store/use-auth-store";
 import { cartApi } from "../../features/cart/api/cart.api";
 import { notificationsApi } from "../../features/notifications/api/notifications.api";
 import { BrandLogo } from "./BrandLogo";
+import { ThemeToggle } from "./ThemeToggle";
 import { BellIcon, CartIcon, CloseIcon, MenuIcon, UserIcon } from "../ui/icons";
 
 const links = [
@@ -70,6 +71,7 @@ export function Navbar() {
             ))}
           </nav>
           <div className="nav-actions">
+            <ThemeToggle />
             {user ? (
               <Link
                 className="icon-button nav-cart-button"

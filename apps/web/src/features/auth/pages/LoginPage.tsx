@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { BrandLogo } from "../../../components/layout/BrandLogo";
+import { ThemeToggle } from "../../../components/layout/ThemeToggle";
 import { Button } from "../../../components/ui/Button";
 import { FormField } from "../../../components/ui/FormField";
 import { MailIcon, ShieldIcon } from "../../../components/ui/icons";
@@ -56,6 +57,9 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
+      <div className="auth-theme-control">
+        <ThemeToggle />
+      </div>
       <div className="auth-visual">
         <BrandLogo />
         <div className="auth-visual-copy">
