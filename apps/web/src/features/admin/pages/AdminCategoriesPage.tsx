@@ -4,7 +4,7 @@ import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { ApiClientError } from '../../../lib/api-client'
 import { adminCatalogApi } from '../api/admin-catalog.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const initial: CreateCategoryInput = {
   name: '',
@@ -57,7 +57,14 @@ export function AdminCategoriesPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
-    if (await confirm({ title: 'Create this category?', description: `${form.name} will become available in the marketplace catalogue.`, confirmLabel: 'Create category' })) create.mutate(form)
+    if (
+      await confirm({
+        title: 'Create this category?',
+        description: `${form.name} will become available in the marketplace catalogue.`,
+        confirmLabel: 'Create category',
+      })
+    )
+      create.mutate(form)
   }
 
   const inputClass =
@@ -79,7 +86,7 @@ export function AdminCategoriesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
         <form
           className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl lg:col-span-2"
-          onSubmit={submit}
+          onSubmit={(event) => void submit(event)}
         >
           <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10">
             Add category
@@ -211,14 +218,35 @@ export function AdminCategoriesPage() {
                   <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       className="px-3 py-1.5 text-xs font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-                      onClick={async () => { if (await confirm({ title: `${category.isActive ? 'Hide' : 'Show'} ${category.name}?`, description: 'This changes whether the category is visible to shoppers.', confirmLabel: category.isActive ? 'Hide category' : 'Show category' })) toggle.mutate({ id: category.id, isActive: !category.isActive }) }}
+                      onClick={async () => {
+                        if (
+                          await confirm({
+                            title: `${category.isActive ? 'Hide' : 'Show'} ${category.name}?`,
+                            description:
+                              'This changes whether the category is visible to shoppers.',
+                            confirmLabel: category.isActive ? 'Hide category' : 'Show category',
+                          })
+                        )
+                          toggle.mutate({ id: category.id, isActive: !category.isActive })
+                      }}
                       disabled={toggle.isPending}
                     >
                       {category.isActive ? 'Hide' : 'Show'}
                     </button>
                     <button
                       className="px-3 py-1.5 text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-all"
-                      onClick={async () => { if (await confirm({ title: `Delete ${category.name}?`, description: 'This permanently removes the category and may affect products using it.', confirmLabel: 'Delete category', tone: 'danger' })) remove.mutate(category.id) }}
+                      onClick={async () => {
+                        if (
+                          await confirm({
+                            title: `Delete ${category.name}?`,
+                            description:
+                              'This permanently removes the category and may affect products using it.',
+                            confirmLabel: 'Delete category',
+                            tone: 'danger',
+                          })
+                        )
+                          remove.mutate(category.id)
+                      }}
                       disabled={remove.isPending}
                     >
                       Delete

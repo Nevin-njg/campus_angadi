@@ -4,11 +4,14 @@ import { useState, type FormEvent } from 'react'
 import { adminPlatformApi } from '../api/admin-platform.api'
 import { BellIcon, SendIcon, AlertTriangleIcon } from '../../../components/ui/icons'
 import { notificationsApi } from '../../notifications/api/notifications.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 export function AdminNotificationsPage() {
   const queryClient = useQueryClient()
   const confirm = useConfirmation()
+  const user = useAuthStore((state) => state.user)!
   const [form, setForm] = useState<SendNotificationInput>({
     audience: 'ALL',
     type: 'SYSTEM',
@@ -20,19 +23,19 @@ export function AdminNotificationsPage() {
   const [msg, setMsg] = useState('')
 
   const inbox = useQuery({
-    queryKey: ['notifications', 'admin-inbox'],
+    queryKey: queryKeys.notifications.adminInbox(user.id),
     queryFn: () => notificationsApi.list({ page: 1, limit: 20 }),
   })
   const markRead = useMutation({
     mutationFn: notificationsApi.read,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all(user.id) })
     },
   })
   const markAllRead = useMutation({
     mutationFn: notificationsApi.readAll,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all(user.id) })
     },
   })
 
@@ -45,7 +48,14 @@ export function AdminNotificationsPage() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setMsg('')
-    if (await confirm({ title: 'Send this notification?', description: `This announcement will be sent to the selected ${(form.audience ?? 'ALL').toLowerCase().replace('_', ' ')} audience.`, confirmLabel: 'Send notification' })) m.mutate(form)
+    if (
+      await confirm({
+        title: 'Send this notification?',
+        description: `This announcement will be sent to the selected ${(form.audience ?? 'ALL').toLowerCase().replace('_', ' ')} audience.`,
+        confirmLabel: 'Send notification',
+      })
+    )
+      m.mutate(form)
   }
 
   const inputClass =
@@ -114,7 +124,7 @@ export function AdminNotificationsPage() {
 
       <form
         className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl relative overflow-hidden"
-        onSubmit={submit}
+        onSubmit={(event) => void submit(event)}
       >
         <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
           <BellIcon className="w-48 h-48" />

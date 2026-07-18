@@ -10,8 +10,7 @@ function mapUser(document: Record<string, unknown>): UserRecord {
     role: document.role as UserRecord['role'],
     status: document.status as UserRecord['status'],
     canSell: Boolean(document.canSell),
-    canMediateOrders:
-      Boolean(document.canMediateOrders) || document.role === 'MODERATOR',
+    canMediateOrders: Boolean(document.canMediateOrders) || document.role === 'MODERATOR',
     profileCompleted: Boolean(document.profileCompleted),
     createdAt: document.createdAt as Date,
     updatedAt: document.updatedAt as Date,

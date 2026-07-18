@@ -5,6 +5,7 @@ import {
   adminOrderListQuerySchema,
   assignOrderDealerInputSchema,
   assignOrderModeratorInputSchema,
+  buyNowInputSchema,
   cancelOrderInputSchema,
   checkoutInputSchema,
   orderListQuerySchema,
@@ -12,6 +13,7 @@ import {
   type AdminOrderListQuery,
   type AssignOrderDealerInput,
   type AssignOrderModeratorInput,
+  type BuyNowInput,
   type CancelOrderInput,
   type CheckoutInput,
   type OrderListQuery,
@@ -54,6 +56,15 @@ export function createOrderRouter(
     asyncHandler(async (request, response) => {
       const data = await service.checkout(request.auth!.user.id, request.body as CheckoutInput)
       response.status(201).json({ success: true, message: 'Orders created successfully.', data })
+    }),
+  )
+  router.post(
+    '/buy-now',
+    checkoutLimiter,
+    validateBody(buyNowInputSchema),
+    asyncHandler(async (request, response) => {
+      const data = await service.buyNow(request.auth!.user.id, request.body as BuyNowInput)
+      response.status(201).json({ success: true, message: 'Order created successfully.', data })
     }),
   )
   router.get(

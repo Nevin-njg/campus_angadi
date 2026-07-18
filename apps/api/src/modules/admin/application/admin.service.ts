@@ -79,7 +79,8 @@ export class AdminService {
     if (existing?.role === 'SUPER_ADMIN') role = 'SUPER_ADMIN'
     else if (existing?.role === 'ADMIN') role = 'ADMIN'
     const value = await this.repo.enrollMediator(email, role)
-    if (!value) throw new AppError(500, 'MEDIATOR_ENROLLMENT_FAILED', 'Could not add mediator access.')
+    if (!value)
+      throw new AppError(500, 'MEDIATOR_ENROLLMENT_FAILED', 'Could not add mediator access.')
     await this.notifications.sendToUser(value.id, {
       type: 'ACCOUNT',
       title: 'Mediator access enabled',

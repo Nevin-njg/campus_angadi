@@ -6,6 +6,7 @@ import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { cartApi } from '../../cart/api/cart.api'
 import { catalogApi } from '../api/catalog.api'
+import { queryKeys } from '../../../lib/query-keys'
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -23,14 +24,14 @@ export function ProductDetailsPage() {
   const navigate = useNavigate()
   const client = useQueryClient()
   const query = useQuery({
-    queryKey: ['product', slug],
+    queryKey: queryKeys.product(slug),
     queryFn: () => catalogApi.product(slug),
     enabled: Boolean(slug),
   })
   const add = useMutation({
     mutationFn: ({ productId }: { productId: string }) => cartApi.add({ productId, quantity }),
     onSuccess(data) {
-      client.setQueryData(['cart'], data)
+      client.setQueryData(queryKeys.cart(user!.id), data)
     },
   })
   if (query.isLoading)
@@ -63,6 +64,14 @@ export function ProductDetailsPage() {
       return
     }
     add.mutate({ productId: product.id })
+  }
+  function buyNow() {
+    const checkoutPath = `/checkout?buyNow=${encodeURIComponent(product.slug)}&quantity=${quantity}`
+    if (!user) {
+      void navigate(`/login?returnTo=${encodeURIComponent(checkoutPath)}`)
+      return
+    }
+    void navigate(checkoutPath)
   }
   return (
     <section className="section">
@@ -157,6 +166,9 @@ export function ProductDetailsPage() {
             <button className="button button-primary" disabled={add.isPending} onClick={addToCart}>
               <CartIcon />
               {add.isPending ? 'Adding…' : 'Add to cart'}
+            </button>
+            <button className="button button-outline" disabled={product.stock < 1} onClick={buyNow}>
+              Buy now
             </button>
           </div>
           {add.isSuccess ? (

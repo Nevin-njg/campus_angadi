@@ -7,7 +7,7 @@ import { ordersApi } from '../../orders/api/orders.api'
 import { dealersApi } from '../api/dealers.api'
 import { OrderStatusBadge } from '../../orders/components/OrderStatusBadge'
 import { useAuthStore } from '../../auth/store/use-auth-store'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const nextStatuses: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
@@ -366,7 +366,15 @@ export function AdminOrderDetailPage() {
                     className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!dealerId || assign.isPending}
                     onClick={async () => {
-                      if (await confirm({ title: 'Assign this dealer?', description: 'The selected assignment profile will take responsibility for this order.', confirmLabel: 'Assign dealer' })) assign.mutate('MANUAL')
+                      if (
+                        await confirm({
+                          title: 'Assign this dealer?',
+                          description:
+                            'The selected assignment profile will take responsibility for this order.',
+                          confirmLabel: 'Assign dealer',
+                        })
+                      )
+                        assign.mutate('MANUAL')
                     }}
                   >
                     Assign selected
@@ -375,7 +383,15 @@ export function AdminOrderDetailPage() {
                     className="flex-1 px-4 py-2 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={assign.isPending}
                     onClick={async () => {
-                      if (await confirm({ title: 'Auto-assign this order?', description: 'Campus Angadi will select an available dealer using current workload and shift capacity.', confirmLabel: 'Auto-assign' })) assign.mutate('AUTO')
+                      if (
+                        await confirm({
+                          title: 'Auto-assign this order?',
+                          description:
+                            'Campus Angadi will select an available dealer using current workload and shift capacity.',
+                          confirmLabel: 'Auto-assign',
+                        })
+                      )
+                        assign.mutate('AUTO')
                     }}
                   >
                     Auto assign
@@ -428,7 +444,17 @@ export function AdminOrderDetailPage() {
                   className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   disabled={!status || update.isPending}
                   onClick={async () => {
-                    if (await confirm({ title: `Move order to ${status.replaceAll('_', ' ')}?`, description: 'The buyer will see this status change and it will be recorded in order history.', confirmLabel: 'Update status', tone: status === 'CANCELLED' || status === 'REJECTED' ? 'danger' : 'default' })) update.mutate()
+                    if (
+                      await confirm({
+                        title: `Move order to ${status.replaceAll('_', ' ')}?`,
+                        description:
+                          'The buyer will see this status change and it will be recorded in order history.',
+                        confirmLabel: 'Update status',
+                        tone:
+                          status === 'CANCELLED' || status === 'REJECTED' ? 'danger' : 'default',
+                      })
+                    )
+                      update.mutate()
                   }}
                 >
                   {update.isPending ? 'Updating…' : 'Save status update'}

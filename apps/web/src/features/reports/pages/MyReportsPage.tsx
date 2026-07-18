@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useState, type FormEvent } from 'react'
 import { reportsApi } from '../api/reports.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 export function MyReportsPage() {
   const [params] = useSearchParams()
   const c = useQueryClient()
@@ -31,7 +31,15 @@ export function MyReportsPage() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setMsg('')
-    if (await confirm({ title: 'Submit this safety report?', description: 'Campus Angadi administrators will receive the report and its description for review.', confirmLabel: 'Submit report' })) m.mutate(form)
+    if (
+      await confirm({
+        title: 'Submit this safety report?',
+        description:
+          'Campus Angadi administrators will receive the report and its description for review.',
+        confirmLabel: 'Submit report',
+      })
+    )
+      m.mutate(form)
   }
   return (
     <section>
@@ -42,7 +50,10 @@ export function MyReportsPage() {
           <p>Report a product or seller and track the review outcome.</p>
         </div>
       </div>
-      <form className="admin-card admin-form report-submit" onSubmit={submit}>
+      <form
+        className="admin-card admin-form report-submit"
+        onSubmit={(event) => void submit(event)}
+      >
         <label>
           Target type
           <select

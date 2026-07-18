@@ -31,6 +31,10 @@
 - [ ] listing approval/rejection/change request creates the correct notification
 - [ ] two buyers cannot purchase the same final unit
 - [ ] multi-seller checkout creates correctly grouped orders
+- [ ] Buy Now creates only the selected product order and preserves the existing cart
+- [ ] profile completion updates immediately and unlocks listing creation
+- [ ] cart and notification caches stay isolated when switching accounts
+- [ ] notification references open the correct buyer or staff screen
 - [ ] dealer capacity and least-load assignment work under concurrent checkout
 - [ ] no available dealer preserves the order in the waiting state
 - [ ] Buyer-to-team chat, voice notes and audio-call signaling work

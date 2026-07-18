@@ -3,6 +3,7 @@ import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
+  BuyNowInput,
   CancelOrderInput,
   CheckoutInput,
   CheckoutResult,
@@ -49,21 +50,35 @@ export class OrderService {
   async checkout(buyerId: string, input: CheckoutInput): Promise<CheckoutResult> {
     const cart = await this.carts.findOrCreate(buyerId)
     if (!cart.items.length) throw new AppError(409, 'CART_EMPTY', 'Your cart is empty.')
-    const products = await this.catalog.findProducts(cart.items.map((item) => item.productId))
+    return this.createCheckout(buyerId, input, cart.items, cart.id)
+  }
+
+  async buyNow(buyerId: string, input: BuyNowInput): Promise<CheckoutResult> {
+    const { productId, quantity, ...checkoutInput } = input
+    return this.createCheckout(buyerId, checkoutInput, [{ productId, quantity }], null)
+  }
+
+  private async createCheckout(
+    buyerId: string,
+    input: CheckoutInput,
+    selectedItems: Array<{ productId: string; quantity: number }>,
+    cartIdToClear: string | null,
+  ): Promise<CheckoutResult> {
+    const products = await this.catalog.findProducts(selectedItems.map((item) => item.productId))
     const productById = new Map(products.map((product) => [product.summary.id, product]))
     const groups = new Map<string, CheckoutPlanGroup>()
 
-    for (const cartItem of cart.items) {
-      const product = productById.get(cartItem.productId)
+    for (const selectedItem of selectedItems) {
+      const product = productById.get(selectedItem.productId)
       if (!product) {
-        throw new AppError(409, 'PRODUCT_NOT_AVAILABLE', 'A product in your cart is unavailable.')
+        throw new AppError(409, 'PRODUCT_NOT_AVAILABLE', 'The selected product is unavailable.')
       }
       if (
         product.summary.status !== 'APPROVED' ||
         !product.summary.published ||
         !product.categoryActive ||
         !product.sellerActive ||
-        product.summary.stock < cartItem.quantity
+        product.summary.stock < selectedItem.quantity
       ) {
         throw new AppError(
           409,
@@ -75,7 +90,7 @@ export class OrderService {
         throw new AppError(
           409,
           'OWN_PRODUCT_NOT_PURCHASABLE',
-          'Remove your own listing from the cart before checkout.',
+          'You cannot purchase your own listing.',
         )
       }
       const groupKey = product.summary.sellerType === 'ADMIN' ? 'ADMIN' : product.sellerId
@@ -84,7 +99,7 @@ export class OrderService {
         sellerId: product.summary.sellerType === 'ADMIN' ? null : product.sellerId,
         items: [],
       }
-      group.items.push({ product, quantity: cartItem.quantity })
+      group.items.push({ product, quantity: selectedItem.quantity })
       groups.set(groupKey, group)
     }
 
@@ -93,7 +108,7 @@ export class OrderService {
       input,
       randomUUID(),
       [...groups.values()],
-      cart,
+      cartIdToClear,
     )
     await this.notifications?.sendToUser(buyerId, {
       type: 'ORDER',

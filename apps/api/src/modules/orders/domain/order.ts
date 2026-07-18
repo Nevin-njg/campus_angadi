@@ -9,7 +9,7 @@ import type {
   OrderStatus,
   PaginatedResult,
 } from '@campusbaza/contracts'
-import type { CartRecord, CheckoutProduct } from '../../cart/domain/cart.js'
+import type { CheckoutProduct } from '../../cart/domain/cart.js'
 
 export interface CheckoutPlanItem {
   product: CheckoutProduct
@@ -28,7 +28,7 @@ export interface OrderRepository {
     input: CheckoutInput,
     checkoutGroupId: string,
     groups: CheckoutPlanGroup[],
-    cart: CartRecord,
+    cartIdToClear: string | null,
   ): Promise<CheckoutResult>
   listOwned(buyerId: string, query: OrderListQuery): Promise<PaginatedResult<OrderDetail>>
   findOwnedById(orderId: string, buyerId: string): Promise<OrderDetail | null>

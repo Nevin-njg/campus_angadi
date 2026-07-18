@@ -1,7 +1,7 @@
-import { Link, Outlet } from "react-router-dom";
-import { Navbar } from "../components/layout/Navbar";
-import { BrandLogo } from "../components/layout/BrandLogo";
-import { SkipLink } from "../components/accessibility/SkipLink";
+import { Link, Outlet } from 'react-router-dom'
+import { Navbar } from '../components/layout/Navbar'
+import { BrandLogo } from '../components/layout/BrandLogo'
+import { SkipLink } from '../components/accessibility/SkipLink'
 
 export function PublicLayout() {
   return (
@@ -15,10 +15,7 @@ export function PublicLayout() {
         <div className="container footer-grid">
           <div>
             <BrandLogo />
-            <p>
-              A trusted official and peer-to-peer marketplace for your campus
-              community.
-            </p>
+            <p>A trusted official and peer-to-peer marketplace for your campus community.</p>
           </div>
           <div>
             <strong>Marketplace</strong>
@@ -32,10 +29,9 @@ export function PublicLayout() {
           </div>
         </div>
         <div className="container footer-bottom">
-          © {new Date().getFullYear()} Campus Angadi. Built for campus
-          communities.
+          © {new Date().getFullYear()} Campus Angadi. Built for campus communities.
         </div>
       </footer>
     </div>
-  );
+  )
 }

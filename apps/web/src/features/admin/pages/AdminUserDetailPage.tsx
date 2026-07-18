@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { adminPlatformApi } from '../api/admin-platform.api'
 import { useAuthStore } from '../../auth/store/use-auth-store'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 export function AdminUserDetailPage() {
   const { id = '' } = useParams()
@@ -44,7 +44,14 @@ export function AdminUserDetailPage() {
     )
 
   const update = async (x: Omit<UpdateAdminUserInput, 'reason'>, label: string) => {
-    if (await confirm({ title: `Confirm ${label}?`, description: `${label} for ${u.email}. The user will be notified with your stated reason.`, confirmLabel: 'Apply change', tone: x.status === 'BLOCKED' || x.status === 'DELETED' ? 'danger' : 'default' }))
+    if (
+      await confirm({
+        title: `Confirm ${label}?`,
+        description: `${label} for ${u.email}. The user will be notified with your stated reason.`,
+        confirmLabel: 'Apply change',
+        tone: x.status === 'BLOCKED' || x.status === 'DELETED' ? 'danger' : 'default',
+      })
+    )
       m.mutate({ ...x, reason })
   }
 
@@ -155,7 +162,12 @@ export function AdminUserDetailPage() {
             <select
               className={`${inputClass} appearance-none`}
               value={u.status}
-              onChange={(e) => void update({ status: e.target.value as UpdateAdminUserInput['status'] }, `change account status to ${e.target.value}`)}
+              onChange={(e) =>
+                void update(
+                  { status: e.target.value as UpdateAdminUserInput['status'] },
+                  `change account status to ${e.target.value}`,
+                )
+              }
             >
               <option value="ACTIVE">Active - Normal usage</option>
               <option value="BLOCKED">Blocked - Cannot log in</option>
@@ -168,7 +180,12 @@ export function AdminUserDetailPage() {
             <select
               className={`${inputClass} appearance-none`}
               value={String(u.canSell)}
-              onChange={(e) => void update({ canSell: e.target.value === 'true' }, e.target.value === 'true' ? 'allow selling' : 'suspend selling')}
+              onChange={(e) =>
+                void update(
+                  { canSell: e.target.value === 'true' },
+                  e.target.value === 'true' ? 'allow selling' : 'suspend selling',
+                )
+              }
             >
               <option value="true">Allowed to list items</option>
               <option value="false">Suspended from selling</option>
@@ -181,7 +198,12 @@ export function AdminUserDetailPage() {
               className={`${inputClass} appearance-none disabled:cursor-not-allowed disabled:opacity-50`}
               disabled={!canManageRoles}
               value={u.role}
-              onChange={(e) => void update({ role: e.target.value as UpdateAdminUserInput['role'] }, `change role to ${e.target.value}`)}
+              onChange={(e) =>
+                void update(
+                  { role: e.target.value as UpdateAdminUserInput['role'] },
+                  `change role to ${e.target.value}`,
+                )
+              }
             >
               <option value="USER">Standard User</option>
               <option value="MODERATOR">Moderator — Assigned conversations only</option>
@@ -197,11 +219,23 @@ export function AdminUserDetailPage() {
 
           <label className={labelClass}>
             Mediator workspace
-            <select className={`${inputClass} appearance-none disabled:cursor-not-allowed disabled:opacity-50`} disabled={!canManageRoles} value={String(u.canMediateOrders)} onChange={(e) => void update({ canMediateOrders: e.target.value === 'true' }, e.target.value === 'true' ? 'enable mediator access' : 'remove mediator access')}>
+            <select
+              className={`${inputClass} appearance-none disabled:cursor-not-allowed disabled:opacity-50`}
+              disabled={!canManageRoles}
+              value={String(u.canMediateOrders)}
+              onChange={(e) =>
+                void update(
+                  { canMediateOrders: e.target.value === 'true' },
+                  e.target.value === 'true' ? 'enable mediator access' : 'remove mediator access',
+                )
+              }
+            >
               <option value="true">Enabled — can handle buyer conversations</option>
               <option value="false">Not enabled</option>
             </select>
-            <span className="mt-2 block text-xs font-normal text-gray-500">Admin and super-admin roles remain unchanged when mediator access is enabled.</span>
+            <span className="mt-2 block text-xs font-normal text-gray-500">
+              Admin and super-admin roles remain unchanged when mediator access is enabled.
+            </span>
           </label>
 
           <label className={labelClass}>
@@ -213,7 +247,13 @@ export function AdminUserDetailPage() {
               placeholder="Notes only visible to administrators..."
             />
           </label>
-          <button className="button button-outline" disabled={notes === (u.internalNotes ?? '') || m.isPending} onClick={() => void update({ internalNotes: notes || null }, 'save internal notes')}>Save internal notes</button>
+          <button
+            className="button button-outline"
+            disabled={notes === (u.internalNotes ?? '') || m.isPending}
+            onClick={() => void update({ internalNotes: notes || null }, 'save internal notes')}
+          >
+            Save internal notes
+          </button>
 
           {m.error ? (
             <div className="mt-4 text-red-400 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm">

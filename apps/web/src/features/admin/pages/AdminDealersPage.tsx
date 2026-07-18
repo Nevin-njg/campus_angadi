@@ -2,7 +2,7 @@ import type { CreateDealerInput, Dealer, EnrollMediatorInput } from '@campusbaza
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { MessageIcon, TrashIcon } from '../../../components/ui/icons'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { adminPlatformApi } from '../api/admin-platform.api'
 import { dealersApi } from '../api/dealers.api'
@@ -30,7 +30,9 @@ export function AdminDealersPage() {
   const [editing, setEditing] = useState<Dealer | null>(null)
   const [form, setForm] = useState<CreateDealerInput>(defaultForm)
   const [accessForm, setAccessForm] = useState<EnrollMediatorInput>({
-    email: '', access: 'MEDIATOR', reason: 'Added to the Campus Angadi order support team.',
+    email: '',
+    access: 'MEDIATOR',
+    reason: 'Added to the Campus Angadi order support team.',
   })
 
   const dealers = useQuery({
@@ -39,7 +41,8 @@ export function AdminDealersPage() {
   })
   const mediatorAccounts = useQuery({
     queryKey: ['mediator-accounts'],
-    queryFn: () => adminPlatformApi.users({ canMediateOrders: true, status: 'ACTIVE', page: 1, limit: 100 }),
+    queryFn: () =>
+      adminPlatformApi.users({ canMediateOrders: true, status: 'ACTIVE', page: 1, limit: 100 }),
   })
   const enroll = useMutation({
     mutationFn: (input: EnrollMediatorInput) => adminPlatformApi.enrollMediator(input),
@@ -87,7 +90,9 @@ export function AdminDealersPage() {
           <span className="text-amber-400 font-bold tracking-wider text-xs uppercase mb-2 block">
             Mediated order support
           </span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">Order mediators</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
+            Order mediators
+          </h1>
           <p className="text-gray-400 text-lg">
             Manage the team members who handle buyer chats, calls and order coordination.
           </p>
@@ -97,26 +102,73 @@ export function AdminDealersPage() {
       <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl space-y-5">
         <div>
           <h2 className="text-xl font-bold text-white">Login-enabled mediator accounts</h2>
-          <p className="text-gray-400 mt-1">Add an email before their first sign-in. They can use the normal email OTP login and will then see the mediator inbox.</p>
+          <p className="text-gray-400 mt-1">
+            Add an email before their first sign-in. They can use the normal email OTP login and
+            will then see the mediator inbox.
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 items-end">
-          <label className={labelClass}>Email address
-            <input className={inputClass} type="email" placeholder="team@nitc.ac.in" value={accessForm.email} onChange={(event) => setAccessForm({ ...accessForm, email: event.target.value })} />
+          <label className={labelClass}>
+            Email address
+            <input
+              className={inputClass}
+              type="email"
+              placeholder="team@nitc.ac.in"
+              value={accessForm.email}
+              onChange={(event) => setAccessForm({ ...accessForm, email: event.target.value })}
+            />
           </label>
-          <label className={labelClass}>Access
-            <select className={inputClass} value={accessForm.access} onChange={(event) => setAccessForm({ ...accessForm, access: event.target.value as EnrollMediatorInput['access'] })}>
+          <label className={labelClass}>
+            Access
+            <select
+              className={inputClass}
+              value={accessForm.access}
+              onChange={(event) =>
+                setAccessForm({
+                  ...accessForm,
+                  access: event.target.value as EnrollMediatorInput['access'],
+                })
+              }
+            >
               <option value="MEDIATOR">Mediator only</option>
-              {actor?.role === 'SUPER_ADMIN' ? <option value="ADMIN_MEDIATOR">Admin + mediator</option> : null}
+              {actor?.role === 'SUPER_ADMIN' ? (
+                <option value="ADMIN_MEDIATOR">Admin + mediator</option>
+              ) : null}
             </select>
           </label>
-          <button className="button button-primary mb-4" disabled={enroll.isPending || !accessForm.email} onClick={async () => {
-            if (await confirm({ title: 'Enable mediator login?', description: `${accessForm.email} will be able to sign in and access buyer order conversations.`, confirmLabel: 'Enable access' })) enroll.mutate(accessForm)
-          }}>{enroll.isPending ? 'Adding…' : 'Add email'}</button>
+          <button
+            className="button button-primary mb-4"
+            disabled={enroll.isPending || !accessForm.email}
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: 'Enable mediator login?',
+                  description: `${accessForm.email} will be able to sign in and access buyer order conversations.`,
+                  confirmLabel: 'Enable access',
+                })
+              )
+                enroll.mutate(accessForm)
+            }}
+          >
+            {enroll.isPending ? 'Adding…' : 'Add email'}
+          </button>
         </div>
         {enroll.isError ? <p className="text-red-400">{enroll.error.message}</p> : null}
         <div className="flex flex-wrap gap-2">
-          {mediatorAccounts.data?.items.map((account) => <span key={account.id} className="px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-sm text-gray-300"><strong className="text-white">{account.email}</strong> · {account.role === 'MODERATOR' ? 'Mediator' : `${account.role.replace('_', ' ')} + mediator`}</span>)}
-          {!mediatorAccounts.isLoading && !mediatorAccounts.data?.items.length ? <span className="text-gray-500">No login-enabled mediators yet.</span> : null}
+          {mediatorAccounts.data?.items.map((account) => (
+            <span
+              key={account.id}
+              className="px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-sm text-gray-300"
+            >
+              <strong className="text-white">{account.email}</strong> ·{' '}
+              {account.role === 'MODERATOR'
+                ? 'Mediator'
+                : `${account.role.replace('_', ' ')} + mediator`}
+            </span>
+          ))}
+          {!mediatorAccounts.isLoading && !mediatorAccounts.data?.items.length ? (
+            <span className="text-gray-500">No login-enabled mediators yet.</span>
+          ) : null}
         </div>
       </section>
 
@@ -133,7 +185,9 @@ export function AdminDealersPage() {
               required
               value={form.mediatorUserId}
               onChange={(event) => {
-                const account = mediatorAccounts.data?.items.find((item) => item.id === event.target.value)
+                const account = mediatorAccounts.data?.items.find(
+                  (item) => item.id === event.target.value,
+                )
                 setForm({
                   ...form,
                   mediatorUserId: event.target.value,
@@ -144,11 +198,16 @@ export function AdminDealersPage() {
               <option value="">Select a mediator email</option>
               {mediatorAccounts.data?.items.map((account) => (
                 <option key={account.id} value={account.id}>
-                  {account.email} · {account.role === 'MODERATOR' ? 'Mediator' : `${account.role.replace('_', ' ')} + mediator`}
+                  {account.email} ·{' '}
+                  {account.role === 'MODERATOR'
+                    ? 'Mediator'
+                    : `${account.role.replace('_', ' ')} + mediator`}
                 </option>
               ))}
             </select>
-            <span className="mt-2 block text-xs font-normal text-gray-500">Only login-enabled mediators can receive dealer assignments and buyer messages.</span>
+            <span className="mt-2 block text-xs font-normal text-gray-500">
+              Only login-enabled mediators can receive dealer assignments and buyer messages.
+            </span>
           </label>
 
           <label className={labelClass}>
@@ -242,9 +301,18 @@ export function AdminDealersPage() {
             <button
               type="button"
               className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={save.isPending || !form.mediatorUserId || !form.displayName || !form.phoneNumber}
+              disabled={
+                save.isPending || !form.mediatorUserId || !form.displayName || !form.phoneNumber
+              }
               onClick={async () => {
-                if (await confirm({ title: editing ? 'Update assignment profile?' : 'Create assignment profile?', description: 'This changes how orders are routed to the support team.', confirmLabel: editing ? 'Update profile' : 'Create profile' })) save.mutate()
+                if (
+                  await confirm({
+                    title: editing ? 'Update assignment profile?' : 'Create assignment profile?',
+                    description: 'This changes how orders are routed to the support team.',
+                    confirmLabel: editing ? 'Update profile' : 'Create profile',
+                  })
+                )
+                  save.mutate()
               }}
             >
               {save.isPending ? 'Saving…' : editing ? 'Update dealer' : 'Add dealer'}
@@ -306,7 +374,9 @@ export function AdminDealersPage() {
                             {dealer.displayName}
                           </strong>
                           <span className="text-gray-400 text-sm block">{dealer.phoneNumber}</span>
-                          <span className={`text-xs block mt-1 ${dealer.mediatorEmail ? 'text-amber-400' : 'text-red-400'}`}>
+                          <span
+                            className={`text-xs block mt-1 ${dealer.mediatorEmail ? 'text-amber-400' : 'text-red-400'}`}
+                          >
                             {dealer.mediatorEmail ?? 'No mediator login linked'}
                           </span>
                         </div>
@@ -362,7 +432,16 @@ export function AdminDealersPage() {
                       }
                       disabled={remove.isPending || dealer.currentOpenOrders > 0}
                       onClick={async () => {
-                        if (await confirm({ title: `Remove ${dealer.displayName}?`, description: 'This assignment profile will no longer receive new orders.', confirmLabel: 'Remove profile', tone: 'danger' })) remove.mutate(dealer.id)
+                        if (
+                          await confirm({
+                            title: `Remove ${dealer.displayName}?`,
+                            description:
+                              'This assignment profile will no longer receive new orders.',
+                            confirmLabel: 'Remove profile',
+                            tone: 'danger',
+                          })
+                        )
+                          remove.mutate(dealer.id)
                       }}
                     >
                       <TrashIcon />

@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { PackageIcon } from '../../../components/ui/icons'
 import { ordersApi } from '../api/orders.api'
 import { OrderStatusBadge } from '../components/OrderStatusBadge'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -17,8 +19,9 @@ export function MyOrdersPage() {
   const [params, setParams] = useSearchParams()
   const status = (params.get('status') || undefined) as OrderStatus | undefined
   const page = Number(params.get('page') || 1)
+  const user = useAuthStore((state) => state.user)!
   const orders = useQuery({
-    queryKey: ['orders', status, page],
+    queryKey: queryKeys.orders.list(user.id, status, page),
     queryFn: () => ordersApi.mine({ status, page, limit: 10 }),
   })
   const created = params.get('created')

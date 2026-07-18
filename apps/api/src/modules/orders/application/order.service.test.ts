@@ -99,14 +99,17 @@ function order(status: OrderStatus = 'PENDING'): OrderDetail {
 
 class OrderFake implements OrderRepository {
   groups: CheckoutPlanGroup[] = []
+  cartIdToClear: string | null | undefined
   current = order()
   async createCheckout(
     _buyerId: string,
     _input: CheckoutInput,
     checkoutGroupId: string,
     groups: CheckoutPlanGroup[],
+    cartIdToClear: string | null,
   ): Promise<CheckoutResult> {
     this.groups = groups
+    this.cartIdToClear = cartIdToClear
     return { checkoutGroupId, orders: [this.current] }
   }
   async listOwned(): Promise<PaginatedResult<OrderDetail>> {
@@ -164,6 +167,27 @@ describe('OrderService', () => {
     await new OrderService(orders, cart, new CatalogFake(products)).checkout('buyer', checkoutInput)
     expect(orders.groups).toHaveLength(3)
     expect(orders.groups.find((group) => group.sellerType === 'ADMIN')?.items).toHaveLength(2)
+    expect(orders.cartIdToClear).toBe('cart')
+  })
+
+  it('creates a direct order without clearing the existing cart', async () => {
+    const selected = product('official-1', 'admin-a', 'ADMIN')
+    const cart = new CartFake({
+      id: 'existing-cart',
+      userId: 'buyer',
+      updatedAt: new Date(),
+      items: [{ productId: 'another-product', quantity: 1, priceAtAddition: 100 }],
+    })
+    const orders = new OrderFake()
+    const result = await new OrderService(orders, cart, new CatalogFake([selected])).buyNow(
+      'buyer',
+      { ...checkoutInput, productId: selected.summary.id, quantity: 2 },
+    )
+
+    expect(result.orders).toHaveLength(1)
+    expect(orders.groups[0]?.items[0]?.quantity).toBe(2)
+    expect(orders.cartIdToClear).toBeNull()
+    expect(cart.record.items).toHaveLength(1)
   })
 
   it('rejects checkout when a product has become unavailable', async () => {

@@ -10,7 +10,7 @@ import {
   RefreshCwIcon,
   TrashIcon,
 } from '../../../components/ui/icons'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 function count(result: {
   staleUploads: number
@@ -82,7 +82,16 @@ export function AdminOperationsPage() {
           className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           disabled={cleanup.isPending || value.cleanupRunning || !value.cleanupEnabled}
           onClick={async () => {
-            if (await confirm({ title: 'Run production cleanup?', description: 'This permanently removes expired operational records according to the retention policy.', confirmLabel: 'Run cleanup', tone: 'danger' })) cleanup.mutate()
+            if (
+              await confirm({
+                title: 'Run production cleanup?',
+                description:
+                  'This permanently removes expired operational records according to the retention policy.',
+                confirmLabel: 'Run cleanup',
+                tone: 'danger',
+              })
+            )
+              cleanup.mutate()
           }}
         >
           {cleanup.isPending ? (

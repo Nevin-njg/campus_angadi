@@ -55,7 +55,9 @@ export function AdminOrdersPage() {
           </h1>
           <p className="text-gray-400 text-lg">
             {moderatorView || mediatorPage
-              ? moderatorView ? 'Open the buyer conversations assigned to you.' : 'Manage buyer conversations and coordinate every active order.'
+              ? moderatorView
+                ? 'Open the buyer conversations assigned to you.'
+                : 'Manage buyer conversations and coordinate every active order.'
               : 'Manage and monitor marketplace transactions.'}
           </p>
         </div>

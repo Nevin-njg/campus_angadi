@@ -3,7 +3,7 @@ import { Navbar } from '../components/layout/Navbar'
 import { LogOutIcon, MessageIcon, PackageIcon, UserIcon } from '../components/ui/icons'
 import { useAuthStore } from '../features/auth/store/use-auth-store'
 import { SkipLink } from '../components/accessibility/SkipLink'
-import { useConfirmation } from '../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../components/feedback/confirmation-context'
 
 export function AccountLayout() {
   const logout = useAuthStore((state) => state.logout)
@@ -31,9 +31,19 @@ export function AccountLayout() {
             <MessageIcon />
             My reports
           </NavLink>
-          <button onClick={async () => {
-            if (await confirm({ title: 'Sign out of Campus Angadi?', description: 'You will need to verify your email again before accessing your account.', confirmLabel: 'Sign out' })) await logout()
-          }}>
+          <button
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: 'Sign out of Campus Angadi?',
+                  description:
+                    'You will need to verify your email again before accessing your account.',
+                  confirmLabel: 'Sign out',
+                })
+              )
+                await logout()
+            }}
+          >
             <LogOutIcon />
             Sign out
           </button>

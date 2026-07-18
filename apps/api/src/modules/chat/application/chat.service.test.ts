@@ -120,16 +120,10 @@ describe('ChatService', () => {
       { $set: { assignedModeratorId, assignedModeratorName: 'Assigned mediator' } },
     )
     const service = new ChatService({} as never, 8_000_000)
-    const request = await service.requestCall(
-      String(order._id),
-      actor(String(buyerId), 'USER'),
-    )
+    const request = await service.requestCall(String(order._id), actor(String(buyerId), 'USER'))
     expect(request.type).toBe('SYSTEM')
     expect(request.text).toContain('requested an audio call')
-    const repeated = await service.requestCall(
-      String(order._id),
-      actor(String(buyerId), 'USER'),
-    )
+    const repeated = await service.requestCall(String(order._id), actor(String(buyerId), 'USER'))
     expect(repeated.id).toBe(request.id)
     await expect(
       service.requestCall(String(order._id), actor(String(assignedModeratorId), 'MODERATOR')),

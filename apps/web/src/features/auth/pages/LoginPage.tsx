@@ -1,59 +1,61 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  requestOtpInputSchema,
-  type RequestOtpInput,
-} from "@campusbaza/contracts";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
-import { BrandLogo } from "../../../components/layout/BrandLogo";
-import { ThemeToggle } from "../../../components/layout/ThemeToggle";
-import { Button } from "../../../components/ui/Button";
-import { FormField } from "../../../components/ui/FormField";
-import { MailIcon, ShieldIcon } from "../../../components/ui/icons";
-import { ApiClientError } from "../../../lib/api-client";
-import { authApi } from "../api/auth.api";
-import { useAuthStore } from "../store/use-auth-store";
-import { useEffect } from "react";
+import { zodResolver } from '@hookform/resolvers/zod'
+import { requestOtpInputSchema, type RequestOtpInput } from '@campusbaza/contracts'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { BrandLogo } from '../../../components/layout/BrandLogo'
+import { ThemeToggle } from '../../../components/layout/ThemeToggle'
+import { Button } from '../../../components/ui/Button'
+import { FormField } from '../../../components/ui/FormField'
+import { MailIcon, ShieldIcon } from '../../../components/ui/icons'
+import { ApiClientError } from '../../../lib/api-client'
+import { authApi } from '../api/auth.api'
+import { useAuthStore } from '../store/use-auth-store'
+import { useEffect } from 'react'
+import { rememberReturnTo } from '../lib/auth-return'
 
 export function LoginPage() {
-  const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const user = useAuthStore((state) => state.user)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
-      void navigate("/", { replace: true });
+      void navigate('/', { replace: true })
     }
-  }, [user, navigate]);
+  }, [user, navigate])
+
+  useEffect(() => {
+    const routeState = location.state as { from?: string } | null
+    rememberReturnTo(searchParams.get('returnTo') ?? routeState?.from)
+  }, [location.state, searchParams])
   const form = useForm<RequestOtpInput>({
     resolver: zodResolver(requestOtpInputSchema),
-    defaultValues: { email: "" },
-  });
+    defaultValues: { email: '' },
+  })
 
   const submit = form.handleSubmit(async (input) => {
-    setServerError(null);
+    setServerError(null)
     try {
-      const result = await authApi.requestOtp(input);
+      const result = await authApi.requestOtp(input)
+      window.sessionStorage.setItem('campusbaza-login-email', input.email.trim().toLowerCase())
       window.sessionStorage.setItem(
-        "campusbaza-login-email",
-        input.email.trim().toLowerCase(),
-      );
-      window.sessionStorage.setItem(
-        "campusbaza-resend-after",
+        'campusbaza-resend-after',
         String(Date.now() + result.resendAfterSeconds * 1000),
-      );
-      void navigate("/verify-otp", {
+      )
+      void navigate('/verify-otp', {
         state: { maskedEmail: result.maskedEmail },
-      });
+      })
     } catch (error) {
       setServerError(
         error instanceof ApiClientError
           ? error.message
-          : "Unable to send a login code. Please try again.",
-      );
+          : 'Unable to send a login code. Please try again.',
+      )
     }
-  });
+  })
 
   return (
     <div className="auth-page">
@@ -75,16 +77,14 @@ export function LoginPage() {
             <em>No password to remember.</em>
           </h1>
           <p>
-            Sign in with an email domain approved by the Campus Angadi team.
-            Access is limited to verified members of your campus community.
+            Sign in with an email domain approved by the Campus Angadi team. Access is limited to
+            verified members of your campus community.
           </p>
           <div className="auth-trust">
             <ShieldIcon />
             <div>
               <strong>Protected by short-lived OTPs</strong>
-              <span>
-                Codes expire, cannot be reused, and have strict attempt limits.
-              </span>
+              <span>Codes expire, cannot be reused, and have strict attempt limits.</span>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export function LoginPage() {
               autoComplete="email"
               placeholder="you@campus.edu"
               error={form.formState.errors.email?.message}
-              {...form.register("email")}
+              {...form.register('email')}
             />
             {serverError ? (
               <div className="form-alert" role="alert">
@@ -118,8 +118,7 @@ export function LoginPage() {
             </Button>
           </form>
           <p className="auth-footnote">
-            No password or social login. Approved domain rules are enforced by
-            the backend.
+            No password or social login. Approved domain rules are enforced by the backend.
           </p>
           <Link className="back-link" to="/">
             ← Return to homepage
@@ -127,5 +126,5 @@ export function LoginPage() {
         </div>
       </main>
     </div>
-  );
+  )
 }

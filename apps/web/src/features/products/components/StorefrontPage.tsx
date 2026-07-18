@@ -1,67 +1,56 @@
-import type {
-  ProductCondition,
-  ProductListQuery,
-  ProductSort,
-} from "@campusbaza/contracts";
-import { useQuery } from "@tanstack/react-query";
-import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import {
-  FilterIcon,
-  PackageIcon,
-  SearchIcon,
-  ShieldIcon,
-} from "../../../components/ui/icons";
-import { catalogApi } from "../api/catalog.api";
-import { ProductGrid, ProductGridSkeleton } from "./ProductGrid";
+import type { ProductCondition, ProductListQuery, ProductSort } from '@campusbaza/contracts'
+import { useQuery } from '@tanstack/react-query'
+import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { FilterIcon, PackageIcon, SearchIcon, ShieldIcon } from '../../../components/ui/icons'
+import { catalogApi } from '../api/catalog.api'
+import { ProductGrid, ProductGridSkeleton } from './ProductGrid'
 
 interface StorefrontPageProps {
-  kind: "official" | "second-hand";
+  kind: 'official' | 'second-hand'
 }
 
 export function StorefrontPage({ kind }: StorefrontPageProps) {
-  const [params, setParams] = useSearchParams();
-  const [search, setSearch] = useState(params.get("q") ?? "");
-  const official = kind === "official";
-  useEffect(() => setSearch(params.get("q") ?? ""), [params]);
+  const [params, setParams] = useSearchParams()
+  const [search, setSearch] = useState(params.get('q') ?? '')
+  const official = kind === 'official'
+  useEffect(() => setSearch(params.get('q') ?? ''), [params])
 
   const query = {
-    q: params.get("q") || undefined,
-    category: params.get("category") || undefined,
-    productType: official ? "NEW" : "SECOND_HAND",
-    sellerType: official ? "ADMIN" : "USER",
+    q: params.get('q') || undefined,
+    category: params.get('category') || undefined,
+    productType: official ? 'NEW' : 'SECOND_HAND',
+    sellerType: official ? 'ADMIN' : 'USER',
     condition: official
       ? undefined
-      : ((params.get("condition") || undefined) as
-          | ProductCondition
-          | undefined),
-    minPrice: Number(params.get("minPrice")) || undefined,
-    maxPrice: Number(params.get("maxPrice")) || undefined,
-    sort: (params.get("sort") || "latest") as ProductSort,
-    page: Number(params.get("page") || 1),
+      : ((params.get('condition') || undefined) as ProductCondition | undefined),
+    minPrice: Number(params.get('minPrice')) || undefined,
+    maxPrice: Number(params.get('maxPrice')) || undefined,
+    sort: (params.get('sort') || 'latest') as ProductSort,
+    page: Number(params.get('page') || 1),
     limit: 12,
-  } satisfies Partial<ProductListQuery>;
+  } satisfies Partial<ProductListQuery>
   const categories = useQuery({
-    queryKey: ["categories"],
+    queryKey: ['categories'],
     queryFn: catalogApi.categories,
-  });
+  })
   const products = useQuery({
-    queryKey: ["products", query],
+    queryKey: ['products', query],
     queryFn: () => catalogApi.products(query),
-  });
+  })
 
   function update(key: string, value?: string) {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    if (key !== "page") next.delete("page");
-    setParams(next);
+    const next = new URLSearchParams(params)
+    if (value) next.set(key, value)
+    else next.delete(key)
+    if (key !== 'page') next.delete('page')
+    setParams(next)
   }
 
   function submitSearch(event: FormEvent) {
-    event.preventDefault();
-    update("q", search.trim() || undefined);
+    event.preventDefault()
+    update('q', search.trim() || undefined)
   }
 
   return (
@@ -71,17 +60,13 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
           <div>
             <span className="storefront-label">
               {official ? <ShieldIcon /> : <PackageIcon />}
-              {official ? "Official Campus Store" : "Community Marketplace"}
+              {official ? 'Official Campus Store' : 'Community Marketplace'}
             </span>
-            <h1>
-              {official
-                ? "Official campus essentials"
-                : "Second-hand campus finds"}
-            </h1>
+            <h1>{official ? 'Official campus essentials' : 'Second-hand campus finds'}</h1>
             <p>
               {official
-                ? "Verified merchandise, supplies and everyday essentials managed by the Campus Angadi team."
-                : "Approved pre-loved books, electronics and hostel essentials from the NITC community."}
+                ? 'Verified merchandise, supplies and everyday essentials managed by the Campus Angadi team.'
+                : 'Approved pre-loved books, electronics and hostel essentials from the NITC community.'}
             </p>
           </div>
           <form className="storefront-search" onSubmit={submitSearch}>
@@ -89,12 +74,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder={
-                official
-                  ? "Search official products"
-                  : "Search second-hand products"
-              }
-              aria-label={`Search ${official ? "official" : "second-hand"} products`}
+              placeholder={official ? 'Search official products' : 'Search second-hand products'}
+              aria-label={`Search ${official ? 'official' : 'second-hand'} products`}
             />
             <button className="button button-primary">Search</button>
           </form>
@@ -111,10 +92,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
             <label>
               Category
               <select
-                value={query.category ?? ""}
-                onChange={(event) =>
-                  update("category", event.target.value || undefined)
-                }
+                value={query.category ?? ''}
+                onChange={(event) => update('category', event.target.value || undefined)}
               >
                 <option value="">All categories</option>
                 {(categories.data ?? []).map((category) => (
@@ -128,10 +107,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
               <label>
                 Condition
                 <select
-                  value={query.condition ?? ""}
-                  onChange={(event) =>
-                    update("condition", event.target.value || undefined)
-                  }
+                  value={query.condition ?? ''}
+                  onChange={(event) => update('condition', event.target.value || undefined)}
                 >
                   <option value="">Any condition</option>
                   <option value="LIKE_NEW">Like new</option>
@@ -148,10 +125,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 type="number"
                 min="0"
                 inputMode="numeric"
-                value={params.get("minPrice") ?? ""}
-                onChange={(event) =>
-                  update("minPrice", event.target.value || undefined)
-                }
+                value={params.get('minPrice') ?? ''}
+                onChange={(event) => update('minPrice', event.target.value || undefined)}
                 placeholder="₹0"
               />
             </label>
@@ -161,10 +136,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 type="number"
                 min="0"
                 inputMode="numeric"
-                value={params.get("maxPrice") ?? ""}
-                onChange={(event) =>
-                  update("maxPrice", event.target.value || undefined)
-                }
+                value={params.get('maxPrice') ?? ''}
+                onChange={(event) => update('maxPrice', event.target.value || undefined)}
                 placeholder="Any price"
               />
             </label>
@@ -172,8 +145,8 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
               type="button"
               className="button button-outline"
               onClick={() => {
-                setSearch("");
-                setParams({});
+                setSearch('')
+                setParams({})
               }}
             >
               Clear filters
@@ -183,15 +156,12 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
           <div className="catalog-results">
             <div className="catalog-toolbar storefront-toolbar">
               <span>
-                <strong>{products.data?.meta.total ?? 0}</strong>{" "}
-                {official ? "products" : "listings"}
+                <strong>{products.data?.meta.total ?? 0}</strong>{' '}
+                {official ? 'products' : 'listings'}
               </span>
               <label>
                 Sort
-                <select
-                  value={query.sort}
-                  onChange={(event) => update("sort", event.target.value)}
-                >
+                <select value={query.sort} onChange={(event) => update('sort', event.target.value)}>
                   <option value="latest">Latest</option>
                   <option value="popular">Popular</option>
                   <option value="price_asc">Price: low to high</option>
@@ -225,7 +195,7 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 <button
                   type="button"
                   disabled={query.page <= 1}
-                  onClick={() => update("page", String(query.page - 1))}
+                  onClick={() => update('page', String(query.page - 1))}
                 >
                   Previous
                 </button>
@@ -235,7 +205,7 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 <button
                   type="button"
                   disabled={query.page >= (products.data?.meta.totalPages ?? 1)}
-                  onClick={() => update("page", String(query.page + 1))}
+                  onClick={() => update('page', String(query.page + 1))}
                 >
                   Next
                 </button>
@@ -245,5 +215,5 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
         </div>
       </section>
     </div>
-  );
+  )
 }

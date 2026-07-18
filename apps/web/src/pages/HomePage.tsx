@@ -1,7 +1,7 @@
-import type { ProductSummary } from "@campusbaza/contracts";
-import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import type { ProductSummary } from '@campusbaza/contracts'
+import { useQuery } from '@tanstack/react-query'
+import { useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -9,30 +9,25 @@ import {
   PackageIcon,
   SearchIcon,
   ShieldIcon,
-} from "../components/ui/icons";
-import { catalogApi } from "../features/products/api/catalog.api";
-import {
-  ProductGrid,
-  ProductGridSkeleton,
-} from "../features/products/components/ProductGrid";
+} from '../components/ui/icons'
+import { catalogApi } from '../features/products/api/catalog.api'
+import { ProductGrid, ProductGridSkeleton } from '../features/products/components/ProductGrid'
 
 export function HomePage() {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
   const homepage = useQuery({
-    queryKey: ["homepage"],
+    queryKey: ['homepage'],
     queryFn: catalogApi.homepage,
-  });
-  const data = homepage.data;
+  })
+  const data = homepage.data
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const query = search.trim();
-    navigate(
-      query
-        ? `/second-hand-store?q=${encodeURIComponent(query)}`
-        : "/second-hand-store",
-    );
+    event.preventDefault()
+    const query = search.trim()
+    void navigate(
+      query ? `/second-hand-store?q=${encodeURIComponent(query)}` : '/second-hand-store',
+    )
   }
 
   return (
@@ -52,9 +47,8 @@ export function HomePage() {
               <br /> <em>Find it here.</em>
             </h1>
             <p>
-              Shop verified essentials, discover great second-hand finds, and
-              sell to people you already share a campus with. Simple, safe, and
-              unmistakably NITC.
+              Shop verified essentials, discover great second-hand finds, and sell to people you
+              already share a campus with. Simple, safe, and unmistakably NITC.
             </p>
             <form className="hero-search" onSubmit={submitSearch} role="search">
               <SearchIcon />
@@ -80,16 +74,10 @@ export function HomePage() {
               <Link to="/second-hand-store?q=hostel">Hostel essentials</Link>
             </div>
             <div className="hero-actions">
-              <Link
-                className="button button-primary button-large"
-                to="/official-store"
-              >
+              <Link className="button button-primary button-large" to="/official-store">
                 Shop official store <ArrowRightIcon />
               </Link>
-              <Link
-                className="button button-outline button-large"
-                to="/second-hand-store"
-              >
+              <Link className="button button-outline button-large" to="/second-hand-store">
                 Shop second-hand
               </Link>
             </div>
@@ -172,30 +160,21 @@ export function HomePage() {
               <span className="status-orb" />
               <div>
                 <strong>Sales team assignment</strong>
-                <p>
-                  Every saved order is routed to an available Campus Angadi
-                  dealer.
-                </p>
+                <p>Every saved order is routed to an available Campus Angadi dealer.</p>
               </div>
             </div>
             <div className="support-status">
               <ShieldIcon />
               <div>
                 <strong>Private mediated chat</strong>
-                <p>
-                  Buyers speak only with the Campus Angadi team—never directly
-                  with sellers.
-                </p>
+                <p>Buyers speak only with the Campus Angadi team—never directly with sellers.</p>
               </div>
             </div>
             <div className="support-status">
               <PackageIcon />
               <div>
                 <strong>Safer campus handoff</strong>
-                <p>
-                  Payment and pickup details are coordinated after the order is
-                  confirmed.
-                </p>
+                <p>Payment and pickup details are coordinated after the order is confirmed.</p>
               </div>
             </div>
           </div>
@@ -221,20 +200,11 @@ export function HomePage() {
 
       {homepage.isError ? (
         <section className="section" aria-live="polite">
-          <div
-            className="container catalog-empty homepage-error-state"
-            role="alert"
-          >
+          <div className="container catalog-empty homepage-error-state" role="alert">
             <PackageIcon />
             <strong>We couldn’t load the marketplace</strong>
-            <span>
-              Check your connection and try again. Your account and cart are
-              safe.
-            </span>
-            <button
-              className="button button-primary"
-              onClick={() => void homepage.refetch()}
-            >
+            <span>Check your connection and try again. Your account and cart are safe.</span>
+            <button className="button button-primary" onClick={() => void homepage.refetch()}>
               Try again
             </button>
           </div>
@@ -282,14 +252,14 @@ export function HomePage() {
           </div>
           <div className="steps-grid">
             {[
-              "Find a product",
-              "Create the order",
-              "Get a dealer",
-              "Chat with our team",
-              "Collect on campus",
+              'Find a product',
+              'Create the order',
+              'Get a dealer',
+              'Chat with our team',
+              'Collect on campus',
             ].map((step, index) => (
               <div className="step-card" key={step}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
+                <span>{String(index + 1).padStart(2, '0')}</span>
                 <strong>{step}</strong>
                 {index < 4 ? <ArrowRightIcon /> : null}
               </div>
@@ -298,7 +268,7 @@ export function HomePage() {
         </div>
       </section>
     </>
-  );
+  )
 }
 
 function HomepageSection({
@@ -309,12 +279,12 @@ function HomepageSection({
   loading,
   storePath,
 }: {
-  id?: string;
-  title: string;
-  kicker: string;
-  products?: ProductSummary[];
-  loading: boolean;
-  storePath?: string;
+  id?: string
+  title: string
+  kicker: string
+  products?: ProductSummary[]
+  loading: boolean
+  storePath?: string
 }) {
   return (
     <section className="section" id={id}>
@@ -340,5 +310,5 @@ function HomepageSection({
         )}
       </div>
     </section>
-  );
+  )
 }

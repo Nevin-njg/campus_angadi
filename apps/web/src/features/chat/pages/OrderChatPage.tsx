@@ -17,7 +17,7 @@ import { webEnv } from '../../../config/env'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { chatApi } from '../api/chat.api'
 import { createChatSocket } from '../lib/chat-socket'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 type CallState = 'idle' | 'calling' | 'incoming' | 'connected'
 
@@ -227,11 +227,15 @@ function OrderChatPage({ admin }: { admin: boolean }) {
 
   async function requestCall() {
     if (admin || callRequestPending || !socketRef.current) return
-    if (!(await confirm({
-      title: 'Request an audio call?',
-      description: 'Your assigned Campus Angadi mediator will be notified and can call you from this conversation.',
-      confirmLabel: 'Request call',
-    }))) return
+    if (
+      !(await confirm({
+        title: 'Request an audio call?',
+        description:
+          'Your assigned Campus Angadi mediator will be notified and can call you from this conversation.',
+        confirmLabel: 'Request call',
+      }))
+    )
+      return
     setMediaError('')
     setCallRequestPending(true)
     socketRef.current.emit(
@@ -343,7 +347,9 @@ function OrderChatPage({ admin }: { admin: boolean }) {
                   ? 'Incoming audio call'
                   : callState === 'connected'
                     ? 'Audio call connected'
-                    : admin ? 'Calling buyer…' : 'Connecting to Campus Angadi team…'}
+                    : admin
+                      ? 'Calling buyer…'
+                      : 'Connecting to Campus Angadi team…'}
               </strong>
               <small>Browser-to-browser encrypted audio</small>
             </div>

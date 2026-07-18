@@ -6,7 +6,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiClientError } from '../../../lib/api-client'
 import { adminCatalogApi } from '../api/admin-catalog.api'
 import { ChevronLeftIcon, PackageIcon } from '../../../components/ui/icons'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 export function AdminProductEditPage() {
   const { id = '' } = useParams()
@@ -68,7 +68,14 @@ export function AdminProductEditPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
-    if (!(await confirm({ title: 'Save product changes?', description: 'The official-store product and its public visibility will be updated.', confirmLabel: 'Save product' }))) return
+    if (
+      !(await confirm({
+        title: 'Save product changes?',
+        description: 'The official-store product and its public visibility will be updated.',
+        confirmLabel: 'Save product',
+      }))
+    )
+      return
     update.mutate({
       ...form,
       tags: tags
@@ -128,7 +135,7 @@ export function AdminProductEditPage() {
 
       <form
         className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl"
-        onSubmit={submit}
+        onSubmit={(event) => void submit(event)}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">

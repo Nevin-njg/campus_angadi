@@ -6,7 +6,7 @@ import { AlertIcon, ShieldIcon, ChevronLeftIcon } from '../../../components/ui/i
 import { ApiClientError } from '../../../lib/api-client'
 import { ListingStatusBadge } from '../../listings/components/ListingStatusBadge'
 import { adminModerationApi } from '../api/admin-moderation.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const decisionLabels: Array<{ value: ModerationDecision; label: string }> = [
   { value: 'APPROVE', label: 'Approve and publish' },
@@ -344,7 +344,16 @@ export function AdminModerationDetailPage() {
                   setMessage('Enter a clear reason for this decision.')
                   return
                 }
-                if (!(await confirm({ title: `Confirm ${selectedDecision.replaceAll('_', ' ').toLowerCase()}?`, description: 'This moderation decision changes the listing visibility and notifies the seller.', confirmLabel: 'Apply decision', tone: ['REJECT', 'HIDE'].includes(selectedDecision) ? 'danger' : 'default' }))) return
+                if (
+                  !(await confirm({
+                    title: `Confirm ${selectedDecision.replaceAll('_', ' ').toLowerCase()}?`,
+                    description:
+                      'This moderation decision changes the listing visibility and notifies the seller.',
+                    confirmLabel: 'Apply decision',
+                    tone: ['REJECT', 'HIDE'].includes(selectedDecision) ? 'danger' : 'default',
+                  }))
+                )
+                  return
                 if (selectedDecision !== decision) setDecision(selectedDecision)
                 moderate.mutate({ decision: selectedDecision, reason: reason.trim() || null })
               }}

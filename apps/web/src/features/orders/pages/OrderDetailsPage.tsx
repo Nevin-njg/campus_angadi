@@ -4,7 +4,9 @@ import { ChevronLeftIcon, MessageIcon, PackageIcon } from '../../../components/u
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { ordersApi } from '../api/orders.api'
 import { OrderStatusBadge } from '../components/OrderStatusBadge'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -19,16 +21,17 @@ export function OrderDetailsPage() {
   const { id = '' } = useParams()
   const client = useQueryClient()
   const confirm = useConfirmation()
+  const user = useAuthStore((state) => state.user)!
   const order = useQuery({
-    queryKey: ['order', id],
+    queryKey: queryKeys.orders.detail(id),
     queryFn: () => ordersApi.detail(id),
     enabled: Boolean(id),
   })
   const cancel = useMutation({
     mutationFn: () => ordersApi.cancel(id, { reason: 'Cancelled from My Orders' }),
     onSuccess: (data) => {
-      client.setQueryData(['order', id], data)
-      void client.invalidateQueries({ queryKey: ['orders'] })
+      client.setQueryData(queryKeys.orders.detail(id), data)
+      void client.invalidateQueries({ queryKey: queryKeys.orders.all(user.id) })
     },
   })
   if (order.isLoading) return <LoadingSkeleton variant="detail" label="Loading order" />
@@ -164,7 +167,16 @@ export function OrderDetailsPage() {
               className="button button-outline danger-text"
               disabled={cancel.isPending}
               onClick={async () => {
-                if (await confirm({ title: 'Cancel this order?', description: 'The Campus Angadi team will stop processing this order and reserved stock may be released.', confirmLabel: 'Cancel order', tone: 'danger' })) cancel.mutate()
+                if (
+                  await confirm({
+                    title: 'Cancel this order?',
+                    description:
+                      'The Campus Angadi team will stop processing this order and reserved stock may be released.',
+                    confirmLabel: 'Cancel order',
+                    tone: 'danger',
+                  })
+                )
+                  cancel.mutate()
               }}
             >
               {cancel.isPending ? 'Cancelling…' : 'Cancel order'}

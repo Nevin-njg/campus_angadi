@@ -15,8 +15,8 @@ describe('Order Routes', () => {
   beforeEach(() => {
     mockOrderService = {
       checkout: vi.fn(),
+      buyNow: vi.fn(),
       listOwned: vi.fn(),
-      continueOnWhatsapp: vi.fn(),
       getOwned: vi.fn(),
       cancelOwned: vi.fn(),
       listAdmin: vi.fn(),
@@ -81,6 +81,38 @@ describe('Order Routes', () => {
         expect(res.status).toBe(400)
         expect(res.body.success).toBe(false)
         expect(mockOrderService.checkout).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('POST /orders/buy-now', () => {
+      it('creates a direct order with validated product and checkout details', async () => {
+        const body = {
+          productId: 'product-1',
+          quantity: 2,
+          fullName: 'John Doe',
+          phoneNumber: '1234567890',
+          pickupLocation: 'Main Gate',
+        }
+        mockOrderService.buyNow.mockResolvedValue({ checkoutGroupId: 'direct-group' } as any)
+
+        const res = await request(app).post('/orders/buy-now').send(body)
+
+        expect(res.status).toBe(201)
+        expect(res.body.data.checkoutGroupId).toBe('direct-group')
+        expect(mockOrderService.buyNow).toHaveBeenCalledWith('user-123', body)
+      })
+
+      it('rejects invalid direct-order quantities', async () => {
+        const res = await request(app).post('/orders/buy-now').send({
+          productId: 'product-1',
+          quantity: 0,
+          fullName: 'John Doe',
+          phoneNumber: '1234567890',
+          pickupLocation: 'Main Gate',
+        })
+
+        expect(res.status).toBe(400)
+        expect(mockOrderService.buyNow).not.toHaveBeenCalled()
       })
     })
 

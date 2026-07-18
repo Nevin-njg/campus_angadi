@@ -4,7 +4,7 @@ import { AlertIcon, PackageIcon } from '../../../components/ui/icons'
 import { ApiClientError } from '../../../lib/api-client'
 import { listingsApi } from '../api/listings.api'
 import { ListingStatusBadge } from '../components/ListingStatusBadge'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 export function ListingDetailsPage() {
   const { id } = useParams()
@@ -129,7 +129,15 @@ export function ListingDetailsPage() {
                   className="button button-outline"
                   disabled={markSold.isPending}
                   onClick={async () => {
-                    if (await confirm({ title: 'Mark this listing as sold?', description: 'It will disappear from the public marketplace and cannot receive new enquiries.', confirmLabel: 'Mark sold' })) markSold.mutate()
+                    if (
+                      await confirm({
+                        title: 'Mark this listing as sold?',
+                        description:
+                          'It will disappear from the public marketplace and cannot receive new enquiries.',
+                        confirmLabel: 'Mark sold',
+                      })
+                    )
+                      markSold.mutate()
                   }}
                 >
                   {markSold.isPending ? 'Updating…' : 'Mark sold'}
@@ -140,7 +148,15 @@ export function ListingDetailsPage() {
                   className="button button-danger"
                   disabled={remove.isPending}
                   onClick={async () => {
-                    if (await confirm({ title: 'Delete this listing?', description: 'The listing will be removed from your marketplace account.', confirmLabel: 'Delete listing', tone: 'danger' })) remove.mutate()
+                    if (
+                      await confirm({
+                        title: 'Delete this listing?',
+                        description: 'The listing will be removed from your marketplace account.',
+                        confirmLabel: 'Delete listing',
+                        tone: 'danger',
+                      })
+                    )
+                      remove.mutate()
                   }}
                 >
                   {remove.isPending ? 'Deleting…' : 'Delete listing'}

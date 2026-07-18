@@ -2,6 +2,7 @@ import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
+  BuyNowInput,
   CancelOrderInput,
   CheckoutInput,
   CheckoutResult,
@@ -24,6 +25,8 @@ function queryString(values: Record<string, string | number | undefined>) {
 export const ordersApi = {
   checkout: (input: CheckoutInput) =>
     apiRequest<CheckoutResult>('/orders/checkout', { method: 'POST', body: input }),
+  buyNow: (input: BuyNowInput) =>
+    apiRequest<CheckoutResult>('/orders/buy-now', { method: 'POST', body: input }),
   async mine(query: OrderListQuery): Promise<PaginatedResult<OrderDetail>> {
     const envelope = await apiRequestEnvelope<OrderDetail[]>(`/orders${queryString(query)}`)
     return { items: envelope.data, meta: envelope.meta! }

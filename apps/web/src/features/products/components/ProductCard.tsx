@@ -1,67 +1,70 @@
-import type { ProductSummary } from "@campusbaza/contracts";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { CartIcon, PackageIcon } from "../../../components/ui/icons";
-import { useAuthStore } from "../../auth/store/use-auth-store";
-import { cartApi } from "../../cart/api/cart.api";
+import type { ProductSummary } from '@campusbaza/contracts'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CartIcon, PackageIcon } from '../../../components/ui/icons'
+import { useAuthStore } from '../../auth/store/use-auth-store'
+import { cartApi } from '../../cart/api/cart.api'
+import { queryKeys } from '../../../lib/query-keys'
 
 function formatPrice(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value)
 }
 
-function conditionLabel(value: ProductSummary["condition"]) {
+function conditionLabel(value: ProductSummary['condition']) {
   return value
-    .replaceAll("_", " ")
+    .replaceAll('_', ' ')
     .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 export function ProductCard({ product }: { product: ProductSummary }) {
-  const user = useAuthStore((state) => state.user);
-  const navigate = useNavigate();
-  const client = useQueryClient();
-  const [added, setAdded] = useState(false);
-  const feedbackTimer = useRef<number | null>(null);
+  const user = useAuthStore((state) => state.user)
+  const navigate = useNavigate()
+  const client = useQueryClient()
+  const [added, setAdded] = useState(false)
+  const feedbackTimer = useRef<number | null>(null)
 
   useEffect(
     () => () => {
-      if (feedbackTimer.current !== null)
-        window.clearTimeout(feedbackTimer.current);
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
     },
     [],
-  );
+  )
 
   const add = useMutation({
     mutationFn: () => cartApi.add({ productId: product.id, quantity: 1 }),
     onSuccess(data) {
-      client.setQueryData(["cart"], data);
-      setAdded(true);
-      if (feedbackTimer.current !== null)
-        window.clearTimeout(feedbackTimer.current);
-      feedbackTimer.current = window.setTimeout(() => setAdded(false), 1600);
+      client.setQueryData(queryKeys.cart(user!.id), data)
+      setAdded(true)
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+      feedbackTimer.current = window.setTimeout(() => setAdded(false), 1600)
     },
-  });
+  })
   const discount =
     product.originalPrice && product.originalPrice > product.price
-      ? Math.round(
-          ((product.originalPrice - product.price) / product.originalPrice) *
-            100,
-        )
-      : null;
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : null
   function addToCart() {
-    if (product.stock <= 0 || add.isPending) return;
+    if (product.stock <= 0 || add.isPending) return
     if (!user) {
-      void navigate(
-        `/login?returnTo=${encodeURIComponent(`/products/${product.slug}`)}`,
-      );
-      return;
+      void navigate(`/login?returnTo=${encodeURIComponent(`/products/${product.slug}`)}`)
+      return
     }
-    add.mutate();
+    add.mutate()
+  }
+  function buyNow() {
+    if (product.stock <= 0) return
+    const checkoutPath = `/checkout?buyNow=${encodeURIComponent(product.slug)}&quantity=1`
+    if (!user) {
+      void navigate(`/login?returnTo=${encodeURIComponent(checkoutPath)}`)
+      return
+    }
+    void navigate(checkoutPath)
   }
   return (
     <article className="catalog-card">
@@ -84,13 +87,11 @@ export function ProductCard({ product }: { product: ProductSummary }) {
         )}
         <div className="catalog-card-badges">
           <span
-            className={`product-pill ${product.sellerType === "ADMIN" ? "official" : "second-hand"}`}
+            className={`product-pill ${product.sellerType === 'ADMIN' ? 'official' : 'second-hand'}`}
           >
-            {product.sellerType === "ADMIN" ? "Official" : "Second-Hand"}
+            {product.sellerType === 'ADMIN' ? 'Official' : 'Second-Hand'}
           </span>
-          <span className="product-pill condition">
-            {conditionLabel(product.condition)}
-          </span>
+          <span className="product-pill condition">{conditionLabel(product.condition)}</span>
         </div>
         {discount ? <span className="discount-badge">-{discount}%</span> : null}
       </Link>
@@ -101,19 +102,14 @@ export function ProductCard({ product }: { product: ProductSummary }) {
         </Link>
         <div className="catalog-price-row">
           <strong>{formatPrice(product.price)}</strong>
-          {product.originalPrice ? (
-            <del>{formatPrice(product.originalPrice)}</del>
-          ) : null}
+          {product.originalPrice ? <del>{formatPrice(product.originalPrice)}</del> : null}
         </div>
         <div className="catalog-meta-row">
           <span>{product.stock} available</span>
           <span>{product.viewCount} views</span>
         </div>
         <div className="catalog-card-actions">
-          <Link
-            className="button button-outline"
-            to={`/products/${product.slug}`}
-          >
+          <Link className="button button-outline" to={`/products/${product.slug}`}>
             View
           </Link>
           <button
@@ -122,23 +118,23 @@ export function ProductCard({ product }: { product: ProductSummary }) {
             disabled={add.isPending || product.stock <= 0}
             onClick={addToCart}
             aria-label={
-              product.stock <= 0
-                ? `${product.title} is sold out`
-                : `Add ${product.title} to cart`
+              product.stock <= 0 ? `${product.title} is sold out` : `Add ${product.title} to cart`
             }
           >
             <CartIcon />
-            {product.stock <= 0
-              ? "Sold out"
-              : added
-                ? "Added"
-                : add.isPending
-                  ? "Adding…"
-                  : "Add"}
+            {product.stock <= 0 ? 'Sold out' : added ? 'Added' : add.isPending ? 'Adding…' : 'Add'}
+          </button>
+          <button
+            type="button"
+            className="button button-outline"
+            disabled={product.stock <= 0}
+            onClick={buyNow}
+          >
+            Buy now
           </button>
         </div>
         <span className="sr-only" aria-live="polite">
-          {added ? `${product.title} added to cart` : ""}
+          {added ? `${product.title} added to cart` : ''}
         </span>
         {add.isError ? (
           <small className="card-action-error" role="alert">
@@ -147,5 +143,5 @@ export function ProductCard({ product }: { product: ProductSummary }) {
         ) : null}
       </div>
     </article>
-  );
+  )
 }

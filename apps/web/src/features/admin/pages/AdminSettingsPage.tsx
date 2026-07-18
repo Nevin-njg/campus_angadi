@@ -9,7 +9,7 @@ import {
   AlertTriangleIcon,
   CheckCircleIcon,
 } from '../../../components/ui/icons'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 export function AdminSettingsPage() {
   const q = useQuery({ queryKey: ['admin', 'settings'], queryFn: adminPlatformApi.settings })
@@ -38,7 +38,15 @@ export function AdminSettingsPage() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (form && await confirm({ title: 'Save platform settings?', description: 'These settings affect marketplace availability, branding and user-facing defaults.', confirmLabel: 'Save settings' }))
+    if (
+      form &&
+      (await confirm({
+        title: 'Save platform settings?',
+        description:
+          'These settings affect marketplace availability, branding and user-facing defaults.',
+        confirmLabel: 'Save settings',
+      }))
+    )
       m.mutate({
         ...form,
         defaultPickupLocations: locations
@@ -70,7 +78,7 @@ export function AdminSettingsPage() {
 
       <form
         className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl"
-        onSubmit={submit}
+        onSubmit={(event) => void submit(event)}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Brand & Identity */}

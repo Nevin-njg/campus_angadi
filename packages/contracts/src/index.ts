@@ -485,6 +485,13 @@ export const checkoutInputSchema = z
   })
   .strict()
 
+export const buyNowInputSchema = checkoutInputSchema
+  .extend({
+    productId: z.string().min(1),
+    quantity: z.number().int().min(1).max(20).default(1),
+  })
+  .strict()
+
 export const dealerWorkingHoursSchema = z
   .object({
     timeZone: z.string().trim().min(1).max(80).default('Asia/Kolkata'),
@@ -530,7 +537,10 @@ export const assignedModeratorSchema = z.object({
 
 export const createDealerInputSchema = z
   .object({
-    mediatorUserId: z.string().trim().regex(/^[a-f\d]{24}$/i),
+    mediatorUserId: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i),
     displayName: z.string().trim().min(2).max(80),
     phoneNumber: z
       .string()
@@ -550,7 +560,11 @@ export const createDealerInputSchema = z
 
 export const updateDealerInputSchema = z
   .object({
-    mediatorUserId: z.string().trim().regex(/^[a-f\d]{24}$/i).optional(),
+    mediatorUserId: z
+      .string()
+      .trim()
+      .regex(/^[a-f\d]{24}$/i)
+      .optional(),
     displayName: z.string().trim().min(2).max(80).optional(),
     phoneNumber: z
       .string()
@@ -1135,6 +1149,7 @@ export type Cart = z.infer<typeof cartSchema>
 export type AddCartItemInput = z.infer<typeof addCartItemInputSchema>
 export type UpdateCartItemInput = z.infer<typeof updateCartItemInputSchema>
 export type CheckoutInput = z.infer<typeof checkoutInputSchema>
+export type BuyNowInput = z.infer<typeof buyNowInputSchema>
 export type OrderStatus = z.infer<typeof orderStatusSchema>
 export type OrderItem = z.infer<typeof orderItemSchema>
 export type OrderStatusHistory = z.infer<typeof orderStatusHistorySchema>

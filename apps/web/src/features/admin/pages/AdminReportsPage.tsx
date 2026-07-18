@@ -2,7 +2,7 @@ import type { ReportListQuery, ReportStatus } from '@campusbaza/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { adminPlatformApi } from '../api/admin-platform.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 export function AdminReportsPage() {
   const [q, setQ] = useState<ReportListQuery>({ page: 1, limit: 20 })
@@ -138,21 +138,49 @@ export function AdminReportsPage() {
               <div className="flex flex-wrap gap-2">
                 <button
                   className="flex-1 min-w-[100px] px-4 py-2 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-                  onClick={async () => { if (await confirm({ title: 'Mark report in review?', description: 'This changes the report workflow state for the safety team.', confirmLabel: 'Mark in review' })) m.mutate({ id: x.id, status: 'IN_REVIEW' }) }}
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: 'Mark report in review?',
+                        description: 'This changes the report workflow state for the safety team.',
+                        confirmLabel: 'Mark in review',
+                      })
+                    )
+                      m.mutate({ id: x.id, status: 'IN_REVIEW' })
+                  }}
                   disabled={m.isPending}
                 >
                   Mark in review
                 </button>
                 <button
                   className="flex-1 min-w-[100px] px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)]"
-                  onClick={async () => { if (await confirm({ title: 'Resolve this report?', description: 'The saved resolution will close this safety report.', confirmLabel: 'Resolve report' })) m.mutate({ id: x.id, status: 'RESOLVED' }) }}
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: 'Resolve this report?',
+                        description: 'The saved resolution will close this safety report.',
+                        confirmLabel: 'Resolve report',
+                      })
+                    )
+                      m.mutate({ id: x.id, status: 'RESOLVED' })
+                  }}
                   disabled={m.isPending}
                 >
                   Resolve
                 </button>
                 <button
                   className="flex-1 min-w-[100px] px-4 py-2 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all"
-                  onClick={async () => { if (await confirm({ title: 'Dismiss this report?', description: 'The report will be closed without further action.', confirmLabel: 'Dismiss report', tone: 'danger' })) m.mutate({ id: x.id, status: 'DISMISSED' }) }}
+                  onClick={async () => {
+                    if (
+                      await confirm({
+                        title: 'Dismiss this report?',
+                        description: 'The report will be closed without further action.',
+                        confirmLabel: 'Dismiss report',
+                        tone: 'danger',
+                      })
+                    )
+                      m.mutate({ id: x.id, status: 'DISMISSED' })
+                  }}
                   disabled={m.isPending}
                 >
                   Dismiss

@@ -13,14 +13,27 @@ await connectMongo(env.MONGODB_URI, logger, {
 })
 try {
   const dealers = [
-    { displayName: 'Campus Angadi Sales 01', phoneNumber: '+919900000001', email: 'mediator01@example.com' },
-    { displayName: 'Campus Angadi Sales 02', phoneNumber: '+919900000002', email: 'mediator02@example.com' },
+    {
+      displayName: 'Campus Angadi Sales 01',
+      phoneNumber: '+919900000001',
+      email: 'mediator01@example.com',
+    },
+    {
+      displayName: 'Campus Angadi Sales 02',
+      phoneNumber: '+919900000002',
+      email: 'mediator02@example.com',
+    },
   ]
   for (const dealer of dealers) {
     const mediator = await UserModel.findOneAndUpdate(
       { email: dealer.email },
       {
-        $setOnInsert: { email: dealer.email, emailVerified: false, canSell: true, profileCompleted: false },
+        $setOnInsert: {
+          email: dealer.email,
+          emailVerified: false,
+          canSell: true,
+          profileCompleted: false,
+        },
         $set: { role: 'MODERATOR', status: 'ACTIVE', canMediateOrders: true },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },

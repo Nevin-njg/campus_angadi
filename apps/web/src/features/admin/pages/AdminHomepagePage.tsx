@@ -5,7 +5,7 @@ import { ProductGrid } from '../../products/components/ProductGrid'
 import { ApiClientError } from '../../../lib/api-client'
 import { adminCatalogApi } from '../api/admin-catalog.api'
 import { SearchIcon, PackageIcon, AlertIcon } from '../../../components/ui/icons'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const labels: Record<HomepageSectionKey, string> = {
   FEATURED: 'Featured',
@@ -136,7 +136,18 @@ export function AdminHomepagePage() {
             </div>
             <button
               className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors bg-amber-500/10 px-4 py-2 rounded-lg"
-              onClick={async () => { if (await confirm({ title: 'Reset homepage curation?', description: 'All manually curated homepage sections will return to automatic product selection.', confirmLabel: 'Reset homepage', tone: 'danger' })) reset.mutate() }}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: 'Reset homepage curation?',
+                    description:
+                      'All manually curated homepage sections will return to automatic product selection.',
+                    confirmLabel: 'Reset homepage',
+                    tone: 'danger',
+                  })
+                )
+                  reset.mutate()
+              }}
               disabled={reset.isPending}
             >
               Reset to automatic
@@ -229,7 +240,17 @@ export function AdminHomepagePage() {
             ) : null}
             <button
               className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={async () => { if (await confirm({ title: `Save ${labels[section]} section?`, description: 'This changes the product selection visible on the public homepage.', confirmLabel: 'Save section' })) save.mutate() }}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: `Save ${labels[section]} section?`,
+                    description:
+                      'This changes the product selection visible on the public homepage.',
+                    confirmLabel: 'Save section',
+                  })
+                )
+                  save.mutate()
+              }}
               disabled={save.isPending}
             >
               {save.isPending ? 'Saving changes…' : 'Publish selection'}

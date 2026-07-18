@@ -6,6 +6,7 @@ import type {
   UpdateDealerInput,
 } from '@campusbaza/contracts'
 import type { DealerRepository } from '../domain/dealer.js'
+import { Types } from 'mongoose'
 import { DealerModel } from './dealer.models.js'
 
 function escapeRegex(value: string) {
@@ -16,8 +17,13 @@ export function mapDealer(document: Record<string, unknown>): Dealer {
   const hours = document.workingHours as Record<string, unknown>
   return {
     id: String(document._id),
-    mediatorUserId: document.mediatorUserId ? String(document.mediatorUserId) : null,
-    mediatorEmail: document.mediatorEmail ? String(document.mediatorEmail) : null,
+    mediatorUserId:
+      document.mediatorUserId instanceof Types.ObjectId
+        ? document.mediatorUserId.toHexString()
+        : typeof document.mediatorUserId === 'string'
+          ? document.mediatorUserId
+          : null,
+    mediatorEmail: typeof document.mediatorEmail === 'string' ? document.mediatorEmail : null,
     displayName: String(document.displayName),
     phoneNumber: String(document.phoneNumber),
     isActive: Boolean(document.isActive),

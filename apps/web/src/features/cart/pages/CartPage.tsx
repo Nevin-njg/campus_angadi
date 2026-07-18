@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { AlertIcon, CartIcon, TrashIcon } from '../../../components/ui/icons'
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { cartApi } from '../api/cart.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -16,9 +18,10 @@ function price(value: number) {
 export function CartPage() {
   const client = useQueryClient()
   const confirm = useConfirmation()
-  const cart = useQuery({ queryKey: ['cart'], queryFn: cartApi.get })
+  const user = useAuthStore((state) => state.user)!
+  const cart = useQuery({ queryKey: queryKeys.cart(user.id), queryFn: cartApi.get })
   const refresh = (data: Awaited<ReturnType<typeof cartApi.get>>) => {
-    client.setQueryData(['cart'], data)
+    client.setQueryData(queryKeys.cart(user.id), data)
   }
   const update = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
@@ -78,7 +81,15 @@ export function CartPage() {
               className="button button-ghost danger-text"
               disabled={busy}
               onClick={async () => {
-                if (await confirm({ title: 'Clear your cart?', description: 'Every item currently in your cart will be removed.', confirmLabel: 'Clear cart', tone: 'danger' })) clear.mutate()
+                if (
+                  await confirm({
+                    title: 'Clear your cart?',
+                    description: 'Every item currently in your cart will be removed.',
+                    confirmLabel: 'Clear cart',
+                    tone: 'danger',
+                  })
+                )
+                  clear.mutate()
               }}
             >
               <TrashIcon /> Clear cart

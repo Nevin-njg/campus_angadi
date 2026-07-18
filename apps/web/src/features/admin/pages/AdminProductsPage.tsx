@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiClientError } from '../../../lib/api-client'
 import { adminCatalogApi } from '../api/admin-catalog.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const initial: CreateOfficialProductInput = {
   title: '',
@@ -55,7 +55,14 @@ export function AdminProductsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setMessage('')
-    if (!(await confirm({ title: 'Create this official product?', description: `${form.title} will be ${form.publish ? 'published to' : 'saved in'} the official store.`, confirmLabel: 'Create product' }))) return
+    if (
+      !(await confirm({
+        title: 'Create this official product?',
+        description: `${form.title} will be ${form.publish ? 'published to' : 'saved in'} the official store.`,
+        confirmLabel: 'Create product',
+      }))
+    )
+      return
     create.mutate({
       ...form,
       tags: tags
@@ -104,7 +111,10 @@ export function AdminProductsPage() {
           </span>
         </summary>
 
-        <form className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={submit}>
+        <form
+          className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6"
+          onSubmit={(event) => void submit(event)}
+        >
           <div>
             <label className={labelClass}>
               Title

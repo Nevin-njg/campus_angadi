@@ -30,7 +30,11 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-misused-promises': [
         'error',
-        { checksVoidReturn: { arguments: false } },
+        {
+          // React supports async event callbacks. They are intentionally ignored by React,
+          // while no-floating-promises continues to protect promises created elsewhere.
+          checksVoidReturn: { arguments: false, attributes: false },
+        },
       ],
       '@typescript-eslint/no-floating-promises': 'error',
     },

@@ -1,14 +1,15 @@
 import 'dotenv/config'
-import mongoose from 'mongoose'
 import '../infrastructure/database/model-registry.js'
 import { connectMongo, disconnectMongo } from '../infrastructure/database/mongoose.connection.js'
 import { logger } from '../core/http/logger.js'
 import { env } from '../config/env.js'
 
 import { UserModel, UserProfileModel } from '../modules/users/infrastructure/user.models.js'
-import { CategoryModel } from '../modules/categories/infrastructure/category.model.js'
-import { ProductModel, ProductImageModel } from '../modules/products/infrastructure/product.models.js'
-import { DealerModel, DealerAssignmentHistoryModel } from '../modules/dealers/infrastructure/dealer.models.js'
+import { ProductModel } from '../modules/products/infrastructure/product.models.js'
+import {
+  DealerModel,
+  DealerAssignmentHistoryModel,
+} from '../modules/dealers/infrastructure/dealer.models.js'
 import { AuditLogModel } from '../modules/audit/infrastructure/audit-log.model.js'
 import { SessionModel } from '../modules/auth/infrastructure/session.model.js'
 import { CartModel } from '../modules/cart/infrastructure/cart.model.js'
@@ -16,7 +17,11 @@ import { ChatMessageModel } from '../modules/chat/infrastructure/chat-message.mo
 import { HomepageSelectionModel } from '../modules/homepage/infrastructure/homepage.model.js'
 import { ModerationHistoryModel } from '../modules/listings/infrastructure/moderation-history.model.js'
 import { NotificationModel } from '../modules/notifications/infrastructure/notification.model.js'
-import { OrderModel, OrderItemModel, OrderStatusHistoryModel } from '../modules/orders/infrastructure/order.models.js'
+import {
+  OrderModel,
+  OrderItemModel,
+  OrderStatusHistoryModel,
+} from '../modules/orders/infrastructure/order.models.js'
 import { ReportModel } from '../modules/reports/infrastructure/report.model.js'
 import { PlatformSettingModel } from '../modules/settings/infrastructure/platform-setting.model.js'
 import { UploadAssetModel } from '../modules/uploads/infrastructure/upload-asset.model.js'
@@ -215,7 +220,8 @@ async function seed() {
       productId: product1._id,
       productName: product1.title,
       productSlug: product1.slug,
-      productImageUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=900&auto=format&fit=crop&q=80',
+      productImageUrl:
+        'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=900&auto=format&fit=crop&q=80',
       sellerId: superAdmin._id,
       productType: 'NEW',
       quantity: 2,
@@ -223,11 +229,41 @@ async function seed() {
       totalPrice: product1.price * 2,
     })
     await OrderStatusHistoryModel.insertMany([
-      { orderId: order1._id, fromStatus: null, toStatus: 'PENDING', note: 'Order created', actorId: buyer._id },
-      { orderId: order1._id, fromStatus: 'PENDING', toStatus: 'WAITING_FOR_DEALER_ASSIGNMENT', note: 'Awaiting assignment', actorId: null },
-      { orderId: order1._id, fromStatus: 'WAITING_FOR_DEALER_ASSIGNMENT', toStatus: 'CONFIRMED', note: 'Dealer assigned & order confirmed', actorId: dealer.mediatorUserId },
-      { orderId: order1._id, fromStatus: 'CONFIRMED', toStatus: 'READY_FOR_PICKUP', note: 'Order is ready at pickup location', actorId: dealer.mediatorUserId },
-      { orderId: order1._id, fromStatus: 'READY_FOR_PICKUP', toStatus: 'COMPLETED', note: 'Order picked up successfully', actorId: dealer.mediatorUserId },
+      {
+        orderId: order1._id,
+        fromStatus: null,
+        toStatus: 'PENDING',
+        note: 'Order created',
+        actorId: buyer._id,
+      },
+      {
+        orderId: order1._id,
+        fromStatus: 'PENDING',
+        toStatus: 'WAITING_FOR_DEALER_ASSIGNMENT',
+        note: 'Awaiting assignment',
+        actorId: null,
+      },
+      {
+        orderId: order1._id,
+        fromStatus: 'WAITING_FOR_DEALER_ASSIGNMENT',
+        toStatus: 'CONFIRMED',
+        note: 'Dealer assigned & order confirmed',
+        actorId: dealer.mediatorUserId,
+      },
+      {
+        orderId: order1._id,
+        fromStatus: 'CONFIRMED',
+        toStatus: 'READY_FOR_PICKUP',
+        note: 'Order is ready at pickup location',
+        actorId: dealer.mediatorUserId,
+      },
+      {
+        orderId: order1._id,
+        fromStatus: 'READY_FOR_PICKUP',
+        toStatus: 'COMPLETED',
+        note: 'Order picked up successfully',
+        actorId: dealer.mediatorUserId,
+      },
     ])
 
     // Order 2: Ready for Pickup (Active)
@@ -256,7 +292,8 @@ async function seed() {
       productId: product2._id,
       productName: product2.title,
       productSlug: product2.slug,
-      productImageUrl: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=900&auto=format&fit=crop&q=80',
+      productImageUrl:
+        'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=900&auto=format&fit=crop&q=80',
       sellerId: akhil?._id ?? superAdmin._id,
       productType: 'SECOND_HAND',
       quantity: 1,
@@ -264,10 +301,34 @@ async function seed() {
       totalPrice: product2.price,
     })
     await OrderStatusHistoryModel.insertMany([
-      { orderId: order2._id, fromStatus: null, toStatus: 'PENDING', note: 'Order created', actorId: buyer._id },
-      { orderId: order2._id, fromStatus: 'PENDING', toStatus: 'WAITING_FOR_DEALER_ASSIGNMENT', note: 'Awaiting assignment', actorId: null },
-      { orderId: order2._id, fromStatus: 'WAITING_FOR_DEALER_ASSIGNMENT', toStatus: 'CONFIRMED', note: 'Dealer assigned', actorId: dealer.mediatorUserId },
-      { orderId: order2._id, fromStatus: 'CONFIRMED', toStatus: 'READY_FOR_PICKUP', note: 'Brought to Main Gate for pickup', actorId: dealer.mediatorUserId },
+      {
+        orderId: order2._id,
+        fromStatus: null,
+        toStatus: 'PENDING',
+        note: 'Order created',
+        actorId: buyer._id,
+      },
+      {
+        orderId: order2._id,
+        fromStatus: 'PENDING',
+        toStatus: 'WAITING_FOR_DEALER_ASSIGNMENT',
+        note: 'Awaiting assignment',
+        actorId: null,
+      },
+      {
+        orderId: order2._id,
+        fromStatus: 'WAITING_FOR_DEALER_ASSIGNMENT',
+        toStatus: 'CONFIRMED',
+        note: 'Dealer assigned',
+        actorId: dealer.mediatorUserId,
+      },
+      {
+        orderId: order2._id,
+        fromStatus: 'CONFIRMED',
+        toStatus: 'READY_FOR_PICKUP',
+        note: 'Brought to Main Gate for pickup',
+        actorId: dealer.mediatorUserId,
+      },
     ])
 
     // Order 3: Cancelled
@@ -293,7 +354,8 @@ async function seed() {
       productId: product3._id,
       productName: product3.title,
       productSlug: product3.slug,
-      productImageUrl: 'https://images.unsplash.com/photo-1583485088034-697b5bc36b45?w=900&auto=format&fit=crop&q=80',
+      productImageUrl:
+        'https://images.unsplash.com/photo-1583485088034-697b5bc36b45?w=900&auto=format&fit=crop&q=80',
       sellerId: superAdmin._id,
       productType: 'NEW',
       quantity: 1,
@@ -301,8 +363,20 @@ async function seed() {
       totalPrice: product3.price,
     })
     await OrderStatusHistoryModel.insertMany([
-      { orderId: order3._id, fromStatus: null, toStatus: 'PENDING', note: 'Order created', actorId: buyer._id },
-      { orderId: order3._id, fromStatus: 'PENDING', toStatus: 'CANCELLED', note: 'Cancelled by user', actorId: buyer._id },
+      {
+        orderId: order3._id,
+        fromStatus: null,
+        toStatus: 'PENDING',
+        note: 'Order created',
+        actorId: buyer._id,
+      },
+      {
+        orderId: order3._id,
+        fromStatus: 'PENDING',
+        toStatus: 'CANCELLED',
+        note: 'Cancelled by user',
+        actorId: buyer._id,
+      },
     ])
     logger.info('Orders, OrderItems, and OrderStatusHistories seeded')
 
@@ -384,7 +458,7 @@ async function seed() {
         entityType: 'Product',
         entityId: product2._id.toString(),
         requestMethod: 'POST',
-        requestPath: `/api/v1/products/${product2._id}/approve`,
+        requestPath: `/api/v1/products/${product2._id.toString()}/approve`,
         ipAddress: '127.0.0.1',
         userAgent: 'Mozilla/5.0',
       },
@@ -395,7 +469,9 @@ async function seed() {
     await HomepageSelectionModel.deleteMany({})
     const featuredProducts = products.filter((p) => p.isFeatured).map((p) => p._id)
     const officialProducts = products.filter((p) => p.productType === 'NEW').map((p) => p._id)
-    const secondHandProductsList = products.filter((p) => p.productType === 'SECOND_HAND').map((p) => p._id)
+    const secondHandProductsList = products
+      .filter((p) => p.productType === 'SECOND_HAND')
+      .map((p) => p._id)
     const recentProducts = products.slice(0, 8).map((p) => p._id)
 
     await HomepageSelectionModel.insertMany([
@@ -471,7 +547,8 @@ async function seed() {
         targetType: 'PRODUCT',
         targetId: product3._id,
         type: 'INCORRECT_CONDITION',
-        description: 'The product describes the items as LIKE_NEW but in photos it looks scratched and used.',
+        description:
+          'The product describes the items as LIKE_NEW but in photos it looks scratched and used.',
         status: 'OPEN',
       },
       {
@@ -511,7 +588,7 @@ async function seed() {
     logger.info('Database collections seeded completely!')
   } catch (error) {
     logger.error({ err: error }, 'Full seeding failed')
-    throw error;
+    throw error
   } finally {
     await disconnectMongo()
   }

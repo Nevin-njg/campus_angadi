@@ -13,7 +13,9 @@ const queryClient = new QueryClient({
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfirmationProvider><AuthBootstrap>{children}</AuthBootstrap></ConfirmationProvider>
+      <ConfirmationProvider>
+        <AuthBootstrap>{children}</AuthBootstrap>
+      </ConfirmationProvider>
     </QueryClientProvider>
   )
 }

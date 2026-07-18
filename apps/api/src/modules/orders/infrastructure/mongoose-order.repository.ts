@@ -25,7 +25,6 @@ import {
   DealerModel,
 } from '../../dealers/infrastructure/dealer.models.js'
 import type { CheckoutPlanGroup, OrderRepository } from '../domain/order.js'
-import type { CartRecord } from '../../cart/domain/cart.js'
 import { OrderItemModel, OrderModel, OrderStatusHistoryModel } from './order.models.js'
 
 function escapeRegex(value: string) {
@@ -82,7 +81,7 @@ export class MongooseOrderRepository implements OrderRepository {
     input: CheckoutInput,
     checkoutGroupId: string,
     groups: CheckoutPlanGroup[],
-    cart: CartRecord,
+    cartIdToClear: string | null,
   ): Promise<CheckoutResult> {
     const session = await mongoose.startSession()
     const createdOrderIds: string[] = []
@@ -258,11 +257,13 @@ export class MongooseOrderRepository implements OrderRepository {
             { session },
           )
         }
-        await CartModel.updateOne(
-          { _id: cart.id, userId: buyerId },
-          { $set: { items: [] } },
-          { session },
-        )
+        if (cartIdToClear) {
+          await CartModel.updateOne(
+            { _id: cartIdToClear, userId: buyerId },
+            { $set: { items: [] } },
+            { session },
+          )
+        }
       })
     } catch (error) {
       if (transactionUnavailable(error)) {

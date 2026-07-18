@@ -43,11 +43,13 @@ export class DealerService {
         'MEDIATOR_ALREADY_A_DEALER',
         'This mediator already has a dealer assignment profile.',
       )
-    const mediator = input.mediatorUserId
-      ? await this.findMediator(input.mediatorUserId)
-      : null
+    const mediator = input.mediatorUserId ? await this.findMediator(input.mediatorUserId) : null
     if (input.mediatorUserId && !mediator)
-      throw new AppError(400, 'MEDIATOR_ACCOUNT_REQUIRED', 'Choose an active login-enabled mediator.')
+      throw new AppError(
+        400,
+        'MEDIATOR_ACCOUNT_REQUIRED',
+        'Choose an active login-enabled mediator.',
+      )
     const dealer = await this.dealers.update(id, {
       ...input,
       ...(mediator ? { mediatorEmail: String(mediator.email) } : {}),

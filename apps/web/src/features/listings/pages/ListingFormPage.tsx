@@ -7,7 +7,7 @@ import { AlertIcon, PackageIcon } from '../../../components/ui/icons'
 import { ApiClientError } from '../../../lib/api-client'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { listingsApi } from '../api/listings.api'
-import { useConfirmation } from '../../../components/feedback/ConfirmationProvider'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 
 const conditionOptions: Array<{ value: SecondHandCondition; label: string }> = [
   { value: 'LIKE_NEW', label: 'Like new' },
@@ -161,7 +161,15 @@ export function ListingFormPage() {
       setMessage('Enter a valid price and quantity.')
       return
     }
-    if (await confirm({ title: editing ? 'Submit these listing changes?' : 'Submit this item for review?', description: 'The Campus Angadi moderation team will review the listing before it appears publicly.', confirmLabel: editing ? 'Submit changes' : 'Submit listing' })) mutation.mutate()
+    if (
+      await confirm({
+        title: editing ? 'Submit these listing changes?' : 'Submit this item for review?',
+        description:
+          'The Campus Angadi moderation team will review the listing before it appears publicly.',
+        confirmLabel: editing ? 'Submit changes' : 'Submit listing',
+      })
+    )
+      mutation.mutate()
   }
 
   const existingImages = listing.data?.images ?? []
@@ -206,7 +214,7 @@ export function ListingFormPage() {
       ) : null}
 
       {(!editing || listing.data) && allowedToEdit ? (
-        <form className="content-card listing-form" onSubmit={submit}>
+        <form className="content-card listing-form" onSubmit={(event) => void submit(event)}>
           <div className="listing-form-section">
             <div className="listing-form-section-title">
               <PackageIcon />
