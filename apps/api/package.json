@@ -12,6 +12,7 @@
     "test": "vitest run --coverage=false",
     "seed:catalog": "tsx src/scripts/seed-catalog.ts",
     "seed:dealers": "tsx src/scripts/seed-dealers.ts",
+    "seed:all": "tsx src/scripts/seed-all-collections.ts",
     "db:indexes:check": "tsx src/scripts/check-indexes.ts",
     "db:indexes:ensure": "tsx src/scripts/ensure-indexes.ts"
   },

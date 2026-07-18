@@ -1,25 +1,45 @@
-import type { ProductSummary } from '@campusbaza/contracts'
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import type { ProductSummary } from "@campusbaza/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRightIcon,
   CheckIcon,
   MessageIcon,
   PackageIcon,
+  SearchIcon,
   ShieldIcon,
-} from '../components/ui/icons'
-import { catalogApi } from '../features/products/api/catalog.api'
-import { ProductGrid, ProductGridSkeleton } from '../features/products/components/ProductGrid'
+} from "../components/ui/icons";
+import { catalogApi } from "../features/products/api/catalog.api";
+import {
+  ProductGrid,
+  ProductGridSkeleton,
+} from "../features/products/components/ProductGrid";
 
 export function HomePage() {
-  const homepage = useQuery({ queryKey: ['homepage'], queryFn: catalogApi.homepage })
-  const data = homepage.data
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const homepage = useQuery({
+    queryKey: ["homepage"],
+    queryFn: catalogApi.homepage,
+  });
+  const data = homepage.data;
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = search.trim();
+    navigate(
+      query
+        ? `/second-hand-store?q=${encodeURIComponent(query)}`
+        : "/second-hand-store",
+    );
+  }
 
   return (
     <>
       <section className="hero-section">
-        <div className="hero-ambient hero-ambient-one" />
-        <div className="hero-ambient hero-ambient-two" />
+        <div className="hero-ambient hero-ambient-one" aria-hidden="true" />
+        <div className="hero-ambient hero-ambient-two" aria-hidden="true" />
         <div className="container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow">
@@ -32,14 +52,44 @@ export function HomePage() {
               <br /> <em>Find it here.</em>
             </h1>
             <p>
-              Shop verified essentials, discover great second-hand finds, and sell to people you
-              already share a campus with. Simple, safe, and unmistakably NITC.
+              Shop verified essentials, discover great second-hand finds, and
+              sell to people you already share a campus with. Simple, safe, and
+              unmistakably NITC.
             </p>
+            <form className="hero-search" onSubmit={submitSearch} role="search">
+              <SearchIcon />
+              <label className="sr-only" htmlFor="homepage-search">
+                Search the campus marketplace
+              </label>
+              <input
+                id="homepage-search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search books, cycles, electronics…"
+                autoComplete="off"
+              />
+              <button className="button button-primary" type="submit">
+                Search
+              </button>
+            </form>
+            <div className="hero-quick-links" aria-label="Popular categories">
+              <span>Popular:</span>
+              <Link to="/second-hand-store?q=books">Books</Link>
+              <Link to="/second-hand-store?q=cycles">Cycles</Link>
+              <Link to="/second-hand-store?q=electronics">Electronics</Link>
+              <Link to="/second-hand-store?q=hostel">Hostel essentials</Link>
+            </div>
             <div className="hero-actions">
-              <Link className="button button-primary button-large" to="/official-store">
+              <Link
+                className="button button-primary button-large"
+                to="/official-store"
+              >
                 Shop official store <ArrowRightIcon />
               </Link>
-              <Link className="button button-outline button-large" to="/second-hand-store">
+              <Link
+                className="button button-outline button-large"
+                to="/second-hand-store"
+              >
                 Shop second-hand
               </Link>
             </div>
@@ -54,7 +104,7 @@ export function HomePage() {
               </span>
               <span>
                 <CheckIcon />
-                Offline payments only
+                Safe campus pickup
               </span>
             </div>
           </div>
@@ -122,21 +172,30 @@ export function HomePage() {
               <span className="status-orb" />
               <div>
                 <strong>Sales team assignment</strong>
-                <p>Every saved order is routed to an available Campus Angadi dealer.</p>
+                <p>
+                  Every saved order is routed to an available Campus Angadi
+                  dealer.
+                </p>
               </div>
             </div>
             <div className="support-status">
               <ShieldIcon />
               <div>
                 <strong>Private mediated chat</strong>
-                <p>Buyers speak only with the Campus Angadi team—never directly with sellers.</p>
+                <p>
+                  Buyers speak only with the Campus Angadi team—never directly
+                  with sellers.
+                </p>
               </div>
             </div>
             <div className="support-status">
               <PackageIcon />
               <div>
-                <strong>No online payment gateway</strong>
-                <p>Payment and pickup are coordinated directly after the order is created.</p>
+                <strong>Safer campus handoff</strong>
+                <p>
+                  Payment and pickup details are coordinated after the order is
+                  confirmed.
+                </p>
               </div>
             </div>
           </div>
@@ -146,7 +205,7 @@ export function HomePage() {
       <section className="market-strip" aria-label="Marketplace highlights">
         <div className="container market-strip-inner">
           <span>
-            <ShieldIcon /> NITC email verified
+            <ShieldIcon /> Campus access controlled
           </span>
           <span>
             <PackageIcon /> Official + student listings
@@ -160,34 +219,58 @@ export function HomePage() {
         </div>
       </section>
 
-      <HomepageSection
-        title="Featured on Campus Angadi"
-        kicker="Selected for you"
-        products={data?.sections.FEATURED.products ?? []}
-        loading={homepage.isLoading}
-      />
-      <HomepageSection
-        id="official"
-        title="Official Campus Store"
-        kicker="Administration"
-        products={data?.sections.OFFICIAL.products ?? []}
-        loading={homepage.isLoading}
-        storePath="/official-store"
-      />
-      <HomepageSection
-        id="secondhand"
-        title="Second-Hand Marketplace"
-        kicker="Community"
-        products={data?.sections.SECOND_HAND.products ?? []}
-        loading={homepage.isLoading}
-        storePath="/second-hand-store"
-      />
-      <HomepageSection
-        title="Recently added"
-        kicker="Fresh listings"
-        products={data?.sections.RECENT.products ?? []}
-        loading={homepage.isLoading}
-      />
+      {homepage.isError ? (
+        <section className="section" aria-live="polite">
+          <div
+            className="container catalog-empty homepage-error-state"
+            role="alert"
+          >
+            <PackageIcon />
+            <strong>We couldn’t load the marketplace</strong>
+            <span>
+              Check your connection and try again. Your account and cart are
+              safe.
+            </span>
+            <button
+              className="button button-primary"
+              onClick={() => void homepage.refetch()}
+            >
+              Try again
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+          <HomepageSection
+            title="Featured on Campus Angadi"
+            kicker="Selected for you"
+            products={data?.sections?.FEATURED?.products ?? []}
+            loading={homepage.isLoading}
+          />
+          <HomepageSection
+            id="official"
+            title="Official Campus Store"
+            kicker="Administration"
+            products={data?.sections?.OFFICIAL?.products ?? []}
+            loading={homepage.isLoading}
+            storePath="/official-store"
+          />
+          <HomepageSection
+            id="secondhand"
+            title="Second-Hand Marketplace"
+            kicker="Community"
+            products={data?.sections?.SECOND_HAND?.products ?? []}
+            loading={homepage.isLoading}
+            storePath="/second-hand-store"
+          />
+          <HomepageSection
+            title="Recently added"
+            kicker="Fresh listings"
+            products={data?.sections?.RECENT?.products ?? []}
+            loading={homepage.isLoading}
+          />
+        </>
+      )}
 
       <section className="section" id="how-it-works">
         <div className="container">
@@ -199,14 +282,14 @@ export function HomePage() {
           </div>
           <div className="steps-grid">
             {[
-              'Find a product',
-              'Create the order',
-              'Get a dealer',
-              'Chat with our team',
-              'Collect on campus',
+              "Find a product",
+              "Create the order",
+              "Get a dealer",
+              "Chat with our team",
+              "Collect on campus",
             ].map((step, index) => (
               <div className="step-card" key={step}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
+                <span>{String(index + 1).padStart(2, "0")}</span>
                 <strong>{step}</strong>
                 {index < 4 ? <ArrowRightIcon /> : null}
               </div>
@@ -215,7 +298,7 @@ export function HomePage() {
         </div>
       </section>
     </>
-  )
+  );
 }
 
 function HomepageSection({
@@ -226,12 +309,12 @@ function HomepageSection({
   loading,
   storePath,
 }: {
-  id?: string
-  title: string
-  kicker: string
-  products?: ProductSummary[]
-  loading: boolean
-  storePath?: string
+  id?: string;
+  title: string;
+  kicker: string;
+  products?: ProductSummary[];
+  loading: boolean;
+  storePath?: string;
 }) {
   return (
     <section className="section" id={id}>
@@ -257,5 +340,5 @@ function HomepageSection({
         )}
       </div>
     </section>
-  )
+  );
 }

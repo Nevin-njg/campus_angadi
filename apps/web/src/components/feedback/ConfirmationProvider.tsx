@@ -1,43 +1,93 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 type ConfirmationOptions = {
-  title: string
-  description: string
-  confirmLabel?: string
-  tone?: 'default' | 'danger'
-}
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  tone?: "default" | "danger";
+};
 
-type PendingConfirmation = ConfirmationOptions & { resolve: (value: boolean) => void }
-const ConfirmationContext = createContext<((options: ConfirmationOptions) => Promise<boolean>) | null>(null)
+type PendingConfirmation = ConfirmationOptions & {
+  resolve: (value: boolean) => void;
+};
+const ConfirmationContext = createContext<
+  ((options: ConfirmationOptions) => Promise<boolean>) | null
+>(null);
 
 export function ConfirmationProvider({ children }: { children: ReactNode }) {
-  const [pending, setPending] = useState<PendingConfirmation | null>(null)
-  const confirmRef = useRef<HTMLButtonElement>(null)
+  const [pending, setPending] = useState<PendingConfirmation | null>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const confirm = useCallback(
     (options: ConfirmationOptions) =>
       new Promise<boolean>((resolve) => setPending({ ...options, resolve })),
     [],
-  )
+  );
   const settle = useCallback((value: boolean) => {
     setPending((current) => {
-      current?.resolve(value)
-      return null
-    })
-  }, [])
+      current?.resolve(value);
+      return null;
+    });
+  }, []);
   useEffect(() => {
-    if (!pending) return
-    confirmRef.current?.focus()
-    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && settle(false)
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [pending, settle])
+    if (!pending) return;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    confirmRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        settle(false);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const controls = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [pending, settle]);
 
   return (
     <ConfirmationContext.Provider value={confirm}>
       {children}
       {pending ? (
-        <div className="confirmation-backdrop" role="presentation" onMouseDown={() => settle(false)}>
+        <div
+          className="confirmation-backdrop"
+          role="presentation"
+          onMouseDown={() => settle(false)}
+        >
           <section
+            ref={dialogRef}
             className="confirmation-dialog"
             role="alertdialog"
             aria-modal="true"
@@ -49,24 +99,32 @@ export function ConfirmationProvider({ children }: { children: ReactNode }) {
             <h2 id="confirmation-title">{pending.title}</h2>
             <p id="confirmation-description">{pending.description}</p>
             <div className="confirmation-actions">
-              <button className="button button-outline" onClick={() => settle(false)}>Cancel</button>
               <button
+                type="button"
+                className="button button-outline"
+                onClick={() => settle(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
                 ref={confirmRef}
-                className={`button ${pending.tone === 'danger' ? 'button-danger' : 'button-primary'}`}
+                className={`button ${pending.tone === "danger" ? "button-danger" : "button-primary"}`}
                 onClick={() => settle(true)}
               >
-                {pending.confirmLabel ?? 'Confirm'}
+                {pending.confirmLabel ?? "Confirm"}
               </button>
             </div>
           </section>
         </div>
       ) : null}
     </ConfirmationContext.Provider>
-  )
+  );
 }
 
 export function useConfirmation() {
-  const value = useContext(ConfirmationContext)
-  if (!value) throw new Error('useConfirmation must be used inside ConfirmationProvider')
-  return value
+  const value = useContext(ConfirmationContext);
+  if (!value)
+    throw new Error("useConfirmation must be used inside ConfirmationProvider");
+  return value;
 }
