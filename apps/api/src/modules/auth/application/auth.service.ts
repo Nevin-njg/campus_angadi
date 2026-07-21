@@ -46,6 +46,7 @@ export class AuthService {
   async requestOtp(
     rawEmail: string,
   ): Promise<{ maskedEmail: string; expiresInSeconds: number; resendAfterSeconds: number }> {
+    console.log('Requesting OTP for email:', rawEmail)
     const email = this.assertAllowedEmail(rawEmail)
     const now = new Date()
     const existing = await this.otpStore.get(email)

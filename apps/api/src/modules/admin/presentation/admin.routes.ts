@@ -22,7 +22,7 @@ import type { AdminService } from '../application/admin.service.js'
 const id = z.object({ id: z.string().min(1) }).strict()
 export function createAdminCoreRouter(s: AdminService, a: RequestHandler) {
   const r = Router()
-  r.use(a, requireRoles('ADMIN', 'SUPER_ADMIN'))
+  r.use(a, requireRoles('ADMIN', 'SUPER_ADMIN', 'MODERATOR'))
   r.get(
     '/dashboard',
     asyncHandler(async (_q, p) => {

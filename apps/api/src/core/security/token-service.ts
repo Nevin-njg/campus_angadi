@@ -67,7 +67,7 @@ export class TokenService {
         typeof payload === 'string' ||
         payload.type !== 'access' ||
         typeof payload.sub !== 'string' ||
-        !['USER', 'ADMIN', 'SUPER_ADMIN'].includes(String(payload.role))
+        !['USER', 'ADMIN', 'SUPER_ADMIN', 'MODERATOR'].includes(String(payload.role))
       ) {
         throw new Error('Invalid access payload')
       }

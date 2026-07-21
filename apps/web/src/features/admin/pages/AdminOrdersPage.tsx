@@ -147,6 +147,9 @@ export function AdminOrdersPage() {
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Created
                 </th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -198,11 +201,19 @@ export function AdminOrdersPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-gray-400 text-sm">
                     {new Date(order.createdAt).toLocaleDateString('en-IN')}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Link
+                      to={`/admin/orders/${order.id}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/30 hover:border-amber-400/60 rounded-lg transition-all duration-200"
+                    >
+                      View
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {orders.data && !orders.data.items.length && !orders.isLoading && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
                       <PackageIcon />
                     </div>
