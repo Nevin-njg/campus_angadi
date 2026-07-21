@@ -86,8 +86,9 @@ export class AuthService {
       sendCount,
       sendWindowStartedAt,
     }
-
+    console.log('Storing OTP record:', record)
     await this.otpStore.set(record)
+    console.log('Sending OTP email to:', email)
     try {
       await this.emailSender.sendLoginOtp({
         recipient: email,
@@ -96,6 +97,7 @@ export class AuthService {
         appName: this.options.appName,
       })
     } catch (error) {
+      console.log('Failed to send OTP email:', error)
       await this.otpStore.delete(email)
       throw new AppError(
         503,
