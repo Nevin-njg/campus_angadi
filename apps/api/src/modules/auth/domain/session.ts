@@ -15,7 +15,14 @@ export interface SessionRecord {
 export interface SessionRepository {
   create(input: Omit<SessionRecord, 'createdAt' | 'updatedAt'>): Promise<SessionRecord>
   findById(id: string): Promise<SessionRecord | null>
-  rotate(id: string, refreshTokenHash: string, refreshJti: string, expiresAt: Date): Promise<void>
+  rotate(
+    id: string,
+    expectedRefreshTokenHash: string,
+    expectedRefreshJti: string,
+    refreshTokenHash: string,
+    refreshJti: string,
+    expiresAt: Date,
+  ): Promise<boolean>
   revoke(id: string, reason: string): Promise<void>
   revokeAllForUser(userId: string, reason: string): Promise<void>
 }

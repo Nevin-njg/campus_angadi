@@ -136,16 +136,29 @@ export class InMemorySessionRepository implements SessionRepository {
 
   async rotate(
     id: string,
+    expectedRefreshTokenHash: string,
+    expectedRefreshJti: string,
     refreshTokenHash: string,
     refreshJti: string,
     expiresAt: Date,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const value = this.sessions.get(id)
-    if (!value) throw new Error('Missing session')
+
+    if (
+      !value ||
+      value.revokedAt ||
+      value.expiresAt.getTime() <= Date.now() ||
+      value.refreshTokenHash !== expectedRefreshTokenHash ||
+      value.refreshJti !== expectedRefreshJti
+    ) {
+      return false
+    }
+
     value.refreshTokenHash = refreshTokenHash
     value.refreshJti = refreshJti
     value.expiresAt = expiresAt
     value.updatedAt = new Date()
+    return true
   }
 
   async revoke(id: string, reason: string): Promise<void> {

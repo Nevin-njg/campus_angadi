@@ -115,12 +115,23 @@ export class AuthService {
     }
 
     const tokens = this.tokenService.createTokenPair(value.user.id, value.user.role, session.id)
-    await this.sessions.rotate(
+    const rotated = await this.sessions.rotate(
       session.id,
+      session.refreshTokenHash,
+      session.refreshJti,
       hashToken(tokens.refreshToken),
       tokens.refreshJti,
       tokens.refreshExpiresAt,
     )
+
+    if (!rotated) {
+      await this.sessions.revokeAllForUser(payload.sub, 'REFRESH_TOKEN_REUSE_DETECTED')
+      throw new AppError(
+        401,
+        'REFRESH_TOKEN_REUSE_DETECTED',
+        'This session was revoked for security. Please sign in again.',
+      )
+    }
 
     return {
       accessToken: tokens.accessToken,

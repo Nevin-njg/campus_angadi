@@ -30,14 +30,24 @@ export class MongooseSessionRepository implements SessionRepository {
 
   async rotate(
     id: string,
+    expectedRefreshTokenHash: string,
+    expectedRefreshJti: string,
     refreshTokenHash: string,
     refreshJti: string,
     expiresAt: Date,
-  ): Promise<void> {
-    await SessionModel.updateOne(
-      { _id: id, revokedAt: null },
+  ): Promise<boolean> {
+    const result = await SessionModel.updateOne(
+      {
+        _id: id,
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+        refreshTokenHash: expectedRefreshTokenHash,
+        refreshJti: expectedRefreshJti,
+      },
       { $set: { refreshTokenHash, refreshJti, expiresAt } },
     )
+
+    return result.modifiedCount === 1
   }
 
   async revoke(id: string, reason: string): Promise<void> {
