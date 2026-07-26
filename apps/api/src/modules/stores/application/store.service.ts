@@ -159,7 +159,12 @@ export class StoreService {
       ? new RegExp(escapeRegExp(normalizedQuery), 'i')
       : null
 
-    const activeStores: any[] = await StoreModel.find({ status: 'ACTIVE' })
+    const activeSellerIds = await UserModel.find({ status: 'ACTIVE' }).distinct('_id')
+
+    const activeStores: any[] = await StoreModel.find({
+      status: 'ACTIVE',
+      sellerId: { $in: activeSellerIds },
+    })
       .sort({ name: 1 })
       .lean()
     const activeStoreIds = activeStores.map((store) => store._id)
@@ -188,6 +193,7 @@ export class StoreService {
       status: 'APPROVED',
       published: true,
       deletedAt: null,
+      sellerId: { $in: activeSellerIds },
     }
     if (searchPattern) {
       productFilter.$or = [

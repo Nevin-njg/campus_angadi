@@ -13,6 +13,7 @@ import type {
 import { Types } from 'mongoose'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
+import { StoreModel } from '../../stores/infrastructure/store.model.js'
 import type { ProductRepository } from '../domain/product.js'
 import { ProductImageModel, ProductModel } from './product.models.js'
 
@@ -44,8 +45,10 @@ function mapImage(document: Record<string, unknown>): ProductImage {
   }
 }
 
+type SummaryCategory = Pick<Category, 'id' | 'name' | 'slug'>
+
 type Hydration = {
-  categories: Map<string, Category>
+  categories: Map<string, SummaryCategory>
   images: Map<string, ProductImage[]>
 }
 
@@ -320,24 +323,67 @@ export class MongooseProductRepository implements ProductRepository {
 
   private async hydrateSummaries(documents: Record<string, unknown>[]): Promise<ProductSummary[]> {
     if (!documents.length) return []
+
     const productIds = documents.map((document) => document._id)
     const categoryIds = [...new Set(documents.map((document) => String(document.categoryId)))]
-    const [categoryDocuments, imageDocuments] = await Promise.all([
+    const storeIds = [
+      ...new Set(
+        documents
+          .map((document) => String(document.storeId ?? ''))
+          .filter(Boolean),
+      ),
+    ]
+
+    const [categoryDocuments, imageDocuments, storeDocuments] = await Promise.all([
       CategoryModel.find({ _id: { $in: categoryIds }, deletedAt: null, isActive: true }).lean<
         Record<string, unknown>[]
       >(),
       ProductImageModel.find({ productId: { $in: productIds } })
         .sort({ displayOrder: 1 })
         .lean<Record<string, unknown>[]>(),
+      StoreModel.find({
+        _id: { $in: storeIds },
+        status: 'ACTIVE',
+      }).lean<Record<string, unknown>[]>(),
     ])
-    const categories = new Map(
+
+    const categories = new Map<string, SummaryCategory>(
       categoryDocuments.map((category) => [String(category._id), mapCategory(category)]),
     )
+
+    const stores = new Map(
+      storeDocuments.map((store) => [String(store._id), store]),
+    )
+
+    for (const document of documents) {
+      const categoryKey = String(document.categoryId)
+      if (categories.has(categoryKey)) continue
+
+      const store = stores.get(String(document.storeId))
+      const storeCategories = Array.isArray(store?.categories)
+        ? (store.categories as Record<string, unknown>[])
+        : []
+
+      const storeCategoryId = String(document.storeCategoryId ?? document.categoryId)
+      const storeCategory = storeCategories.find(
+        (category) => String(category._id) === storeCategoryId,
+      )
+
+      if (!storeCategory || storeCategory.isActive === false) continue
+
+      categories.set(categoryKey, {
+        id: String(storeCategory._id),
+        name: String(storeCategory.name),
+        slug: String(storeCategory.slug),
+      })
+    }
+
     const images = new Map<string, ProductImage[]>()
     for (const image of imageDocuments) {
       const productId = String(image.productId)
       images.set(productId, [...(images.get(productId) ?? []), mapImage(image)])
     }
+
     return documents
       .filter((document) => categories.has(String(document.categoryId)))
       .map((document) => mapSummary(document, { categories, images }))
