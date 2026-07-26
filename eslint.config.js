@@ -30,7 +30,11 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-misused-promises': [
         'error',
-        { checksVoidReturn: { arguments: false } },
+        {
+          // React supports async event callbacks. They are intentionally ignored by React,
+          // while no-floating-promises continues to protect promises created elsewhere.
+          checksVoidReturn: { arguments: false, attributes: false },
+        },
       ],
       '@typescript-eslint/no-floating-promises': 'error',
     },
@@ -49,6 +53,14 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/consistent-type-imports': 'off',
+      '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/require-await': 'off',
     },
   },

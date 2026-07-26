@@ -89,14 +89,18 @@ export async function apiRequestEnvelope<T>(
       ...(body === undefined ? {} : { body: isFormData ? body : JSON.stringify(body) }),
     })
   } catch {
-    throw new ApiClientError(0, 'NETWORK_ERROR', 'Unable to reach the server. Check your connection.')
+    throw new ApiClientError(
+      0,
+      'NETWORK_ERROR',
+      'Unable to reach the server. Check your connection.',
+    )
   }
 
   if (
     response.status === 401 &&
     retryOnUnauthorized &&
     !path.startsWith('/auth/refresh') &&
-    !path.startsWith('/auth/otp')
+    !path.startsWith('/auth/google')
   ) {
     const refreshed = await refreshAccessToken().catch(() => false)
     if (refreshed) {

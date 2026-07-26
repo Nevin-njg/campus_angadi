@@ -1,21 +1,9 @@
-import type {
-  AuthUser,
-  RequestOtpInput,
-  UpdateProfileInput,
-  VerifyOtpInput,
-} from '@campusbaza/contracts'
+import type { AuthUser, GoogleSignInInput, UpdateProfileInput } from '@campusbaza/contracts'
 import { apiRequest } from '../../../lib/api-client'
 
 export const authApi = {
-  requestOtp(input: RequestOtpInput) {
-    return apiRequest<{
-      maskedEmail: string
-      expiresInSeconds: number
-      resendAfterSeconds: number
-    }>('/auth/otp/request', { method: 'POST', body: input, retryOnUnauthorized: false })
-  },
-  verifyOtp(input: VerifyOtpInput) {
-    return apiRequest<{ accessToken: string; user: AuthUser }>('/auth/otp/verify', {
+  googleSignIn(input: GoogleSignInInput) {
+    return apiRequest<{ accessToken: string; user: AuthUser }>('/auth/google', {
       method: 'POST',
       body: input,
       retryOnUnauthorized: false,

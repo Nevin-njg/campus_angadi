@@ -3,6 +3,7 @@ import { Types } from 'mongoose'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { ProductImageModel, ProductModel } from '../../products/infrastructure/product.models.js'
 import { UserModel } from '../../users/infrastructure/user.models.js'
+import { StoreModel } from '../../stores/infrastructure/store.model.js'
 import type {
   CartMapper,
   CartRecord,
@@ -89,19 +90,28 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
     const products = await ProductModel.find({ _id: { $in: validIds }, deletedAt: null }).lean<
       Record<string, unknown>[]
     >()
-    const categoryIds = [...new Set(products.map((product) => String(product.categoryId)))]
+    const categoryIds = [
+      ...new Set(
+        products.filter((product) => !product.storeId).map((product) => String(product.categoryId)),
+      ),
+    ]
     const sellerIds = [...new Set(products.map((product) => String(product.sellerId)))]
-    const [categories, sellers, images] = await Promise.all([
+    const storeIds = [
+      ...new Set(products.filter((product) => product.storeId).map((product) => String(product.storeId))),
+    ]
+    const [categories, sellers, stores, images] = await Promise.all([
       CategoryModel.find({ _id: { $in: categoryIds }, deletedAt: null }).lean<
         Record<string, unknown>[]
       >(),
       UserModel.find({ _id: { $in: sellerIds } }).lean<Record<string, unknown>[]>(),
+      StoreModel.find({ _id: { $in: storeIds } }).lean<Record<string, unknown>[]>(),
       ProductImageModel.find({ productId: { $in: validIds } })
         .sort({ displayOrder: 1 })
         .lean<Record<string, unknown>[]>(),
     ])
     const categoryById = new Map(categories.map((category) => [String(category._id), category]))
     const sellerById = new Map(sellers.map((seller) => [String(seller._id), seller]))
+    const storeById = new Map(stores.map((store) => [String(store._id), store]))
     const imagesByProduct = new Map<string, ProductImage[]>()
     for (const image of images) {
       const id = String(image.productId)
@@ -116,9 +126,14 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
       imagesByProduct.set(id, current)
     }
     const mapped = products.flatMap((product): CheckoutProduct[] => {
-      const category = categoryById.get(String(product.categoryId))
       const seller = sellerById.get(String(product.sellerId))
-      if (!category || !seller) return []
+      const store = product.storeId ? storeById.get(String(product.storeId)) : null
+      const storeCategories = (store?.categories as Array<Record<string, unknown>> | undefined) ?? []
+      const storeCategory = storeCategories.find(
+        (category) => String(category._id) === String(product.storeCategoryId),
+      )
+      const category = product.storeId ? storeCategory : categoryById.get(String(product.categoryId))
+      if (!category || !seller || (product.storeId && !store)) return []
       const productImages = imagesByProduct.get(String(product._id)) ?? []
       const summary: ProductSummary = {
         id: String(product._id),
@@ -148,7 +163,9 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
         {
           summary,
           sellerId: String(product.sellerId),
-          categoryActive: Boolean(category.isActive),
+          storeId: product.storeId ? String(product.storeId) : null,
+          categoryActive:
+            Boolean(category.isActive) && (!store || String(store.status) === 'ACTIVE'),
           sellerActive: seller.status === 'ACTIVE',
         },
       ]

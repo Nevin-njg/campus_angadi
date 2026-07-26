@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { createAuthenticateMiddleware } from '../core/middleware/authenticate.js'
 import { TokenService } from '../core/security/token-service.js'
 import { MetricsRegistry } from '../core/observability/metrics.js'
-import { InMemoryOtpStore } from '../infrastructure/otp/in-memory-otp.store.js'
 import { AuthService } from '../modules/auth/application/auth.service.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
 import type { CategoryService } from '../modules/categories/application/category.service.js'
@@ -16,7 +15,7 @@ import type { CartService } from '../modules/cart/application/cart.service.js'
 import type { OrderService } from '../modules/orders/application/order.service.js'
 import type { DealerService } from '../modules/dealers/application/dealer.service.js'
 import {
-  FakeEmailSender,
+  FakeGoogleIdentityVerifier,
   InMemorySessionRepository,
   InMemoryUserRepository,
 } from '../test/fakes.js'
@@ -27,24 +26,13 @@ function createTestRoot(): CompositionRoot {
   const users = new InMemoryUserRepository()
   const sessions = new InMemorySessionRepository()
   const tokens = new TokenService('a'.repeat(48), 'b'.repeat(48), '15m', '30d')
-  const authService = new AuthService(
-    users,
-    sessions,
-    new InMemoryOtpStore(),
-    new FakeEmailSender(),
-    tokens,
-    {
-      appName: 'Campus Angaadi',
-      allowedEmailDomains: ['campusbaza.example.edu'],
-      adminEmails: [],
-      superAdminEmails: [],
-      otpLength: 6,
-      otpExpiryMinutes: 5,
-      otpResendCooldownSeconds: 60,
-      otpMaxAttempts: 5,
-      otpHashSecret: 'c'.repeat(48),
-    },
-  )
+  const googleIdentity = new FakeGoogleIdentityVerifier()
+  const authService = new AuthService(users, sessions, googleIdentity, tokens, {
+    allowedEmailDomains: ['campusbaza.example.edu'],
+    googleHostedDomains: [],
+    adminEmails: [],
+    superAdminEmails: [],
+  })
 
   const emptySection = (key: 'FEATURED' | 'OFFICIAL' | 'SECOND_HAND' | 'RECENT') => ({
     key,
@@ -110,7 +98,7 @@ function createTestRoot(): CompositionRoot {
   return {
     env: {
       NODE_ENV: 'test',
-      APP_NAME: 'Campus Angaadi',
+      APP_NAME: 'Campus Angadi',
       BRAND_MARK: 'CV',
       CAMPUS_DISPLAY_NAME: 'Test Campus',
       WEB_URL: 'http://localhost:5173',
@@ -137,24 +125,11 @@ function createTestRoot(): CompositionRoot {
       MONGODB_MIN_POOL_SIZE: 0,
       MONGODB_SERVER_SELECTION_TIMEOUT_MS: 8000,
       REDIS_URL: 'redis://127.0.0.1:6379',
-      OTP_STORE: 'memory',
       ALLOWED_EMAIL_DOMAINS: ['campusbaza.example.edu'],
+      GOOGLE_CLIENT_ID: 'test-client-id.apps.googleusercontent.com',
+      GOOGLE_HOSTED_DOMAINS: [],
       ADMIN_EMAILS: [],
       SUPER_ADMIN_EMAILS: [],
-      OTP_LENGTH: 6,
-      OTP_EXPIRY_MINUTES: 5,
-      OTP_RESEND_COOLDOWN_SECONDS: 60,
-      OTP_MAX_ATTEMPTS: 5,
-      OTP_SEND_MAX_PER_HOUR: 5,
-      OTP_HASH_SECRET: 'c'.repeat(48),
-      EMAIL_PROVIDER: 'console',
-      SMTP_HOST: '',
-      SMTP_PORT: 587,
-      SMTP_SECURE: false,
-      SMTP_USER: '',
-      SMTP_PASSWORD: '',
-      SMTP_FROM_NAME: 'Campus Angaadi',
-      SMTP_FROM_EMAIL: 'no-reply@campusbaza.example.edu',
       JWT_ACCESS_SECRET: 'a'.repeat(48),
       JWT_REFRESH_SECRET: 'b'.repeat(48),
       ACCESS_TOKEN_EXPIRES_IN: '15m',
@@ -176,7 +151,7 @@ function createTestRoot(): CompositionRoot {
       PRODUCT_IMAGE_MAX_COUNT: 8,
     },
     logger: pino({ enabled: false }),
-    redis: null,
+    redis: null as unknown as CompositionRoot['redis'],
     metrics: new MetricsRegistry(),
     rateLimitStoreFactory: () => undefined,
     authService,
@@ -197,7 +172,7 @@ function createTestRoot(): CompositionRoot {
     },
     settingsService: {
       getPublic: async () => ({
-        appName: 'Campus Angaadi',
+        appName: 'Campus Angadi',
         brandMark: 'CV',
         campusDisplayName: 'Test Campus',
         supportEmail: null,
@@ -222,7 +197,7 @@ function createTestRoot(): CompositionRoot {
   }
 }
 
-describe('Campus Angaadi API application', () => {
+describe('Campus Angadi API application', () => {
   it('returns the health contract without external dependencies', async () => {
     const response = await request(createApp(createTestRoot())).get('/api/v1/health')
     expect(response.status).toBe(200)
@@ -239,12 +214,12 @@ describe('Campus Angaadi API application', () => {
     expect(response.headers['content-type']).toContain('text/plain')
   })
 
-  it('rejects an OTP request for a non-campus domain', async () => {
+  it('rejects an invalid Google sign-in credential', async () => {
     const response = await request(createApp(createTestRoot()))
-      .post('/api/v1/auth/otp/request')
-      .send({ email: 'student@gmail.com' })
-    expect(response.status).toBe(403)
-    expect(response.body.error.code).toBe('EMAIL_DOMAIN_NOT_ALLOWED')
+      .post('/api/v1/auth/google')
+      .send({ credential: 'invalid-google-token'.padEnd(120, 'x') })
+    expect(response.status).toBe(401)
+    expect(response.body.error.code).toBe('GOOGLE_TOKEN_INVALID')
   })
 
   it('serves the public Part 2 catalogue contracts', async () => {

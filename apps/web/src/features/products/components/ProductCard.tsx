@@ -1,10 +1,11 @@
 import type { ProductSummary } from '@campusbaza/contracts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CartIcon, PackageIcon } from '../../../components/ui/icons'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { cartApi } from '../../cart/api/cart.api'
+import { queryKeys } from '../../../lib/query-keys'
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -26,12 +27,22 @@ export function ProductCard({ product }: { product: ProductSummary }) {
   const navigate = useNavigate()
   const client = useQueryClient()
   const [added, setAdded] = useState(false)
+  const feedbackTimer = useRef<number | null>(null)
+
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+    },
+    [],
+  )
+
   const add = useMutation({
     mutationFn: () => cartApi.add({ productId: product.id, quantity: 1 }),
     onSuccess(data) {
-      client.setQueryData(['cart'], data)
+      client.setQueryData(queryKeys.cart(user!.id), data)
       setAdded(true)
-      window.setTimeout(() => setAdded(false), 1600)
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+      feedbackTimer.current = window.setTimeout(() => setAdded(false), 1600)
     },
   })
   const discount =
@@ -39,11 +50,21 @@ export function ProductCard({ product }: { product: ProductSummary }) {
       ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
       : null
   function addToCart() {
+    if (product.stock <= 0 || add.isPending) return
     if (!user) {
       void navigate(`/login?returnTo=${encodeURIComponent(`/products/${product.slug}`)}`)
       return
     }
     add.mutate()
+  }
+  function buyNow() {
+    if (product.stock <= 0) return
+    const checkoutPath = `/checkout?buyNow=${encodeURIComponent(product.slug)}&quantity=1`
+    if (!user) {
+      void navigate(`/login?returnTo=${encodeURIComponent(checkoutPath)}`)
+      return
+    }
+    void navigate(checkoutPath)
   }
   return (
     <article className="catalog-card">
@@ -91,11 +112,35 @@ export function ProductCard({ product }: { product: ProductSummary }) {
           <Link className="button button-outline" to={`/products/${product.slug}`}>
             View
           </Link>
-          <button className="button button-primary" disabled={add.isPending} onClick={addToCart}>
-            <CartIcon /> {added ? 'Added' : add.isPending ? 'Adding…' : 'Add'}
+          <button
+            type="button"
+            className="button button-primary"
+            disabled={add.isPending || product.stock <= 0}
+            onClick={addToCart}
+            aria-label={
+              product.stock <= 0 ? `${product.title} is sold out` : `Add ${product.title} to cart`
+            }
+          >
+            <CartIcon />
+            {product.stock <= 0 ? 'Sold out' : added ? 'Added' : add.isPending ? 'Adding…' : 'Add'}
+          </button>
+          <button
+            type="button"
+            className="button button-outline"
+            disabled={product.stock <= 0}
+            onClick={buyNow}
+          >
+            Buy now
           </button>
         </div>
-        {add.isError ? <small className="card-action-error">{add.error.message}</small> : null}
+        <span className="sr-only" aria-live="polite">
+          {added ? `${product.title} added to cart` : ''}
+        </span>
+        {add.isError ? (
+          <small className="card-action-error" role="alert">
+            {add.error.message}
+          </small>
+        ) : null}
       </div>
     </article>
   )

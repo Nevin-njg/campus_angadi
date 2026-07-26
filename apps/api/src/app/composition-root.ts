@@ -1,15 +1,10 @@
-import type Redis from 'ioredis'
 import { env } from '../config/env.js'
 import { logger } from '../core/http/logger.js'
 import { createAuthenticateMiddleware } from '../core/middleware/authenticate.js'
 import { TokenService } from '../core/security/token-service.js'
 import { createRedis } from '../infrastructure/database/redis.connection.js'
-import { ConsoleEmailSender } from '../infrastructure/email/console-email.sender.js'
-import { SmtpEmailSender } from '../infrastructure/email/smtp-email.sender.js'
-import { InMemoryOtpStore } from '../infrastructure/otp/in-memory-otp.store.js'
-import { RedisOtpStore } from '../infrastructure/otp/redis-otp.store.js'
+import { GoogleIdentityTokenVerifier } from '../infrastructure/google/google-identity.verifier.js'
 import { AuthService } from '../modules/auth/application/auth.service.js'
-import type { EmailSender, OtpStore } from '../modules/auth/domain/otp.js'
 import { MongooseSessionRepository } from '../modules/auth/infrastructure/mongoose-session.repository.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
 import { MongooseUserRepository } from '../modules/users/infrastructure/mongoose-user.repository.js'
@@ -46,6 +41,9 @@ import { createRateLimitStoreFactory } from '../core/rate-limit/rate-limit-store
 import { CleanupService } from '../modules/operations/application/cleanup.service.js'
 import { CleanupScheduler } from '../modules/operations/application/cleanup.scheduler.js'
 import { IndexInspectionService } from '../modules/operations/application/index-inspection.service.js'
+import { ChatService } from '../modules/chat/application/chat.service.js'
+import { CloudinaryAudioStorage } from '../modules/chat/infrastructure/cloudinary-audio-storage.js'
+import { StoreService } from '../modules/stores/application/store.service.js'
 
 export function createCompositionRoot() {
   const metrics = new MetricsRegistry()
@@ -58,40 +56,14 @@ export function createCompositionRoot() {
     env.REFRESH_TOKEN_EXPIRES_IN,
   )
 
-  let redis: Redis | null = null
-  let otpStore: OtpStore
-  if (env.OTP_STORE === 'redis') {
-    redis = createRedis(env.REDIS_URL, logger)
-    otpStore = new RedisOtpStore(redis)
-  } else {
-    otpStore = new InMemoryOtpStore()
-  }
+  const redis = createRedis(env.REDIS_URL, logger)
+  const googleIdentity = new GoogleIdentityTokenVerifier(env.GOOGLE_CLIENT_ID)
 
-  let emailSender: EmailSender
-  if (env.EMAIL_PROVIDER === 'smtp') {
-    emailSender = new SmtpEmailSender(
-      env.SMTP_HOST,
-      env.SMTP_PORT,
-      env.SMTP_SECURE,
-      env.SMTP_USER,
-      env.SMTP_PASSWORD,
-      env.SMTP_FROM_NAME,
-      env.SMTP_FROM_EMAIL,
-    )
-  } else {
-    emailSender = new ConsoleEmailSender(logger)
-  }
-
-  const authService = new AuthService(users, sessions, otpStore, emailSender, tokenService, {
-    appName: env.APP_NAME,
+  const authService = new AuthService(users, sessions, googleIdentity, tokenService, {
     allowedEmailDomains: env.ALLOWED_EMAIL_DOMAINS,
+    googleHostedDomains: env.GOOGLE_HOSTED_DOMAINS,
     adminEmails: env.ADMIN_EMAILS,
     superAdminEmails: env.SUPER_ADMIN_EMAILS,
-    otpLength: env.OTP_LENGTH,
-    otpExpiryMinutes: env.OTP_EXPIRY_MINUTES,
-    otpResendCooldownSeconds: env.OTP_RESEND_COOLDOWN_SECONDS,
-    otpMaxAttempts: env.OTP_MAX_ATTEMPTS,
-    otpHashSecret: env.OTP_HASH_SECRET,
   })
   const profileService = new ProfileService(users)
   const categories = new MongooseCategoryRepository()
@@ -116,6 +88,7 @@ export function createCompositionRoot() {
     maxBytes: env.PRODUCT_IMAGE_MAX_BYTES,
     maxCount: env.PRODUCT_IMAGE_MAX_COUNT,
   })
+  const storeService = new StoreService(uploadService)
   const notifications = new MongooseNotificationRepository()
   const listings = new MongooseListingRepository()
   const listingService = new ListingService(
@@ -131,6 +104,13 @@ export function createCompositionRoot() {
   const cartService = new CartService(carts, checkoutCatalog, cartMapper)
   const orders = new MongooseOrderRepository()
   const orderService = new OrderService(orders, carts, checkoutCatalog, env.APP_NAME, notifications)
+  const chatAudioStorage = new CloudinaryAudioStorage(
+    env.CLOUDINARY_CLOUD_NAME,
+    env.CLOUDINARY_API_KEY,
+    env.CLOUDINARY_API_SECRET,
+    env.CLOUDINARY_FOLDER,
+  )
+  const chatService = new ChatService(chatAudioStorage, env.CHAT_AUDIO_MAX_BYTES)
   const dealers = new MongooseDealerRepository()
   const dealerService = new DealerService(dealers)
   const notificationService = new NotificationService(notifications)
@@ -165,15 +145,19 @@ export function createCompositionRoot() {
     redis,
     metrics,
     rateLimitStoreFactory,
+    tokenService,
+    users,
     authService,
     profileService,
     categoryService,
     productService,
+    storeService,
     homepageService,
     uploadService,
     listingService,
     cartService,
     orderService,
+    chatService,
     dealerService,
     notificationService,
     reportService,

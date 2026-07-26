@@ -39,8 +39,8 @@ backups until the database retention window has passed.
 
 ## Redis
 
-Redis is not the source of truth for marketplace records. It contains short-lived OTP data,
-distributed rate-limit counters, and job locks. Configure Redis persistence and high availability for
+Redis is not the source of truth for marketplace records. It contains distributed rate-limit
+counters and job locks. Configure Redis persistence and high availability for
 service continuity, but MongoDB remains the primary backup target.
 
 ## Secrets

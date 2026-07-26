@@ -1,12 +1,9 @@
 import { Router, type CookieOptions, type RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
-import {
-  requestOtpInputSchema,
-  verifyOtpInputSchema,
-  type RequestOtpInput,
-  type VerifyOtpInput,
-} from '@campusbaza/contracts'
-import { normalizeEmail } from '@campusbaza/validation'
+import * as contracts from '@campusbaza/contracts'
+import type { GoogleSignInInput } from '@campusbaza/contracts'
+
+const { googleSignInInputSchema } = contracts
 import type { AppEnv } from '../../../config/env.js'
 import { asyncHandler } from '../../../core/http/async-handler.js'
 import { validateBody } from '../../../core/middleware/validate.js'
@@ -36,74 +33,28 @@ export function createAuthRouter(
   storeFactory: RateLimitStoreFactory,
 ): Router {
   const router = Router()
-  const ipRequestLimiter = rateLimit({
-    windowMs: 60 * 60_000,
-    limit: 30,
-    ...rateLimitStoreOption(storeFactory, 'auth-otp-ip'),
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: {
-      success: false,
-      error: {
-        code: 'OTP_IP_RATE_LIMIT',
-        message: 'Too many login-code requests. Try again later.',
-      },
-    },
-  })
-  const emailRequestLimiter = rateLimit({
-    windowMs: 60 * 60_000,
-    limit: env.OTP_SEND_MAX_PER_HOUR,
-    ...rateLimitStoreOption(storeFactory, 'auth-otp-email'),
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    keyGenerator: (request) =>
-      `email:${normalizeEmail(String((request.body as RequestOtpInput).email))}`,
-    message: {
-      success: false,
-      error: {
-        code: 'OTP_EMAIL_RATE_LIMIT',
-        message: 'Too many login-code requests. Try again later.',
-      },
-    },
-  })
-  const verifyLimiter = rateLimit({
+  const googleSignInLimiter = rateLimit({
     windowMs: 15 * 60_000,
     limit: 30,
-    ...rateLimitStoreOption(storeFactory, 'auth-otp-verify'),
+    ...rateLimitStoreOption(storeFactory, 'auth-google-sign-in'),
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: {
       success: false,
       error: {
-        code: 'OTP_VERIFY_RATE_LIMIT',
-        message: 'Too many verification attempts. Try again later.',
+        code: 'GOOGLE_SIGN_IN_RATE_LIMIT',
+        message: 'Too many sign-in attempts. Try again later.',
       },
     },
   })
 
   router.post(
-    '/otp/request',
-    ipRequestLimiter,
-    validateBody(requestOtpInputSchema),
-    emailRequestLimiter,
+    '/google',
+    googleSignInLimiter,
+    validateBody(googleSignInInputSchema),
     asyncHandler(async (request, response) => {
-      const input = request.body as RequestOtpInput
-      const data = await auth.requestOtp(input.email)
-      response.status(202).json({
-        success: true,
-        message: 'A login code has been sent if the address is eligible.',
-        data,
-      })
-    }),
-  )
-
-  router.post(
-    '/otp/verify',
-    verifyLimiter,
-    validateBody(verifyOtpInputSchema),
-    asyncHandler(async (request, response) => {
-      const input = request.body as VerifyOtpInput
-      const result = await auth.verifyOtp(input.email, input.code, {
+      const input = request.body as GoogleSignInInput
+      const result = await auth.signInWithGoogle(input.credential, {
         ipAddress: request.ip ?? null,
         userAgent: request.header('user-agent') ?? null,
       })

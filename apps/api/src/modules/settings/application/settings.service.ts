@@ -26,7 +26,6 @@ function map(d: Record<string, unknown>): PlatformSettings {
     allowNewListings: Boolean(d.allowNewListings),
     allowOrders: Boolean(d.allowOrders),
     maintenanceMessage: (d.maintenanceMessage as string | null) ?? null,
-    whatsappMessageTemplate: String(d.whatsappMessageTemplate),
   }
 }
 export class SettingsService {
@@ -42,11 +41,24 @@ export class SettingsService {
     // Upgrade only the previous generated defaults. Existing campuses with a custom name or mark
     // keep their own branding intact.
     const legacyBrandUpdate: Record<string, string> = {}
-    if (d.appName === 'CampusBaza' && this.defaults.appName === 'Campus Angaadi') {
+    if (
+      ['CampusBaza', 'Campus Bazaar', 'Campus Angaadi', 'Campus Annadi'].includes(
+        String(d.appName),
+      ) &&
+      this.defaults.appName === 'Campus Angadi'
+    ) {
       legacyBrandUpdate.appName = this.defaults.appName
     }
     if (d.brandMark === 'CV' && this.defaults.brandMark === 'CA') {
       legacyBrandUpdate.brandMark = this.defaults.brandMark
+    }
+    if (
+      ['My College', 'Your College', 'Your College Name', 'Your Campus'].includes(
+        String(d.campusDisplayName),
+      ) &&
+      this.defaults.campusDisplayName === 'NIT Calicut'
+    ) {
+      legacyBrandUpdate.campusDisplayName = this.defaults.campusDisplayName
     }
     if (Object.keys(legacyBrandUpdate).length) {
       const upgraded = await PlatformSettingModel.findByIdAndUpdate(

@@ -4,6 +4,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { PackageIcon } from '../../../components/ui/icons'
 import { ordersApi } from '../api/orders.api'
 import { OrderStatusBadge } from '../components/OrderStatusBadge'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -17,8 +19,9 @@ export function MyOrdersPage() {
   const [params, setParams] = useSearchParams()
   const status = (params.get('status') || undefined) as OrderStatus | undefined
   const page = Number(params.get('page') || 1)
+  const user = useAuthStore((state) => state.user)!
   const orders = useQuery({
-    queryKey: ['orders', status, page],
+    queryKey: queryKeys.orders.list(user.id, status, page),
     queryFn: () => ordersApi.mine({ status, page, limit: 10 }),
   })
   const created = params.get('created')
@@ -29,15 +32,16 @@ export function MyOrdersPage() {
           <span className="section-kicker">Purchases</span>
           <h1>My orders</h1>
         </div>
-        <Link className="button button-primary" to="/products">
-          Browse products
+        <Link className="button button-primary" to="/search">
+          Shop official store
         </Link>
       </div>
       {created ? (
         <div className="success-banner">
           <strong>Your orders were created.</strong>
           <span>
-            Each seller group has its own order number. A dealer will be assigned in Part 5.
+            Each seller group has its own order number and a private Campus Angadi support
+            conversation.
           </span>
         </div>
       ) : null}

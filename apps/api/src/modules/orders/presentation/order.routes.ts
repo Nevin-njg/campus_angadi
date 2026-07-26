@@ -4,12 +4,16 @@ import { z } from 'zod'
 import {
   adminOrderListQuerySchema,
   assignOrderDealerInputSchema,
+  assignOrderModeratorInputSchema,
+  buyNowInputSchema,
   cancelOrderInputSchema,
   checkoutInputSchema,
   orderListQuerySchema,
   updateOrderStatusInputSchema,
   type AdminOrderListQuery,
   type AssignOrderDealerInput,
+  type AssignOrderModeratorInput,
+  type BuyNowInput,
   type CancelOrderInput,
   type CheckoutInput,
   type OrderListQuery,
@@ -37,13 +41,6 @@ export function createOrderRouter(
   storeFactory: RateLimitStoreFactory,
 ) {
   const router = Router()
-  const whatsappLimiter = rateLimit({
-    windowMs: 15 * 60_000,
-    limit: 30,
-    ...rateLimitStoreOption(storeFactory, 'orders-whatsapp'),
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-  })
   const checkoutLimiter = rateLimit({
     windowMs: 15 * 60_000,
     limit: 10,
@@ -61,6 +58,15 @@ export function createOrderRouter(
       response.status(201).json({ success: true, message: 'Orders created successfully.', data })
     }),
   )
+  router.post(
+    '/buy-now',
+    checkoutLimiter,
+    validateBody(buyNowInputSchema),
+    asyncHandler(async (request, response) => {
+      const data = await service.buyNow(request.auth!.user.id, request.body as BuyNowInput)
+      response.status(201).json({ success: true, message: 'Order created successfully.', data })
+    }),
+  )
   router.get(
     '/',
     validateQuery(orderListQuerySchema),
@@ -75,18 +81,6 @@ export function createOrderRouter(
         data: result.items,
         meta: result.meta,
       })
-    }),
-  )
-  router.post(
-    '/:id/whatsapp',
-    whatsappLimiter,
-    validateParams(idParams),
-    asyncHandler(async (request, response) => {
-      const data = await service.continueOnWhatsapp(
-        String(request.params.id),
-        request.auth!.user.id,
-      )
-      response.json({ success: true, message: 'WhatsApp continuation prepared.', data })
     }),
   )
   router.get(
@@ -115,12 +109,16 @@ export function createOrderRouter(
 
 export function createAdminOrderRouter(service: OrderService, authenticate: RequestHandler) {
   const router = Router()
-  router.use(authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'))
+  router.use(authenticate)
   router.get(
     '/',
+    requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     validateQuery(adminOrderListQuerySchema),
     asyncHandler(async (request, response) => {
-      const result = await service.listAdmin(getValidatedQuery<AdminOrderListQuery>(request))
+      const result = await service.listAdmin(getValidatedQuery<AdminOrderListQuery>(request), {
+        id: request.auth!.user.id,
+        role: request.auth!.user.role,
+      })
       response.json({
         success: true,
         message: 'Orders retrieved successfully.',
@@ -131,14 +129,19 @@ export function createAdminOrderRouter(service: OrderService, authenticate: Requ
   )
   router.get(
     '/:id',
+    requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     validateParams(idParams),
     asyncHandler(async (request, response) => {
-      const data = await service.getAdmin(String(request.params.id))
+      const data = await service.getAdmin(String(request.params.id), {
+        id: request.auth!.user.id,
+        role: request.auth!.user.role,
+      })
       response.json({ success: true, message: 'Order retrieved successfully.', data })
     }),
   )
   router.patch(
     '/:id/dealer',
+    requireRoles('ADMIN', 'SUPER_ADMIN'),
     validateParams(idParams),
     validateBody(assignOrderDealerInputSchema),
     asyncHandler(async (request, response) => {
@@ -151,7 +154,22 @@ export function createAdminOrderRouter(service: OrderService, authenticate: Requ
     }),
   )
   router.patch(
+    '/:id/moderator',
+    requireRoles('ADMIN', 'SUPER_ADMIN'),
+    validateParams(idParams),
+    validateBody(assignOrderModeratorInputSchema),
+    asyncHandler(async (request, response) => {
+      const data = await service.assignModerator(
+        String(request.params.id),
+        request.auth!.user.id,
+        request.body as AssignOrderModeratorInput,
+      )
+      response.json({ success: true, message: 'Moderator assignment updated.', data })
+    }),
+  )
+  router.patch(
     '/:id/status',
+    requireRoles('ADMIN', 'SUPER_ADMIN'),
     validateParams(idParams),
     validateBody(updateOrderStatusInputSchema),
     asyncHandler(async (request, response) => {

@@ -22,7 +22,7 @@ describe('Category Routes', () => {
       slug: 'electronics',
       description: 'Gadgets',
       isActive: true,
-      displayOrder: 1
+      displayOrder: 1,
     })
     testCategoryId = cat._id.toString()
 
@@ -43,7 +43,11 @@ describe('Category Routes', () => {
     }
 
     app.use('/categories', createCategoryRouter(service))
-    app.use('/admin/categories', authenticate, createAdminCategoryRouter(service, (req, res, next) => next()))
+    app.use(
+      '/admin/categories',
+      authenticate,
+      createAdminCategoryRouter(service, (req, res, next) => next()),
+    )
     app.use(errorHandler)
   })
 

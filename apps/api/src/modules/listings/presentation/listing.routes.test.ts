@@ -18,7 +18,7 @@ describe('Listing Routes', () => {
   let categories: MongooseCategoryRepository
   let users: MongooseUserRepository
   let service: ListingService
-  
+
   let testUserId: string
   let testAdminId: string
   let testCategoryId: string
@@ -34,7 +34,7 @@ describe('Listing Routes', () => {
       assertOwnedTemporary: async () => [{ url: 'test.jpg', isPrimary: true }],
       attachToProduct: async () => [{ url: 'test.jpg', isPrimary: true }],
       releaseFromProduct: async () => {},
-      deleteStoredImages: async () => {}
+      deleteStoredImages: async () => {},
     } as any
 
     service = new ListingService(listings, categories, users, fakeUploads)
@@ -44,12 +44,12 @@ describe('Listing Routes', () => {
       role: 'USER',
       status: 'ACTIVE',
       canSell: true,
-      profileCompleted: true
+      profileCompleted: true,
     })
     testUserId = user._id.toString()
     await UserProfileModel.create({
       userId: user._id,
-      fullName: 'Test Seller'
+      fullName: 'Test Seller',
     })
 
     const admin = await UserModel.create({
@@ -57,7 +57,7 @@ describe('Listing Routes', () => {
       role: 'ADMIN',
       status: 'ACTIVE',
       canSell: true,
-      profileCompleted: true
+      profileCompleted: true,
     })
     testAdminId = admin._id.toString()
 
@@ -65,7 +65,7 @@ describe('Listing Routes', () => {
       name: 'Electronics',
       slug: 'electronics',
       isActive: true,
-      displayOrder: 1
+      displayOrder: 1,
     })
     testCategoryId = cat._id.toString()
 
@@ -81,7 +81,7 @@ describe('Listing Routes', () => {
       sellerType: 'USER',
       sellerId: user._id,
       status: 'APPROVED',
-      published: true
+      published: true,
     })
     testListingId = listing._id.toString()
 
@@ -97,7 +97,7 @@ describe('Listing Routes', () => {
       sellerType: 'USER',
       sellerId: user._id,
       status: 'PENDING_APPROVAL',
-      published: false
+      published: false,
     })
     testModerationListingId = modListing._id.toString()
 
@@ -119,8 +119,16 @@ describe('Listing Routes', () => {
 
     const rateLimitStoreFactory = () => undefined as any
 
-    app.use('/listings', authenticate, createListingRouter(service, (req, res, next) => next(), rateLimitStoreFactory))
-    app.use('/admin/moderation', authenticate, createAdminModerationRouter(service, (req, res, next) => next()))
+    app.use(
+      '/listings',
+      authenticate,
+      createListingRouter(service, (req, res, next) => next(), rateLimitStoreFactory),
+    )
+    app.use(
+      '/admin/moderation',
+      authenticate,
+      createAdminModerationRouter(service, (req, res, next) => next()),
+    )
     app.use((err: any, req: any, res: any, next: any) => {
       console.log('Error caught:', err)
       errorHandler(err, req, res, next)
@@ -128,9 +136,7 @@ describe('Listing Routes', () => {
   })
 
   it('GET /listings retrieves user listings', async () => {
-    const response = await request(app)
-      .get('/listings')
-      .set('Authorization', 'Bearer user-token')
+    const response = await request(app).get('/listings').set('Authorization', 'Bearer user-token')
 
     if (response.status !== 200) console.log(response.body)
     expect(response.status).toBe(200)
@@ -159,7 +165,7 @@ describe('Listing Routes', () => {
         price: 150,
         condition: 'USED',
         pickupLocation: 'Main Campus',
-        imageUploadIds: ['upload-1']
+        imageUploadIds: ['upload-1'],
       })
 
     if (response.status !== 201) console.log(JSON.stringify(response.body, null, 2))
@@ -176,7 +182,7 @@ describe('Listing Routes', () => {
         title: 'Updated Old Laptop',
         price: 180,
         keepImageIds: [],
-        imageUploadIds: ['upload-2']
+        imageUploadIds: ['upload-2'],
       })
 
     expect(response.status).toBe(200)
@@ -229,16 +235,16 @@ describe('Listing Routes', () => {
       .post(`/admin/moderation/${testModerationListingId}/decision`)
       .set('Authorization', 'Bearer admin-token')
       .send({
-        decision: 'APPROVE'
+        decision: 'APPROVE',
       })
-      
+
     // Needs to have an image. Let's see if our setup handles it.
     // Fake upload creates one image in attachToProduct, but modListing has no images in DB currently.
     // It might fail with 'LISTING_IMAGE_REQUIRED'. Let's check status.
     if (response.status === 409 && response.body.error.code === 'LISTING_IMAGE_REQUIRED') {
-       expect(response.status).toBe(409)
+      expect(response.status).toBe(409)
     } else {
-       expect(response.status).toBe(200)
+      expect(response.status).toBe(200)
     }
   })
 })

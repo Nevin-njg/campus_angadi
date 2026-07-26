@@ -503,7 +503,7 @@ export class MongooseListingRepository implements ListingRepository {
         actor: actorId
           ? {
               id: actorId,
-              displayName: displayName(profileByUserId.get(actorId), 'Campus Angaadi admin'),
+              displayName: displayName(profileByUserId.get(actorId), 'Campus Angadi admin'),
             }
           : null,
         createdAt: (document.createdAt as Date).toISOString(),

@@ -1,4 +1,4 @@
-# Campus Angaadi release checklist
+# Campus Angadi release checklist
 
 ## Automated gate
 
@@ -12,7 +12,7 @@
 
 - [ ] MongoDB is a replica set and transactions are enabled
 - [ ] Redis authentication/TLS and persistence are enabled
-- [ ] SMTP sender domain is verified
+- [ ] Google OAuth Web Client has the correct authorized JavaScript origins
 - [ ] Cloudinary credentials and folder are correct
 - [ ] HTTPS is active for web and API
 - [ ] CORS contains only the production web origin
@@ -22,18 +22,22 @@
 
 ## Real-service acceptance tests
 
-- [ ] eligible campus email receives an OTP
+- [ ] eligible Google account signs in successfully
 - [ ] invalid domains receive the generic safe failure flow
-- [ ] OTP expiry, resend cooldown, attempt limit, and single-use behavior work
+- [ ] invalid, expired, wrong-audience, and unverified Google ID tokens are rejected
 - [ ] refresh rotation, logout, and logout-all revoke sessions
 - [ ] Cloudinary upload, attachment, replacement, deletion, and stale cleanup work
 - [ ] user listing stays private until approved
 - [ ] listing approval/rejection/change request creates the correct notification
 - [ ] two buyers cannot purchase the same final unit
 - [ ] multi-seller checkout creates correctly grouped orders
+- [ ] Buy Now creates only the selected product order and preserves the existing cart
+- [ ] profile completion updates immediately and unlocks listing creation
+- [ ] cart and notification caches stay isolated when switching accounts
+- [ ] notification references open the correct buyer or staff screen
 - [ ] dealer capacity and least-load assignment work under concurrent checkout
 - [ ] no available dealer preserves the order in the waiting state
-- [ ] WhatsApp URL and tracked redirect work
+- [ ] Buyer-to-team chat, voice notes and audio-call signaling work
 - [ ] completion/cancellation releases dealer workload exactly once
 - [ ] blocking a user revokes active sessions
 - [ ] marketplace listing/order switches are enforced by the API
@@ -52,7 +56,7 @@
 
 ## Release sign-off
 
-- [ ] production environment contains no development OTP console provider
+- [ ] production API and web use the same Google OAuth client ID
 - [ ] sample dealers and placeholder products are removed or replaced
 - [ ] institutional naming and branding are approved
 - [ ] support contact, terms, and privacy URLs are configured

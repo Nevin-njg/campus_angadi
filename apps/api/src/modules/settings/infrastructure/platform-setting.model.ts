@@ -15,11 +15,6 @@ const schema = new Schema(
     allowNewListings: { type: Boolean, required: true, default: true },
     allowOrders: { type: Boolean, required: true, default: true },
     maintenanceMessage: { type: String, default: null },
-    whatsappMessageTemplate: {
-      type: String,
-      required: true,
-      default: 'Hello, I would like to confirm order {{orderNumber}}.',
-    },
   },
   { timestamps: true, versionKey: false },
 )

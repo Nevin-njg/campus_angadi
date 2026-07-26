@@ -1,55 +1,62 @@
-import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useTheme } from '../../hooks/useTheme'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/store/use-auth-store'
 import { cartApi } from '../../features/cart/api/cart.api'
 import { notificationsApi } from '../../features/notifications/api/notifications.api'
 import { BrandLogo } from './BrandLogo'
-import {
-  BellIcon,
-  CartIcon,
-  CloseIcon,
-  MenuIcon,
-  MoonIcon,
-  SearchIcon,
-  SunIcon,
-  UserIcon,
-} from '../ui/icons'
+import { ThemeToggle } from './ThemeToggle'
+import { BellIcon, CartIcon, CloseIcon, MenuIcon, UserIcon } from '../ui/icons'
+import { queryKeys } from '../../lib/query-keys'
 
 const links = [
   { to: '/', label: 'Home' },
-  { to: '/products', label: 'Browse' },
-  { to: '/official-store', label: 'Official Store' },
+  { to: '/search', label: 'Stores' },
   { to: '/second-hand-store', label: 'Second-Hand' },
   { to: '/account/listings/new', label: 'Sell' },
 ]
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const { theme, toggleTheme } = useTheme()
+  const location = useLocation()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.user)
   const cart = useQuery({
-    queryKey: ['cart'],
+    queryKey: queryKeys.cart(user?.id ?? ''),
     queryFn: cartApi.get,
     enabled: Boolean(user),
     staleTime: 30_000,
   })
   const unread = useQuery({
-    queryKey: ['notifications', 'unread'],
+    queryKey: queryKeys.notifications.unread(user?.id ?? ''),
     queryFn: notificationsApi.unread,
     enabled: Boolean(user),
     staleTime: 30_000,
   })
-  const navigate = useNavigate()
 
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    const value = search.trim()
-    void navigate(value ? `/products?q=${encodeURIComponent(value)}` : '/products')
+  useEffect(() => setOpen(false), [location.pathname])
+
+  useEffect(() => {
+    if (!open) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeButtonRef.current?.focus()
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      window.requestAnimationFrame(() => menuButtonRef.current?.focus())
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  function closeMenu() {
     setOpen(false)
+    window.requestAnimationFrame(() => menuButtonRef.current?.focus())
   }
 
   return (
@@ -64,23 +71,8 @@ export function Navbar() {
               </NavLink>
             ))}
           </nav>
-          <form className="nav-search desktop-search" onSubmit={submit}>
-            <SearchIcon aria-hidden="true" />
-            <input
-              aria-label="Search products"
-              placeholder="Search books, electronics, snacks…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </form>
           <div className="nav-actions">
-            <button
-              className="icon-button"
-              onClick={toggleTheme}
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
+            <ThemeToggle />
             {user ? (
               <Link
                 className="icon-button nav-cart-button"
@@ -96,7 +88,7 @@ export function Navbar() {
             {user ? (
               <Link
                 className="icon-button nav-cart-button"
-                to="/account/notifications"
+                to="/notifications"
                 aria-label={`${unread.data?.count ?? 0} unread notifications`}
               >
                 <BellIcon />
@@ -105,9 +97,19 @@ export function Navbar() {
                 ) : null}
               </Link>
             ) : null}
-            {user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-              <Link className="button button-outline admin-nav-button" to="/admin/dashboard">
-                Admin
+            {user?.role === 'SELLER' ? (
+              <Link className="button button-outline admin-nav-button" to="/seller">
+                Seller panel
+              </Link>
+            ) : null}
+            {user?.role === 'MODERATOR' ||
+            user?.role === 'ADMIN' ||
+            user?.role === 'SUPER_ADMIN' ? (
+              <Link
+                className="button button-outline admin-nav-button"
+                to={user.role === 'MODERATOR' ? '/admin/mediator' : '/admin/dashboard'}
+              >
+                {user.role === 'MODERATOR' ? 'Support' : 'Admin'}
               </Link>
             ) : null}
             {user ? (
@@ -121,33 +123,40 @@ export function Navbar() {
               </Link>
             )}
             <button
+              ref={menuButtonRef}
               className="icon-button mobile-menu-button"
               onClick={() => setOpen(true)}
               aria-label="Open menu"
+              aria-expanded={open}
+              aria-controls="mobile-navigation"
             >
               <MenuIcon />
             </button>
           </div>
         </div>
-        <form className="container mobile-search" onSubmit={submit}>
-          <SearchIcon aria-hidden="true" />
-          <input
-            aria-label="Search products"
-            placeholder="Search products"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </form>
       </header>
       <button
         className={`drawer-overlay ${open ? 'open' : ''}`}
-        onClick={() => setOpen(false)}
+        onClick={closeMenu}
         aria-label="Close menu overlay"
+        tabIndex={open ? 0 : -1}
       />
-      <aside className={`mobile-drawer ${open ? 'open' : ''}`} aria-hidden={!open}>
+      <aside
+        id="mobile-navigation"
+        className={`mobile-drawer ${open ? 'open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        aria-hidden={!open}
+      >
         <div className="drawer-head">
           <BrandLogo />
-          <button className="icon-button" onClick={() => setOpen(false)} aria-label="Close menu">
+          <button
+            ref={closeButtonRef}
+            className="icon-button"
+            onClick={closeMenu}
+            aria-label="Close menu"
+          >
             <CloseIcon />
           </button>
         </div>
@@ -162,9 +171,17 @@ export function Navbar() {
               Cart ({cart.data?.totalItems ?? 0})
             </Link>
           ) : null}
-          {user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-            <Link to="/admin/dashboard" onClick={() => setOpen(false)}>
-              Admin panel
+          {user?.role === 'SELLER' ? (
+            <Link to="/seller" onClick={() => setOpen(false)}>
+              Seller panel
+            </Link>
+          ) : null}
+          {user?.role === 'MODERATOR' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+            <Link
+              to={user.role === 'MODERATOR' ? '/admin/mediator' : '/admin/dashboard'}
+              onClick={() => setOpen(false)}
+            >
+              {user.role === 'MODERATOR' ? 'Support inbox' : 'Admin panel'}
             </Link>
           ) : null}
           {user ? (
@@ -177,7 +194,7 @@ export function Navbar() {
             </Link>
           ) : (
             <Link to="/login" className="button button-primary" onClick={() => setOpen(false)}>
-              Sign in with campus email
+              Sign in with Google
             </Link>
           )}
         </nav>

@@ -1,24 +1,19 @@
-import { randomInt, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import type { AuthUser, UserRole } from '@campusbaza/contracts'
-import { isEmailDomainAllowed, maskEmail, normalizeEmail } from '@campusbaza/validation'
+import { isEmailDomainAllowed, normalizeEmail } from '@campusbaza/validation'
 import { AppError } from '../../../core/errors/app-error.js'
-import { hashOtp, hashToken } from '../../../core/security/hash.js'
+import { hashToken } from '../../../core/security/hash.js'
 import type { TokenService } from '../../../core/security/token-service.js'
 import type { UserRepository } from '../../users/domain/user.js'
 import { toAuthUser } from '../../users/domain/user.js'
-import type { EmailSender, OtpRecord, OtpStore } from '../domain/otp.js'
+import type { GoogleIdentityVerifier } from '../domain/google-identity.js'
 import type { SessionRepository } from '../domain/session.js'
 
 export interface AuthServiceOptions {
-  appName: string
   allowedEmailDomains: readonly string[]
+  googleHostedDomains: readonly string[]
   adminEmails: readonly string[]
   superAdminEmails: readonly string[]
-  otpLength: number
-  otpExpiryMinutes: number
-  otpResendCooldownSeconds: number
-  otpMaxAttempts: number
-  otpHashSecret: string
 }
 
 export interface RequestMetadata {
@@ -37,136 +32,60 @@ export class AuthService {
   constructor(
     private readonly users: UserRepository,
     private readonly sessions: SessionRepository,
-    private readonly otpStore: OtpStore,
-    private readonly emailSender: EmailSender,
+    private readonly googleIdentity: GoogleIdentityVerifier,
     private readonly tokenService: TokenService,
     private readonly options: AuthServiceOptions,
   ) {}
 
-  async requestOtp(
-    rawEmail: string,
-  ): Promise<{ maskedEmail: string; expiresInSeconds: number; resendAfterSeconds: number }> {
-    const email = this.assertAllowedEmail(rawEmail)
-    const now = new Date()
-    const existing = await this.otpStore.get(email)
-
-    if (existing && existing.resendAvailableAt.getTime() > now.getTime()) {
-      const retryAfter = Math.ceil((existing.resendAvailableAt.getTime() - now.getTime()) / 1000)
-      throw new AppError(
-        429,
-        'OTP_RESEND_COOLDOWN',
-        `Please wait ${retryAfter} seconds before requesting another code.`,
-        {
-          retryAfterSeconds: retryAfter,
-        },
-      )
-    }
-
-    const code = randomInt(0, 10 ** this.options.otpLength)
-      .toString()
-      .padStart(this.options.otpLength, '0')
-    const expiresAt = new Date(now.getTime() + this.options.otpExpiryMinutes * 60_000)
-    const resendAvailableAt = new Date(now.getTime() + this.options.otpResendCooldownSeconds * 1000)
-    const sendWindowStartedAt =
-      existing && now.getTime() - existing.sendWindowStartedAt.getTime() < 60 * 60_000
-        ? existing.sendWindowStartedAt
-        : now
-    const sendCount =
-      existing && now.getTime() - existing.sendWindowStartedAt.getTime() < 60 * 60_000
-        ? existing.sendCount + 1
-        : 1
-
-    const record: OtpRecord = {
-      email,
-      hash: hashOtp(email, code, this.options.otpHashSecret),
-      expiresAt,
-      resendAvailableAt,
-      attemptsRemaining: this.options.otpMaxAttempts,
-      sendCount,
-      sendWindowStartedAt,
-    }
-
-    await this.otpStore.set(record)
-    try {
-      await this.emailSender.sendLoginOtp({
-        recipient: email,
-        code,
-        expiresInMinutes: this.options.otpExpiryMinutes,
-        appName: this.options.appName,
-      })
-    } catch (error) {
-      await this.otpStore.delete(email)
-      throw new AppError(
-        503,
-        'OTP_DELIVERY_FAILED',
-        'The login code could not be delivered. Please try again.',
-        {
-          cause: error instanceof Error ? error.message : 'Unknown email provider error',
-        },
-      )
-    }
-
-    return {
-      maskedEmail: maskEmail(email),
-      expiresInSeconds: this.options.otpExpiryMinutes * 60,
-      resendAfterSeconds: this.options.otpResendCooldownSeconds,
-    }
-  }
-
-  async verifyOtp(
-    rawEmail: string,
-    code: string,
+  async signInWithGoogle(
+    credential: string,
     metadata: RequestMetadata,
   ): Promise<AuthenticationResult> {
-    const email = this.assertAllowedEmail(rawEmail)
-    const candidateHash = hashOtp(email, code, this.options.otpHashSecret)
-    const verification = await this.otpStore.verifyAndConsume(email, candidateHash)
-
-    if (verification.status === 'MISSING') {
-      throw new AppError(401, 'OTP_INVALID_OR_EXPIRED', 'The code is invalid or has expired.')
-    }
-    if (verification.status === 'LOCKED') {
+    let identity
+    try {
+      identity = await this.googleIdentity.verify(credential)
+    } catch {
       throw new AppError(
-        429,
-        'OTP_ATTEMPTS_EXCEEDED',
-        'Too many incorrect attempts. Request a new code.',
+        401,
+        'GOOGLE_TOKEN_INVALID',
+        'Google sign-in could not be verified. Please try again.',
       )
     }
-    if (verification.status === 'INVALID') {
-      throw new AppError(401, 'OTP_INVALID_OR_EXPIRED', 'The code is invalid or has expired.', {
-        attemptsRemaining: verification.attemptsRemaining,
-      })
+
+    if (!identity.emailVerified) {
+      throw new AppError(
+        403,
+        'GOOGLE_EMAIL_NOT_VERIFIED',
+        'Your Google account email must be verified.',
+      )
     }
 
-    const role = this.resolveRole(email)
-    let value = await this.users.findOrCreateByEmail(email, role)
+    const email = this.assertAllowedEmail(identity.email)
+    this.assertHostedDomain(email, identity.hostedDomain)
+
+    const configuredRole = this.resolveConfiguredRole(email)
+    let value = await this.users.findByEmail(email)
+    const isFirstLogin = value === null
+
+    if (!value) value = await this.users.findOrCreateByEmail(email, configuredRole ?? 'USER')
     if (value.user.status !== 'ACTIVE') {
       await this.sessions.revokeAllForUser(value.user.id, 'ACCOUNT_NOT_ACTIVE')
       throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not currently active.')
     }
 
-    value = await this.users.recordSuccessfulLogin(value.user.id, role)
-    const sessionId = randomUUID()
-    const tokens = this.tokenService.createTokenPair(value.user.id, value.user.role, sessionId)
-
-    await this.sessions.create({
-      id: sessionId,
-      userId: value.user.id,
-      refreshTokenHash: hashToken(tokens.refreshToken),
-      refreshJti: tokens.refreshJti,
-      expiresAt: tokens.refreshExpiresAt,
-      revokedAt: null,
-      revokeReason: null,
-      ipAddress: metadata.ipAddress,
-      userAgent: metadata.userAgent,
-    })
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      refreshExpiresAt: tokens.refreshExpiresAt,
-      user: toAuthUser(value),
+    if (isFirstLogin && (identity.name || identity.picture)) {
+      const fullName = identity.name?.slice(0, 80) ?? undefined
+      const displayName = identity.name?.slice(0, 40) ?? email.split('@')[0]?.slice(0, 40)
+      value = await this.users.updateProfile(value.user.id, {
+        ...(fullName ? { fullName } : {}),
+        ...(displayName && displayName.length >= 2 ? { displayName } : {}),
+        ...(identity.picture ? { profileImageUrl: identity.picture } : {}),
+      })
     }
+
+    value = await this.users.recordSuccessfulLogin(value.user.id, configuredRole ?? value.user.role)
+
+    return this.createSession(value.user.id, value.user.role, toAuthUser(value), metadata)
   }
 
   async refresh(refreshToken: string): Promise<AuthenticationResult> {
@@ -225,21 +144,63 @@ export class AuthService {
     await this.sessions.revokeAllForUser(userId, 'USER_LOGOUT_ALL')
   }
 
+  private async createSession(
+    userId: string,
+    role: UserRole,
+    user: AuthUser,
+    metadata: RequestMetadata,
+  ): Promise<AuthenticationResult> {
+    const sessionId = randomUUID()
+    const tokens = this.tokenService.createTokenPair(userId, role, sessionId)
+
+    await this.sessions.create({
+      id: sessionId,
+      userId,
+      refreshTokenHash: hashToken(tokens.refreshToken),
+      refreshJti: tokens.refreshJti,
+      expiresAt: tokens.refreshExpiresAt,
+      revokedAt: null,
+      revokeReason: null,
+      ipAddress: metadata.ipAddress,
+      userAgent: metadata.userAgent,
+    })
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      refreshExpiresAt: tokens.refreshExpiresAt,
+      user,
+    }
+  }
+
   private assertAllowedEmail(rawEmail: string): string {
     const email = normalizeEmail(rawEmail)
     if (!isEmailDomainAllowed(email, this.options.allowedEmailDomains)) {
       throw new AppError(
         403,
         'EMAIL_DOMAIN_NOT_ALLOWED',
-        'Use an approved campus email address to continue.',
+        'Use an approved Google account to continue.',
       )
     }
     return email
   }
 
-  private resolveRole(email: string): UserRole {
+  private assertHostedDomain(email: string, hostedDomain: string | null): void {
+    if (this.options.googleHostedDomains.length === 0) return
+    const emailDomain = email.split('@')[1] ?? ''
+    if (emailDomain === 'gmail.com') return
+    if (!hostedDomain || !this.options.googleHostedDomains.includes(hostedDomain)) {
+      throw new AppError(
+        403,
+        'GOOGLE_HOSTED_DOMAIN_NOT_ALLOWED',
+        'Use an approved Google Workspace account to continue.',
+      )
+    }
+  }
+
+  private resolveConfiguredRole(email: string): UserRole | null {
     if (this.options.superAdminEmails.includes(email)) return 'SUPER_ADMIN'
     if (this.options.adminEmails.includes(email)) return 'ADMIN'
-    return 'USER'
+    return null
   }
 }

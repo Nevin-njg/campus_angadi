@@ -32,7 +32,10 @@ describe('Notification Routes', () => {
     app = express()
     app.use(express.json())
     app.use('/notifications', createNotificationRouter(mockService as any, mockAuthenticate))
-    app.use('/admin/notifications', createAdminNotificationRouter(mockService as any, mockAdminAuthenticate))
+    app.use(
+      '/admin/notifications',
+      createAdminNotificationRouter(mockService as any, mockAdminAuthenticate),
+    )
 
     // Add error handler so Express doesn't print HTML errors
     app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -78,9 +81,7 @@ describe('Notification Routes', () => {
     it('should return the unread count', async () => {
       mockService.unreadCount.mockResolvedValue(5)
 
-      const response = await request(app)
-        .get('/notifications/unread-count')
-        .expect(200)
+      const response = await request(app).get('/notifications/unread-count').expect(200)
 
       expect(response.body.success).toBe(true)
       expect(response.body.data.count).toBe(5)
@@ -92,9 +93,7 @@ describe('Notification Routes', () => {
     it('should mark all as read', async () => {
       mockService.markAllRead.mockResolvedValue(undefined)
 
-      const response = await request(app)
-        .patch('/notifications/read-all')
-        .expect(200)
+      const response = await request(app).patch('/notifications/read-all').expect(200)
 
       expect(response.body.success).toBe(true)
       expect(mockService.markAllRead).toHaveBeenCalledWith('user-1')
@@ -105,9 +104,7 @@ describe('Notification Routes', () => {
     it('should mark a specific notification as read', async () => {
       mockService.markRead.mockResolvedValue({ id: 'notif-1', read: true } as any)
 
-      const response = await request(app)
-        .patch('/notifications/notif-1/read')
-        .expect(200)
+      const response = await request(app).patch('/notifications/notif-1/read').expect(200)
 
       expect(response.body.success).toBe(true)
       expect(response.body.data.id).toBe('notif-1')
@@ -126,10 +123,7 @@ describe('Notification Routes', () => {
         type: 'SYSTEM',
       }
 
-      const response = await request(app)
-        .post('/admin/notifications')
-        .send(payload)
-        .expect(201)
+      const response = await request(app).post('/admin/notifications').send(payload).expect(201)
 
       expect(response.body.success).toBe(true)
       expect(response.body.data.recipientCount).toBe(10)
@@ -149,15 +143,18 @@ describe('Notification Routes', () => {
     it('should block non-admin users', async () => {
       const nonAdminApp = express()
       nonAdminApp.use(express.json())
-      
+
       const mockNonAdminAuthenticate = (req: Request, res: Response, next: NextFunction) => {
         // @ts-expect-error Mocking auth object
         req.auth = { user: { id: 'user-1', role: 'USER' } }
         next()
       }
-      
-      nonAdminApp.use('/admin/notifications', createAdminNotificationRouter(mockService as any, mockNonAdminAuthenticate))
-      
+
+      nonAdminApp.use(
+        '/admin/notifications',
+        createAdminNotificationRouter(mockService as any, mockNonAdminAuthenticate),
+      )
+
       nonAdminApp.use((err: any, req: Request, res: Response, next: NextFunction) => {
         res.status(err.statusCode || 500).json({
           success: false,
@@ -169,7 +166,7 @@ describe('Notification Routes', () => {
         .post('/admin/notifications')
         .send({ title: 'Test', message: 'Hello', audience: 'ALL' })
         .expect(403)
-        
+
       expect(response.body.code).toBe('INSUFFICIENT_PERMISSION')
     })
   })

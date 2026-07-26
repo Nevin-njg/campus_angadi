@@ -16,6 +16,8 @@ const productSchema = new Schema(
     },
     productType: { type: String, enum: ['NEW', 'SECOND_HAND'], required: true },
     sellerType: { type: String, enum: ['ADMIN', 'USER'], required: true },
+    storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
+    storeCategoryId: { type: Schema.Types.ObjectId, default: null },
     sellerId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
     status: {
       type: String,

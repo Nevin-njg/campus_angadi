@@ -10,3 +10,8 @@ apps/api/uploads/
 .vite/
 backups/
 *.archive.gz
+
+# Local development artifacts
+.patch-backups/
+apps/api/check-store-products.ts
+apps/api/check-seller-create.ts

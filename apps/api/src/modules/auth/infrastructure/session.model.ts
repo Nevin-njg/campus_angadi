@@ -52,11 +52,8 @@ sessionSchema.index({ userId: 1, revokedAt: 1 })
 sessionSchema.index({ revokedAt: 1 })
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
-export type SessionDocumentShape =
-  mongoose.InferSchemaType<typeof sessionSchema>
+export type SessionDocumentShape = mongoose.InferSchemaType<typeof sessionSchema>
 
 export const SessionModel: mongoose.Model<SessionDocumentShape> =
-  (mongoose.models.Session as
-    | mongoose.Model<SessionDocumentShape>
-    | undefined) ??
+  (mongoose.models.Session as mongoose.Model<SessionDocumentShape> | undefined) ??
   mongoose.model<SessionDocumentShape>('Session', sessionSchema)

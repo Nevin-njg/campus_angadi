@@ -66,6 +66,7 @@ export class MongooseNotificationRepository implements NotificationRepository {
   async recipientIdsForAudience(role: UserRole | 'ALL'): Promise<string[]> {
     const filter: Record<string, unknown> = { status: 'ACTIVE' }
     if (role === 'USER') filter.role = 'USER'
+    if (role === 'MODERATOR') filter.role = 'MODERATOR'
     if (role === 'ADMIN') filter.role = { $in: ['ADMIN', 'SUPER_ADMIN'] }
     return (await UserModel.find(filter).distinct('_id')).map(String)
   }

@@ -1,12 +1,12 @@
-# Campus Angaadi production deployment
+# Campus Angadi production deployment
 
-Campus Angaadi is deployed without Docker. The recommended production topology is:
+Campus Angadi is deployed without Docker. The recommended production topology is:
 
 - Node.js 22 LTS for the API
 - a static web host or Nginx for `apps/web/dist`
 - MongoDB Atlas or another replica-set deployment
 - Redis with persistence and authentication
-- an SMTP provider
+- a Google OAuth 2.0 Web Client ID
 - Cloudinary
 - HTTPS at the reverse proxy or platform load balancer
 
@@ -26,21 +26,32 @@ MONGODB_AUTO_INDEX=false
 MONGODB_MAX_POOL_SIZE=30
 MONGODB_MIN_POOL_SIZE=5
 REDIS_URL=rediss://...
-OTP_STORE=redis
 
-EMAIL_PROVIDER=smtp
-SMTP_HOST=...
-SMTP_USER=...
-SMTP_PASSWORD=...
+ALLOWED_EMAIL_DOMAINS=gmail.com,nitc.ac.in
+GOOGLE_CLIENT_ID=<google-web-client-id>.apps.googleusercontent.com
+GOOGLE_HOSTED_DOMAINS=
 COOKIE_SECURE=true
-COOKIE_SAME_SITE=lax
+# Use none when the web and API are on different sites, such as Vercel + Render.
+COOKIE_SAME_SITE=none
 
 METRICS_ENABLED=true
 METRICS_TOKEN=<long-random-secret>
+
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CHAT_AUDIO_MAX_BYTES=8000000
+
+# Web build-time variables
+VITE_API_URL=https://api.campusbaza.example.edu/api/v1
+VITE_GOOGLE_CLIENT_ID=<same-google-web-client-id>.apps.googleusercontent.com
+VITE_WEBRTC_ICE_SERVERS_JSON=[{"urls":"stun:stun.example.edu:3478"},{"urls":"turns:turn.example.edu:5349","username":"short-lived-user","credential":"short-lived-credential"}]
 ```
 
-Generate unrelated secrets for OTP hashing, access tokens, refresh tokens, and metrics. Do not reuse a
-password or commit the environment file.
+Configure a TURN service for reliable audio calls across campus, mobile, and restrictive networks.
+Prefer short-lived TURN credentials issued by your infrastructure provider.
+
+Generate unrelated secrets for access tokens, refresh tokens, and metrics. Do not reuse a password or commit the environment file. Configure the frontend origins in the Google OAuth client before deployment.
 
 ## 2. Release validation
 
@@ -73,7 +84,7 @@ Example systemd unit:
 
 ```ini
 [Unit]
-Description=Campus Angaadi API
+Description=Campus Angadi API
 After=network.target
 
 [Service]
@@ -125,6 +136,8 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Request-Id $request_id;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_read_timeout 35s;
     }
 }

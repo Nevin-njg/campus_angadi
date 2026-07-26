@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest'
 import { BrandLogo } from './BrandLogo'
 
 describe('BrandLogo', () => {
-  it('uses the Campus Angaadi brand and temporary CA mark', () => {
+  it('uses the Campus Angadi brand and temporary CA mark', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     client.setQueryData(['settings', 'public'], {
-      appName: 'Campus Angaadi',
+      appName: 'Campus Angadi',
       brandMark: 'CA',
       campusDisplayName: 'Your Campus',
       supportEmail: null,
@@ -26,7 +26,7 @@ describe('BrandLogo', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('Campus Angaadi')).toBeInTheDocument()
+    expect(screen.getByText('Campus Angadi')).toBeInTheDocument()
     expect(screen.getByText('CA')).toBeInTheDocument()
   })
 })

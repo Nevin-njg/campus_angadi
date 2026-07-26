@@ -1,4 +1,4 @@
-const baseUrl = (process.env.API_BASE_URL ?? 'http://localhost:5000/api/v1').replace(/\/$/, '')
+const baseUrl = (process.env.API_BASE_URL ?? 'http://localhost:3001/api/v1').replace(/\/$/, '')
 const metricsToken = process.env.METRICS_TOKEN ?? ''
 
 async function check(path, expectedStatus = 200, headers = {}) {
@@ -16,7 +16,7 @@ await check('/ready')
 if (metricsToken) {
   const metrics = await check('/metrics', 200, { Authorization: `Bearer ${metricsToken}` })
   if (!metrics.includes('campusbaza_process_uptime_seconds')) {
-    throw new Error('Metrics response did not contain CampusBaza process metrics')
+    throw new Error('Metrics response did not contain Campus Angadi process metrics')
   }
 }
-console.log('CampusBaza API smoke checks passed.')
+console.log('Campus Angadi API smoke checks passed.')

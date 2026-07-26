@@ -13,7 +13,7 @@ export function AuthBootstrap({ children }: { children: ReactNode }) {
     return (
       <div className="app-loading" role="status" aria-live="polite">
         <div className="brand-loader">CA</div>
-        <span>Preparing Campus Angaadi…</span>
+        <span>Preparing Campus Angadi…</span>
       </div>
     )
   }

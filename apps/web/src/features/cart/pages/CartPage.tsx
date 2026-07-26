@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { AlertIcon, CartIcon, TrashIcon } from '../../../components/ui/icons'
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { cartApi } from '../api/cart.api'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { queryKeys } from '../../../lib/query-keys'
+import { useAuthStore } from '../../auth/store/use-auth-store'
 
 function price(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -14,9 +17,11 @@ function price(value: number) {
 
 export function CartPage() {
   const client = useQueryClient()
-  const cart = useQuery({ queryKey: ['cart'], queryFn: cartApi.get })
+  const confirm = useConfirmation()
+  const user = useAuthStore((state) => state.user)!
+  const cart = useQuery({ queryKey: queryKeys.cart(user.id), queryFn: cartApi.get })
   const refresh = (data: Awaited<ReturnType<typeof cartApi.get>>) => {
-    client.setQueryData(['cart'], data)
+    client.setQueryData(queryKeys.cart(user.id), data)
   }
   const update = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
@@ -54,9 +59,9 @@ export function CartPage() {
         <div className="container catalog-empty cart-empty">
           <CartIcon />
           <strong>Your cart is empty</strong>
-          <span>Browse approved campus products and add something you need.</span>
-          <Link className="button button-primary" to="/products">
-            Browse products
+          <span>Choose a store and add something you need.</span>
+          <Link className="button button-primary" to="/">
+            Choose a store
           </Link>
         </div>
       </section>
@@ -75,7 +80,17 @@ export function CartPage() {
             <button
               className="button button-ghost danger-text"
               disabled={busy}
-              onClick={() => clear.mutate()}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: 'Clear your cart?',
+                    description: 'Every item currently in your cart will be removed.',
+                    confirmLabel: 'Clear cart',
+                    tone: 'danger',
+                  })
+                )
+                  clear.mutate()
+              }}
             >
               <TrashIcon /> Clear cart
             </button>
@@ -182,7 +197,7 @@ export function CartPage() {
           >
             Proceed to checkout
           </Link>
-          <Link className="button button-outline" to="/products">
+          <Link className="button button-outline" to="/">
             Continue shopping
           </Link>
         </aside>

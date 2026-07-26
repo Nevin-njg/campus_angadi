@@ -5,6 +5,7 @@ import { rateLimit } from 'express-rate-limit'
 import helmet from 'helmet'
 import pinoHttp from 'pino-http'
 import { AppError } from '../core/errors/app-error.js'
+import { isOriginAllowed } from '../core/http/origin-policy.js'
 import { errorHandler, notFoundHandler } from '../core/middleware/error-handler.js'
 import { createMetricsRouter } from '../core/observability/metrics.routes.js'
 import { rateLimitStoreOption } from '../core/rate-limit/rate-limit-store.factory.js'
@@ -37,6 +38,11 @@ import {
 } from '../modules/orders/presentation/order.routes.js'
 import { createAdminDealerRouter } from '../modules/dealers/presentation/dealer.routes.js'
 import {
+  createAdminStoreRouter,
+  createSellerStoreRouter,
+  createStoreRouter,
+} from '../modules/stores/presentation/store.routes.js'
+import {
   createNotificationRouter,
   createAdminNotificationRouter,
 } from '../modules/notifications/presentation/notification.routes.js'
@@ -54,6 +60,7 @@ import { createMarketplaceGate } from '../modules/settings/presentation/marketpl
 import { createAdminCoreRouter } from '../modules/admin/presentation/admin.routes.js'
 import { requireRoles } from '../core/middleware/authenticate.js'
 import { createOperationsRouter } from '../modules/operations/presentation/operations.routes.js'
+import { createChatRouter } from '../modules/chat/presentation/chat.routes.js'
 import type { CompositionRoot } from './composition-root.js'
 
 export function createApp(root: CompositionRoot) {
@@ -71,7 +78,7 @@ export function createApp(root: CompositionRoot) {
   )
   const corsOptions: cors.CorsOptions = {
     origin(origin, callback) {
-      if (!origin || root.env.CORS_ALLOWED_ORIGINS.includes(origin.toLowerCase())) {
+      if (!origin || isOriginAllowed(origin, root.env.CORS_ALLOWED_ORIGINS, root.env.NODE_ENV)) {
         callback(null, true)
         return
       }
@@ -128,7 +135,7 @@ export function createApp(root: CompositionRoot) {
           return false
         }
       },
-      redisRequired: root.env.OTP_STORE === 'redis',
+      redisRequired: true,
     }),
   )
   if (root.env.METRICS_ENABLED) {
@@ -141,6 +148,8 @@ export function createApp(root: CompositionRoot) {
   api.use('/profile', createProfileRouter(root.profileService, root.authenticate))
   api.use('/categories', createCategoryRouter(root.categoryService))
   api.use('/products', createProductRouter(root.productService))
+  api.use('/stores', createStoreRouter(root.storeService))
+  api.use('/seller/store', createSellerStoreRouter(root.storeService, root.authenticate))
   api.use('/homepage', createHomepageRouter(root.homepageService))
   api.use(
     '/uploads',
@@ -170,18 +179,20 @@ export function createApp(root: CompositionRoot) {
     createMarketplaceGate(root.settingsService, 'ORDERS'),
     createOrderRouter(root.orderService, root.authenticate, root.rateLimitStoreFactory),
   )
+  api.use('/chat', createChatRouter(root.chatService, root.authenticate))
   api.use('/notifications', createNotificationRouter(root.notificationService, root.authenticate))
   api.use('/reports', createReportRouter(root.reportService, root.authenticate))
   api.use('/settings', createSettingsRouter(root.settingsService))
   api.use(
     '/admin',
     root.authenticate,
-    requireRoles('ADMIN', 'SUPER_ADMIN'),
+    requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     createAdminAuditMiddleware(root.auditService),
   )
   api.use('/admin', createAdminCoreRouter(root.adminService, root.authenticate))
   api.use('/admin/categories', createAdminCategoryRouter(root.categoryService, root.authenticate))
   api.use('/admin/products', createAdminProductRouter(root.productService, root.authenticate))
+  api.use('/admin/stores', createAdminStoreRouter(root.storeService, root.authenticate))
   api.use('/admin/homepage', createAdminHomepageRouter(root.homepageService, root.authenticate))
   api.use('/admin/orders', createAdminOrderRouter(root.orderService, root.authenticate))
   api.use('/admin/dealers', createAdminDealerRouter(root.dealerService, root.authenticate))

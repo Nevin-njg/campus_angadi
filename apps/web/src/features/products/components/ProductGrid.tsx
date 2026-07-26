@@ -19,7 +19,7 @@ export function ProductGrid({
     )
   }
   return (
-    <div className="catalog-grid">
+    <div className="catalog-grid" aria-live="polite">
       {products.map((product) => (
         <ProductCard key={product.id} product={product} />
       ))}
@@ -29,9 +29,10 @@ export function ProductGrid({
 
 export function ProductGridSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="catalog-grid" aria-label="Loading products">
+    <div className="catalog-grid" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading products</span>
       {Array.from({ length: count }, (_, index) => (
-        <div className="catalog-card catalog-skeleton" key={index}>
+        <div className="catalog-card catalog-skeleton" key={index} aria-hidden="true">
           <div className="catalog-card-media" />
           <div className="catalog-card-body">
             <span />

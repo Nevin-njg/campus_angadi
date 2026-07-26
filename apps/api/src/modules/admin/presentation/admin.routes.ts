@@ -2,9 +2,11 @@ import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import {
   adminUserListQuerySchema,
+  enrollMediatorInputSchema,
   salesAnalyticsQuerySchema,
   updateAdminUserInputSchema,
   type AdminUserListQuery,
+  type EnrollMediatorInput,
   type SalesAnalyticsQuery,
   type UpdateAdminUserInput,
 } from '@campusbaza/contracts'
@@ -58,6 +60,20 @@ export function createAdminCoreRouter(s: AdminService, a: RequestHandler) {
           { id: q.auth!.user.id, role: q.auth!.user.role },
           String(q.params.id),
           q.body as UpdateAdminUserInput,
+        ),
+      })
+    }),
+  )
+  r.post(
+    '/mediators',
+    validateBody(enrollMediatorInputSchema),
+    asyncHandler(async (q, p) => {
+      p.status(201).json({
+        success: true,
+        message: 'Mediator access enabled.',
+        data: await s.enrollMediator(
+          { id: q.auth!.user.id, role: q.auth!.user.role },
+          q.body as EnrollMediatorInput,
         ),
       })
     }),

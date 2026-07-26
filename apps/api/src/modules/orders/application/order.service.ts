@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
+  AssignOrderModeratorInput,
+  BuyNowInput,
   CancelOrderInput,
   CheckoutInput,
   CheckoutResult,
@@ -10,7 +12,7 @@ import type {
   OrderStatus,
   PaginatedResult,
   UpdateOrderStatusInput,
-  WhatsappContinuation,
+  UserRole,
 } from '@campusbaza/contracts'
 import { AppError } from '../../../core/errors/app-error.js'
 import type { CartRepository, CheckoutCatalogRepository } from '../../cart/domain/cart.js'
@@ -20,7 +22,7 @@ import type { NotificationRepository } from '../../notifications/domain/notifica
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   WAITING_FOR_DEALER_ASSIGNMENT: ['CANCELLED', 'REJECTED'],
-  AWAITING_WHATSAPP_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONTACTED: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONFIRMED: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
@@ -33,7 +35,7 @@ const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 const USER_CANCELLABLE: readonly OrderStatus[] = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
-  'AWAITING_WHATSAPP_CONFIRMATION',
+  'AWAITING_TEAM_CONFIRMATION',
 ]
 
 export class OrderService {
@@ -41,28 +43,42 @@ export class OrderService {
     private readonly orders: OrderRepository,
     private readonly carts: CartRepository,
     private readonly catalog: CheckoutCatalogRepository,
-    private readonly appName = 'Campus Angaadi',
+    private readonly appName = 'Campus Angadi',
     private readonly notifications: NotificationRepository | null = null,
   ) {}
 
   async checkout(buyerId: string, input: CheckoutInput): Promise<CheckoutResult> {
     const cart = await this.carts.findOrCreate(buyerId)
     if (!cart.items.length) throw new AppError(409, 'CART_EMPTY', 'Your cart is empty.')
-    const products = await this.catalog.findProducts(cart.items.map((item) => item.productId))
+    return this.createCheckout(buyerId, input, cart.items, cart.id)
+  }
+
+  async buyNow(buyerId: string, input: BuyNowInput): Promise<CheckoutResult> {
+    const { productId, quantity, ...checkoutInput } = input
+    return this.createCheckout(buyerId, checkoutInput, [{ productId, quantity }], null)
+  }
+
+  private async createCheckout(
+    buyerId: string,
+    input: CheckoutInput,
+    selectedItems: Array<{ productId: string; quantity: number }>,
+    cartIdToClear: string | null,
+  ): Promise<CheckoutResult> {
+    const products = await this.catalog.findProducts(selectedItems.map((item) => item.productId))
     const productById = new Map(products.map((product) => [product.summary.id, product]))
     const groups = new Map<string, CheckoutPlanGroup>()
 
-    for (const cartItem of cart.items) {
-      const product = productById.get(cartItem.productId)
+    for (const selectedItem of selectedItems) {
+      const product = productById.get(selectedItem.productId)
       if (!product) {
-        throw new AppError(409, 'PRODUCT_NOT_AVAILABLE', 'A product in your cart is unavailable.')
+        throw new AppError(409, 'PRODUCT_NOT_AVAILABLE', 'The selected product is unavailable.')
       }
       if (
         product.summary.status !== 'APPROVED' ||
         !product.summary.published ||
         !product.categoryActive ||
         !product.sellerActive ||
-        product.summary.stock < cartItem.quantity
+        product.summary.stock < selectedItem.quantity
       ) {
         throw new AppError(
           409,
@@ -74,16 +90,25 @@ export class OrderService {
         throw new AppError(
           409,
           'OWN_PRODUCT_NOT_PURCHASABLE',
-          'Remove your own listing from the cart before checkout.',
+          'You cannot purchase your own listing.',
         )
       }
-      const groupKey = product.summary.sellerType === 'ADMIN' ? 'ADMIN' : product.sellerId
+      const groupKey = product.storeId
+        ? `STORE:${product.storeId}`
+        : product.summary.sellerType === 'ADMIN'
+          ? 'ADMIN'
+          : product.sellerId
       const group = groups.get(groupKey) ?? {
         sellerType: product.summary.sellerType,
-        sellerId: product.summary.sellerType === 'ADMIN' ? null : product.sellerId,
+        sellerId: product.storeId
+          ? product.sellerId
+          : product.summary.sellerType === 'ADMIN'
+            ? null
+            : product.sellerId,
+        storeId: product.storeId,
         items: [],
       }
-      group.items.push({ product, quantity: cartItem.quantity })
+      group.items.push({ product, quantity: selectedItem.quantity })
       groups.set(groupKey, group)
     }
 
@@ -92,7 +117,7 @@ export class OrderService {
       input,
       randomUUID(),
       [...groups.values()],
-      cart,
+      cartIdToClear,
     )
     await this.notifications?.sendToUser(buyerId, {
       type: 'ORDER',
@@ -143,12 +168,18 @@ export class OrderService {
     return updated
   }
 
-  listAdmin(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>> {
-    return this.orders.listAdmin(query)
+  listAdmin(
+    query: AdminOrderListQuery,
+    actor?: { id: string; role: UserRole },
+  ): Promise<PaginatedResult<OrderDetail>> {
+    return this.orders.listAdmin(query, actor?.role === 'MODERATOR' ? actor.id : undefined)
   }
 
-  async getAdmin(orderId: string): Promise<OrderDetail> {
-    const order = await this.orders.findAdminById(orderId)
+  async getAdmin(orderId: string, actor?: { id: string; role: UserRole }): Promise<OrderDetail> {
+    const order = await this.orders.findAdminById(
+      orderId,
+      actor?.role === 'MODERATOR' ? actor.id : undefined,
+    )
     if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
     return order
   }
@@ -165,50 +196,16 @@ export class OrderService {
     return order
   }
 
-  async continueOnWhatsapp(orderId: string, buyerId: string): Promise<WhatsappContinuation> {
-    const order = await this.orders.recordWhatsappRedirect(orderId, buyerId)
-    if (!order) {
-      const current = await this.orders.findOwnedById(orderId, buyerId)
-      if (!current) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
-      if (!current.assignedDealer) {
-        throw new AppError(
-          409,
-          'DEALER_NOT_ASSIGNED',
-          'A sales dealer has not been assigned yet. Please check again shortly.',
-        )
-      }
-      throw new AppError(
-        409,
-        'WHATSAPP_UNAVAILABLE',
-        'WhatsApp continuation is not available for this order.',
-      )
-    }
-    const dealer = order.assignedDealer
-    if (!dealer || !order.whatsappRedirectedAt) {
-      throw new AppError(409, 'DEALER_NOT_ASSIGNED', 'A sales dealer has not been assigned yet.')
-    }
-    const items = order.items.map((item) => `${item.quantity} × ${item.productName}`).join(', ')
-    const message = [
-      `Hello, I would like to confirm my ${this.appName} order.`,
-      '',
-      `Order ID: ${order.orderNumber}`,
-      `Customer: ${order.fullName}`,
-      `Phone: ${order.phoneNumber}`,
-      `Products: ${items}`,
-      `Total amount: ₹${order.totalAmount.toLocaleString('en-IN')}`,
-      `Pickup location: ${order.pickupLocation}`,
-      ...(order.preferredPickupTime ? [`Preferred time: ${order.preferredPickupTime}`] : []),
-      '',
-      'Please confirm the availability and next steps for this order.',
-    ].join('\n')
-    const phone = dealer.phoneNumber.replace(/\D/g, '')
-    return {
-      url: `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      message,
-      dealer,
-      redirectCount: order.whatsappRedirectCount,
-      redirectedAt: order.whatsappRedirectedAt,
-    }
+  async assignModerator(orderId: string, actorId: string, input: AssignOrderModeratorInput) {
+    const order = await this.orders.assignModerator(orderId, actorId, input)
+    await this.notifications?.sendToUser(input.moderatorId, {
+      type: 'ORDER',
+      title: 'Conversation assigned',
+      message: `You are assigned to assist with order ${order.orderNumber}.`,
+      referenceType: 'ORDER',
+      referenceId: order.id,
+    })
+    return order
   }
 
   async updateStatus(

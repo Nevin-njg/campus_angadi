@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { UpdateProfileInput, UserRole } from '@campusbaza/contracts'
 import type { EmailSender } from '../modules/auth/domain/otp.js'
+import type {
+  GoogleIdentity,
+  GoogleIdentityVerifier,
+} from '../modules/auth/domain/google-identity.js'
 import type { SessionRecord, SessionRepository } from '../modules/auth/domain/session.js'
 import type {
   ProfileRecord,
@@ -8,6 +12,20 @@ import type {
   UserRepository,
   UserWithProfile,
 } from '../modules/users/domain/user.js'
+
+export class FakeGoogleIdentityVerifier implements GoogleIdentityVerifier {
+  readonly identities = new Map<string, GoogleIdentity>()
+
+  set(credential: string, identity: GoogleIdentity): void {
+    this.identities.set(credential, identity)
+  }
+
+  async verify(credential: string): Promise<GoogleIdentity> {
+    const identity = this.identities.get(credential)
+    if (!identity) throw new Error('Invalid Google credential')
+    return structuredClone(identity)
+  }
+}
 
 export class FakeEmailSender implements EmailSender {
   readonly messages: Array<{ recipient: string; code: string }> = []
@@ -34,6 +52,7 @@ export class InMemoryUserRepository implements UserRepository {
     const existing = await this.findByEmail(email)
     if (existing) {
       existing.user.role = role
+      if (role === 'MODERATOR') existing.user.canMediateOrders = true
       this.records.set(existing.user.id, structuredClone(existing))
       return existing
     }
@@ -46,6 +65,7 @@ export class InMemoryUserRepository implements UserRepository {
       role,
       status: 'ACTIVE',
       canSell: true,
+      canMediateOrders: role === 'MODERATOR',
       profileCompleted: false,
       createdAt: now,
       updatedAt: now,
@@ -75,6 +95,7 @@ export class InMemoryUserRepository implements UserRepository {
     const value = this.records.get(userId)
     if (!value) throw new Error('Missing user')
     value.user.role = role
+    if (role === 'MODERATOR') value.user.canMediateOrders = true
     value.user.lastLoginAt = new Date()
     value.user.lastActiveAt = new Date()
     value.user.updatedAt = new Date()

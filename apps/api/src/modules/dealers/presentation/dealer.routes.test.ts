@@ -29,7 +29,7 @@ describe('Dealer Routes', () => {
 
     const router = createAdminDealerRouter(mockService as unknown as DealerService, mockAuth)
     app.use('/dealers', router)
-    
+
     // Global error handler
     app.use((err: any, req: any, res: any, next: any) => {
       console.error(err)
@@ -57,7 +57,7 @@ describe('Dealer Routes', () => {
       } as any)
 
       const response = await request(app).get('/dealers').query({ limit: 10, page: 1 })
-      
+
       expect(response.status).toBe(200)
       expect(response.body).toEqual({
         success: true,
@@ -79,7 +79,7 @@ describe('Dealer Routes', () => {
       mockService.get.mockResolvedValue({ id: '1', displayName: 'Dealer 1' } as any)
 
       const response = await request(app).get('/dealers/1')
-      
+
       expect(response.status).toBe(200)
       expect(response.body).toEqual({
         success: true,
@@ -100,6 +100,7 @@ describe('Dealer Routes', () => {
 
   describe('POST /dealers', () => {
     const validPayload = {
+      mediatorUserId: '507f1f77bcf86cd799439011',
       displayName: 'Test Dealer',
       phoneNumber: '+1234567890',
     }
@@ -108,7 +109,7 @@ describe('Dealer Routes', () => {
       mockService.create.mockResolvedValue({ id: '1', ...validPayload } as any)
 
       const response = await request(app).post('/dealers').send(validPayload)
-      
+
       expect(response.status).toBe(201)
       expect(response.body).toEqual({
         success: true,
@@ -133,7 +134,7 @@ describe('Dealer Routes', () => {
       mockService.update.mockResolvedValue({ id: '1', ...validPayload } as any)
 
       const response = await request(app).patch('/dealers/1').send(validPayload)
-      
+
       expect(response.status).toBe(200)
       expect(response.body).toEqual({
         success: true,
@@ -144,7 +145,9 @@ describe('Dealer Routes', () => {
     })
 
     it('should handle not found error', async () => {
-      mockService.update.mockRejectedValue(new AppError(404, 'DEALER_NOT_FOUND', 'Dealer not found.'))
+      mockService.update.mockRejectedValue(
+        new AppError(404, 'DEALER_NOT_FOUND', 'Dealer not found.'),
+      )
 
       const response = await request(app).patch('/dealers/1').send(validPayload)
       expect(response.status).toBe(404)
@@ -156,7 +159,7 @@ describe('Dealer Routes', () => {
       mockService.remove.mockResolvedValue(undefined)
 
       const response = await request(app).delete('/dealers/1')
-      
+
       expect(response.status).toBe(200)
       expect(response.body).toEqual({
         success: true,
@@ -167,7 +170,13 @@ describe('Dealer Routes', () => {
     })
 
     it('should handle conflict error', async () => {
-      mockService.remove.mockRejectedValue(new AppError(409, 'DEALER_HAS_OPEN_ORDERS', 'Reassign or finish this dealer’s open orders before removing the dealer.'))
+      mockService.remove.mockRejectedValue(
+        new AppError(
+          409,
+          'DEALER_HAS_OPEN_ORDERS',
+          'Reassign or finish this dealer’s open orders before removing the dealer.',
+        ),
+      )
 
       const response = await request(app).delete('/dealers/1')
       expect(response.status).toBe(409)

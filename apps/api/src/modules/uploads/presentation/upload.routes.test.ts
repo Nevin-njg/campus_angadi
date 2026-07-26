@@ -38,7 +38,7 @@ describe('UploadRoutes', () => {
       mockService as unknown as ImageUploadService,
       mockAuthMiddleware,
       { maxBytes: 1024 * 1024, maxCount: 2 }, // 1MB, 2 files
-      mockStoreFactory
+      mockStoreFactory,
     )
 
     app.use('/uploads', router)
@@ -111,9 +111,7 @@ describe('UploadRoutes', () => {
     })
 
     it('should successfully upload product images', async () => {
-      const mockResult = [
-        { id: 'img-1', url: 'http://example.com/img1.png' },
-      ]
+      const mockResult = [{ id: 'img-1', url: 'http://example.com/img1.png' }]
       mockService.uploadProductImages.mockResolvedValue(mockResult as any)
 
       const response = await request(app)
@@ -147,7 +145,9 @@ describe('UploadRoutes', () => {
     })
 
     it('should handle errors from removeTemporary', async () => {
-      mockService.removeTemporary.mockRejectedValue(new AppError(404, 'NOT_FOUND', 'Image not found'))
+      mockService.removeTemporary.mockRejectedValue(
+        new AppError(404, 'NOT_FOUND', 'Image not found'),
+      )
 
       const response = await request(app).delete('/uploads/temp-id-123')
 

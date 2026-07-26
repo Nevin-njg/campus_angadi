@@ -16,6 +16,7 @@ export interface CartRecord {
 export interface CheckoutProduct {
   summary: ProductSummary
   sellerId: string
+  storeId: string | null
   categoryActive: boolean
   sellerActive: boolean
 }

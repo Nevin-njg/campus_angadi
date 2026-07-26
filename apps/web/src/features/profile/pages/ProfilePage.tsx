@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -10,6 +10,10 @@ import { ApiClientError } from '../../../lib/api-client'
 import { authApi } from '../../auth/api/auth.api'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { queryKeys } from '../../../lib/query-keys'
+import { useNavigate } from 'react-router-dom'
+import { takeReturnTo } from '../../auth/lib/auth-return'
 
 const profileFormSchema = z.object({
   fullName: z.string().trim().min(2, 'Enter your full name.').max(80),
@@ -35,10 +39,13 @@ export function ProfilePage() {
   const currentUser = useAuthStore((state) => state.user)
   const updateUser = useAuthStore((state) => state.updateUser)
   const logoutAll = useAuthStore((state) => state.logoutAll)
+  const confirm = useConfirmation()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [message, setMessage] = useState<string | null>(null)
 
   const profileQuery = useQuery({
-    queryKey: ['profile'],
+    queryKey: queryKeys.profile(currentUser?.id ?? ''),
     queryFn: () => authApi.getProfile(),
     initialData: currentUser ? { user: currentUser } : undefined,
   })
@@ -86,7 +93,10 @@ export function ProfilePage() {
       }),
     onSuccess(result) {
       updateUser(result.user)
+      queryClient.setQueryData(queryKeys.profile(result.user.id), { user: result.user })
       setMessage('Your profile has been saved.')
+      const destination = takeReturnTo()
+      if (destination) void navigate(destination, { replace: true })
     },
     onError(error) {
       setMessage(error instanceof ApiClientError ? error.message : 'Unable to save your profile.')
@@ -124,14 +134,26 @@ export function ProfilePage() {
           <div className="verified-email">
             <ShieldIcon />
             <div>
-              <span>Verified campus email</span>
+              <span>Verified email</span>
               <strong>{user.email}</strong>
             </div>
             <span className="verified-badge">Verified</span>
           </div>
           <form
             className="profile-form"
-            onSubmit={(event) => void form.handleSubmit((values) => mutation.mutate(values))(event)}
+            onSubmit={(event) =>
+              void form.handleSubmit(async (values) => {
+                if (
+                  await confirm({
+                    title: 'Save profile changes?',
+                    description:
+                      'Your updated campus details will be used for listings, orders and mediator coordination.',
+                    confirmLabel: 'Save profile',
+                  })
+                )
+                  mutation.mutate(values)
+              })(event)
+            }
             noValidate
           >
             <div className="form-grid two-columns">
@@ -211,7 +233,23 @@ export function ProfilePage() {
           <div className="content-card danger-card">
             <h3>Session security</h3>
             <p>Sign out every device currently connected to this account.</p>
-            <Button variant="danger" onClick={() => void logoutAll()}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                void (async () => {
+                  if (
+                    await confirm({
+                      title: 'Sign out every device?',
+                      description:
+                        'Every active Campus Angadi session for this account will be revoked, including this one.',
+                      confirmLabel: 'Sign out all devices',
+                      tone: 'danger',
+                    })
+                  )
+                    await logoutAll()
+                })()
+              }}
+            >
               Sign out all devices
             </Button>
           </div>

@@ -169,12 +169,19 @@ export class MongooseAdminRepository {
     if (q.role) filter.role = q.role
     if (q.status) filter.status = q.status
     if (q.canSell !== undefined) filter.canSell = q.canSell
+    if (q.canMediateOrders !== undefined) {
+      filter.$or = q.canMediateOrders
+        ? [{ canMediateOrders: true }, { role: 'MODERATOR' }]
+        : [{ canMediateOrders: { $ne: true }, role: { $ne: 'MODERATOR' } }]
+    }
     if (q.q) {
       const regex = new RegExp(escapeRegex(q.q), 'i')
       const profiles = await UserProfileModel.find({
         $or: [{ displayName: regex }, { fullName: regex }],
       }).distinct('userId')
-      filter.$or = [{ email: regex }, { _id: { $in: profiles } }]
+      const search = [{ email: regex }, { _id: { $in: profiles } }]
+      if (filter.$or) filter.$and = [{ $or: filter.$or }, { $or: search }]
+      else filter.$or = search
     }
     const [docs, total] = await Promise.all([
       UserModel.find(filter)
@@ -236,6 +243,7 @@ export class MongooseAdminRepository {
         role: d.role as AdminUserSummary['role'],
         status: d.status as AdminUserSummary['status'],
         canSell: Boolean(d.canSell),
+        canMediateOrders: Boolean(d.canMediateOrders) || d.role === 'MODERATOR',
         profileCompleted: Boolean(d.profileCompleted),
         listingCount: lmap.get(String(d._id)) ?? 0,
         orderCount: omap.get(String(d._id)) ?? 0,
@@ -249,7 +257,13 @@ export class MongooseAdminRepository {
     const set: Record<string, unknown> = {}
     if (input.status) set.status = input.status
     if (input.canSell !== undefined) set.canSell = input.canSell
-    if (input.role) set.role = input.role
+    if (input.canMediateOrders !== undefined) set.canMediateOrders = input.canMediateOrders
+    if (input.role) {
+      set.role = input.role
+      if (input.role === 'MODERATOR') set.canMediateOrders = true
+      if (input.role === 'USER' && input.canMediateOrders === undefined)
+        set.canMediateOrders = false
+    }
     if (input.internalNotes !== undefined) set.internalNotes = input.internalNotes
     const d = await UserModel.findByIdAndUpdate(id, { $set: set }, { new: true }).lean<
       Record<string, unknown>
@@ -264,6 +278,32 @@ export class MongooseAdminRepository {
   }
   async superAdminCount() {
     return UserModel.countDocuments({ role: 'SUPER_ADMIN', status: 'ACTIVE' })
+  }
+
+  async getUserByEmail(email: string): Promise<AdminUserDetail | null> {
+    const document = await UserModel.findOne({ email }).lean<Record<string, unknown>>()
+    return document ? this.getUser(String(document._id)) : null
+  }
+
+  async enrollMediator(email: string, role: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN') {
+    const now = new Date()
+    const document = await UserModel.findOneAndUpdate(
+      { email },
+      {
+        $setOnInsert: {
+          email,
+          emailVerified: false,
+          status: 'ACTIVE',
+          canSell: true,
+          profileCompleted: false,
+          createdAt: now,
+        },
+        $set: { role, canMediateOrders: true },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    ).lean<Record<string, unknown>>()
+    if (!document) return null
+    return this.getUser(String(document._id))
   }
 
   async sales(q: SalesAnalyticsQuery): Promise<SalesAnalytics> {

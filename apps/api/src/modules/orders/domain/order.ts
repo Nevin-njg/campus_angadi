@@ -1,6 +1,7 @@
 import type {
   AdminOrderListQuery,
   AssignOrderDealerInput,
+  AssignOrderModeratorInput,
   CheckoutInput,
   CheckoutResult,
   OrderDetail,
@@ -8,7 +9,7 @@ import type {
   OrderStatus,
   PaginatedResult,
 } from '@campusbaza/contracts'
-import type { CartRecord, CheckoutProduct } from '../../cart/domain/cart.js'
+import type { CheckoutProduct } from '../../cart/domain/cart.js'
 
 export interface CheckoutPlanItem {
   product: CheckoutProduct
@@ -18,6 +19,7 @@ export interface CheckoutPlanItem {
 export interface CheckoutPlanGroup {
   sellerType: 'ADMIN' | 'USER'
   sellerId: string | null
+  storeId: string | null
   items: CheckoutPlanItem[]
 }
 
@@ -27,18 +29,22 @@ export interface OrderRepository {
     input: CheckoutInput,
     checkoutGroupId: string,
     groups: CheckoutPlanGroup[],
-    cart: CartRecord,
+    cartIdToClear: string | null,
   ): Promise<CheckoutResult>
   listOwned(buyerId: string, query: OrderListQuery): Promise<PaginatedResult<OrderDetail>>
   findOwnedById(orderId: string, buyerId: string): Promise<OrderDetail | null>
-  listAdmin(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>>
-  findAdminById(orderId: string): Promise<OrderDetail | null>
+  listAdmin(query: AdminOrderListQuery, moderatorId?: string): Promise<PaginatedResult<OrderDetail>>
+  findAdminById(orderId: string, moderatorId?: string): Promise<OrderDetail | null>
   assignDealer(
     orderId: string,
     actorId: string,
     input: AssignOrderDealerInput,
   ): Promise<OrderDetail>
-  recordWhatsappRedirect(orderId: string, buyerId: string): Promise<OrderDetail | null>
+  assignModerator(
+    orderId: string,
+    actorId: string,
+    input: AssignOrderModeratorInput,
+  ): Promise<OrderDetail>
   transition(
     orderId: string,
     expectedStatus: OrderStatus,

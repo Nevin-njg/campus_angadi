@@ -25,6 +25,7 @@
     "postinstall": "npm run build:packages",
     "seed:catalog": "npm run build:packages && npm run seed:catalog --workspace=@campusbaza/api",
     "seed:dealers": "npm run build:packages && npm run seed:dealers --workspace=@campusbaza/api",
+    "seed:all": "npm run build:packages && npm run seed:all --workspace=@campusbaza/api",
     "db:indexes:check": "npm run build:packages && npm run db:indexes:check --workspace=@campusbaza/api",
     "db:indexes:ensure": "npm run build:packages && npm run db:indexes:ensure --workspace=@campusbaza/api",
     "backup:mongodb": "bash scripts/backup-mongodb.sh",

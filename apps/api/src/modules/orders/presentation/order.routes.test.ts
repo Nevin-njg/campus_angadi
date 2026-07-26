@@ -15,13 +15,14 @@ describe('Order Routes', () => {
   beforeEach(() => {
     mockOrderService = {
       checkout: vi.fn(),
+      buyNow: vi.fn(),
       listOwned: vi.fn(),
-      continueOnWhatsapp: vi.fn(),
       getOwned: vi.fn(),
       cancelOwned: vi.fn(),
       listAdmin: vi.fn(),
       getAdmin: vi.fn(),
       assignDealer: vi.fn(),
+      assignModerator: vi.fn(),
       updateStatus: vi.fn(),
     } as unknown as vi.Mocked<OrderService>
 
@@ -40,7 +41,11 @@ describe('Order Routes', () => {
     app = express()
     app.use(express.json())
 
-    const orderRouter = createOrderRouter(mockOrderService as any, mockAuthenticate, mockStoreFactory)
+    const orderRouter = createOrderRouter(
+      mockOrderService as any,
+      mockAuthenticate,
+      mockStoreFactory,
+    )
     app.use('/orders', orderRouter)
 
     const adminRouter = createAdminOrderRouter(mockOrderService as any, mockAuthenticate)
@@ -79,6 +84,38 @@ describe('Order Routes', () => {
       })
     })
 
+    describe('POST /orders/buy-now', () => {
+      it('creates a direct order with validated product and checkout details', async () => {
+        const body = {
+          productId: 'product-1',
+          quantity: 2,
+          fullName: 'John Doe',
+          phoneNumber: '1234567890',
+          pickupLocation: 'Main Gate',
+        }
+        mockOrderService.buyNow.mockResolvedValue({ checkoutGroupId: 'direct-group' } as any)
+
+        const res = await request(app).post('/orders/buy-now').send(body)
+
+        expect(res.status).toBe(201)
+        expect(res.body.data.checkoutGroupId).toBe('direct-group')
+        expect(mockOrderService.buyNow).toHaveBeenCalledWith('user-123', body)
+      })
+
+      it('rejects invalid direct-order quantities', async () => {
+        const res = await request(app).post('/orders/buy-now').send({
+          productId: 'product-1',
+          quantity: 0,
+          fullName: 'John Doe',
+          phoneNumber: '1234567890',
+          pickupLocation: 'Main Gate',
+        })
+
+        expect(res.status).toBe(400)
+        expect(mockOrderService.buyNow).not.toHaveBeenCalled()
+      })
+    })
+
     describe('GET /orders', () => {
       it('should list owned orders', async () => {
         mockOrderService.listOwned.mockResolvedValue({
@@ -93,24 +130,6 @@ describe('Order Routes', () => {
         expect(res.body.data).toHaveLength(1)
         expect(res.body.meta.total).toBe(1)
         expect(mockOrderService.listOwned).toHaveBeenCalledWith('user-123', { page: 1, limit: 10 })
-      })
-    })
-
-    describe('POST /orders/:id/whatsapp', () => {
-      it('should continue on whatsapp', async () => {
-        mockOrderService.continueOnWhatsapp.mockResolvedValue({ url: 'http://wa.me/123' } as any)
-
-        const res = await request(app).post('/orders/order-1/whatsapp')
-
-        expect(res.status).toBe(200)
-        expect(res.body.success).toBe(true)
-        expect(res.body.data.url).toBe('http://wa.me/123')
-        expect(mockOrderService.continueOnWhatsapp).toHaveBeenCalledWith('order-1', 'user-123')
-      })
-
-      it('should return 400 for invalid id', async () => {
-        const res = await request(app).post('/orders//whatsapp') // This will match nothing or 404
-        expect(res.status).toBe(404)
       })
     })
 
@@ -129,7 +148,10 @@ describe('Order Routes', () => {
 
     describe('POST /orders/:id/cancel', () => {
       it('should cancel owned order', async () => {
-        mockOrderService.cancelOwned.mockResolvedValue({ id: 'order-1', status: 'CANCELLED' } as any)
+        mockOrderService.cancelOwned.mockResolvedValue({
+          id: 'order-1',
+          status: 'CANCELLED',
+        } as any)
 
         const body = { reason: 'No longer needed' }
         const res = await request(app).post('/orders/order-1/cancel').send(body)
@@ -154,7 +176,10 @@ describe('Order Routes', () => {
         expect(res.status).toBe(200)
         expect(res.body.success).toBe(true)
         expect(res.body.data).toHaveLength(1)
-        expect(mockOrderService.listAdmin).toHaveBeenCalledWith({ page: 1, limit: 10 })
+        expect(mockOrderService.listAdmin).toHaveBeenCalledWith(
+          { page: 1, limit: 10 },
+          { id: 'user-123', role: 'ADMIN' },
+        )
       })
     })
 
@@ -166,7 +191,23 @@ describe('Order Routes', () => {
 
         expect(res.status).toBe(200)
         expect(res.body.success).toBe(true)
-        expect(mockOrderService.getAdmin).toHaveBeenCalledWith('order-1')
+        expect(mockOrderService.getAdmin).toHaveBeenCalledWith('order-1', {
+          id: 'user-123',
+          role: 'ADMIN',
+        })
+      })
+    })
+
+    describe('PATCH /admin/orders/:id/moderator', () => {
+      it('should assign the conversation to a moderator', async () => {
+        mockOrderService.assignModerator.mockResolvedValue({ id: 'order-1' } as any)
+
+        const body = { moderatorId: 'moderator-1' }
+        const res = await request(app).patch('/admin/orders/order-1/moderator').send(body)
+
+        expect(res.status).toBe(200)
+        expect(res.body.success).toBe(true)
+        expect(mockOrderService.assignModerator).toHaveBeenCalledWith('order-1', 'user-123', body)
       })
     })
 
