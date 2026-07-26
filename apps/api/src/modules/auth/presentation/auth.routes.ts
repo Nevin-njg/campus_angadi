@@ -5,7 +5,9 @@ import type { GoogleSignInInput } from '@campusbaza/contracts'
 
 const { googleSignInInputSchema } = contracts
 import type { AppEnv } from '../../../config/env.js'
+import { AppError } from '../../../core/errors/app-error.js'
 import { asyncHandler } from '../../../core/http/async-handler.js'
+import { isOriginAllowed } from '../../../core/http/origin-policy.js'
 import { validateBody } from '../../../core/middleware/validate.js'
 import {
   rateLimitStoreOption,
@@ -33,6 +35,38 @@ export function createAuthRouter(
   storeFactory: RateLimitStoreFactory,
 ): Router {
   const router = Router()
+
+  const requireTrustedOrigin: RequestHandler = (request, _response, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      next()
+      return
+    }
+
+    const origin = request.header('origin')
+
+    // Keep local command-line testing convenient, while requiring an Origin
+    // header for every unsafe production authentication request.
+    if (!origin && env.NODE_ENV !== 'production') {
+      next()
+      return
+    }
+
+    if (!origin || !isOriginAllowed(origin, env.CORS_ALLOWED_ORIGINS, env.NODE_ENV)) {
+      next(
+        new AppError(
+          403,
+          'CSRF_ORIGIN_DENIED',
+          'This authentication request did not come from an allowed origin.',
+        ),
+      )
+      return
+    }
+
+    next()
+  }
+
+  router.use(requireTrustedOrigin)
+
   const googleSignInLimiter = rateLimit({
     windowMs: 15 * 60_000,
     limit: 30,

@@ -16,12 +16,16 @@ describe('Auth Routes', () => {
 
   const credential = 'google-id-token-'.padEnd(120, 'x')
   const env = {
+    NODE_ENV: 'test',
+    CORS_ALLOWED_ORIGINS: ['https://campus.example'],
     COOKIE_SECURE: false,
     COOKIE_SAME_SITE: 'lax' as const,
     COOKIE_DOMAIN: '',
   } as any
 
   beforeEach(() => {
+    env.NODE_ENV = 'test'
+
     const users = new MongooseUserRepository()
     const sessions = new MongooseSessionRepository()
     google = new FakeGoogleIdentityVerifier()
@@ -93,5 +97,36 @@ describe('Auth Routes', () => {
 
     expect(response.status).toBe(401)
     expect(response.body.error.code).toBe('GOOGLE_TOKEN_INVALID')
+  })
+
+  it('allows unsafe production auth requests from a configured origin', async () => {
+    env.NODE_ENV = 'production'
+
+    const response = await request(app)
+      .post('/auth/logout')
+      .set('Origin', 'https://campus.example')
+
+    expect(response.status).toBe(200)
+    expect(response.body.success).toBe(true)
+  })
+
+  it('rejects unsafe production auth requests without an Origin header', async () => {
+    env.NODE_ENV = 'production'
+
+    const response = await request(app).post('/auth/logout')
+
+    expect(response.status).toBe(403)
+    expect(response.body.error.code).toBe('CSRF_ORIGIN_DENIED')
+  })
+
+  it('rejects unsafe production auth requests from an untrusted origin', async () => {
+    env.NODE_ENV = 'production'
+
+    const response = await request(app)
+      .post('/auth/logout')
+      .set('Origin', 'https://attacker.example')
+
+    expect(response.status).toBe(403)
+    expect(response.body.error.code).toBe('CSRF_ORIGIN_DENIED')
   })
 })
