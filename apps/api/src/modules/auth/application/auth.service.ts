@@ -60,12 +60,20 @@ export class AuthService {
       )
     }
 
-    const email = this.assertAllowedEmail(identity.email)
-    this.assertHostedDomain(email, identity.hostedDomain)
-
+    const email = normalizeEmail(identity.email)
     const configuredRole = this.resolveConfiguredRole(email)
     let value = await this.users.findByEmail(email)
     const isFirstLogin = value === null
+
+    const domainAllowed = isEmailDomainAllowed(email, this.options.allowedEmailDomains)
+    if (!value && !domainAllowed && !configuredRole) {
+      throw new AppError(
+        403,
+        'ACCESS_APPROVAL_REQUIRED',
+        'This email needs administrator approval before its first sign-in.',
+      )
+    }
+    if (domainAllowed) this.assertHostedDomain(email, identity.hostedDomain)
 
     if (!value) value = await this.users.findOrCreateByEmail(email, configuredRole ?? 'USER')
     if (value.user.status !== 'ACTIVE') {
@@ -182,18 +190,6 @@ export class AuthService {
       refreshExpiresAt: tokens.refreshExpiresAt,
       user,
     }
-  }
-
-  private assertAllowedEmail(rawEmail: string): string {
-    const email = normalizeEmail(rawEmail)
-    if (!isEmailDomainAllowed(email, this.options.allowedEmailDomains)) {
-      throw new AppError(
-        403,
-        'EMAIL_DOMAIN_NOT_ALLOWED',
-        'Use an approved Google account to continue.',
-      )
-    }
-    return email
   }
 
   private assertHostedDomain(email: string, hostedDomain: string | null): void {

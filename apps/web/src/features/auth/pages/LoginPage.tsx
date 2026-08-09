@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BrandLogo } from '../../../components/layout/BrandLogo'
 import { ShieldIcon } from '../../../components/ui/icons'
@@ -17,6 +17,10 @@ export function LoginPage() {
   const establishSession = useAuthStore((state) => state.establishSession)
   const [serverError, setServerError] = useState<string | null>(null)
   const [signingIn, setSigningIn] = useState(false)
+  const [requestCredential, setRequestCredential] = useState<string | null>(null)
+  const [requestForm, setRequestForm] = useState({ fullName: '', affiliation: '', reason: '' })
+  const [requestSent, setRequestSent] = useState(false)
+  const [requesting, setRequesting] = useState(false)
 
   useEffect(() => {
     if (user) void navigate('/', { replace: true })
@@ -43,6 +47,11 @@ export function LoginPage() {
           : '/account/profile'
         void navigate(destination, { replace: true })
       } catch (error) {
+        if (error instanceof ApiClientError && error.code === 'ACCESS_APPROVAL_REQUIRED') {
+          setRequestCredential(credential)
+          setServerError(null)
+          return
+        }
         setServerError(
           error instanceof ApiClientError
             ? error.message
@@ -54,6 +63,23 @@ export function LoginPage() {
     },
     [establishSession, navigate],
   )
+
+  async function submitAccessRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!requestCredential) return
+    setRequesting(true)
+    setServerError(null)
+    try {
+      await authApi.requestAccess({ credential: requestCredential, ...requestForm })
+      setRequestSent(true)
+    } catch (error) {
+      setServerError(
+        error instanceof Error ? error.message : 'The access request could not be sent.',
+      )
+    } finally {
+      setRequesting(false)
+    }
+  }
 
   return (
     <div className="auth-page">
@@ -94,12 +120,74 @@ export function LoginPage() {
           </div>
           <h2>Sign in to Campus Angadi</h2>
           <p>Continue with an approved Google account.</p>
-          <GoogleSignInButton
-            clientId={webEnv.googleClientId}
-            disabled={signingIn}
-            onCredential={(credential) => void handleCredential(credential)}
-            onError={handleError}
-          />
+          {!requestCredential ? (
+            <GoogleSignInButton
+              clientId={webEnv.googleClientId}
+              disabled={signingIn}
+              onCredential={(credential) => void handleCredential(credential)}
+              onError={handleError}
+            />
+          ) : requestSent ? (
+            <div className="form-alert" role="status">
+              Request sent. An administrator will review it and you will receive an email after
+              approval. You can then sign in with this Google account.
+            </div>
+          ) : (
+            <form
+              className="auth-access-request"
+              onSubmit={(event) => void submitAccessRequest(event)}
+            >
+              <div className="form-alert">
+                This is an external email. Tell the administrators how you are connected to the
+                campus to request first-time access.
+              </div>
+              <label>
+                Full name
+                <input
+                  required
+                  minLength={2}
+                  value={requestForm.fullName}
+                  onChange={(event) =>
+                    setRequestForm((value) => ({ ...value, fullName: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Campus affiliation
+                <input
+                  required
+                  minLength={2}
+                  placeholder="Student, alumnus, staff, vendor…"
+                  value={requestForm.affiliation}
+                  onChange={(event) =>
+                    setRequestForm((value) => ({ ...value, affiliation: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Why do you need access?
+                <textarea
+                  required
+                  minLength={10}
+                  rows={3}
+                  value={requestForm.reason}
+                  onChange={(event) =>
+                    setRequestForm((value) => ({ ...value, reason: event.target.value }))
+                  }
+                />
+              </label>
+              <button className="button button-primary" disabled={requesting} type="submit">
+                {requesting ? 'Sending…' : 'Request access'}
+              </button>
+              <button
+                className="button button-outline"
+                type="button"
+                onClick={() => setRequestCredential(null)}
+              >
+                Use another Google account
+              </button>
+            </form>
+          )}
           {signingIn ? <p className="auth-signing-in">Signing you in securely…</p> : null}
           {serverError ? (
             <div className="form-alert" role="alert">

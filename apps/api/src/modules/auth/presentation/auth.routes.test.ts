@@ -89,7 +89,7 @@ describe('Auth Routes', () => {
     const response = await request(app).post('/auth/google').send({ credential })
 
     expect(response.status).toBe(403)
-    expect(response.body.error.code).toBe('EMAIL_DOMAIN_NOT_ALLOWED')
+    expect(response.body.error.code).toBe('ACCESS_APPROVAL_REQUIRED')
   })
 
   it('POST /auth/google rejects an invalid Google credential', async () => {
@@ -102,9 +102,7 @@ describe('Auth Routes', () => {
   it('allows unsafe production auth requests from a configured origin', async () => {
     env.NODE_ENV = 'production'
 
-    const response = await request(app)
-      .post('/auth/logout')
-      .set('Origin', 'https://campus.example')
+    const response = await request(app).post('/auth/logout').set('Origin', 'https://campus.example')
 
     expect(response.status).toBe(200)
     expect(response.body.success).toBe(true)

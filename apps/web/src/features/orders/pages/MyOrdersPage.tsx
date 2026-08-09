@@ -40,8 +40,7 @@ export function MyOrdersPage() {
         <div className="success-banner">
           <strong>Your orders were created.</strong>
           <span>
-            Each seller group has its own order number and a private Campus Angadi support
-            conversation.
+            Each seller group has its own order number and assigned Campus Angadi contact.
           </span>
         </div>
       ) : null}
@@ -49,24 +48,17 @@ export function MyOrdersPage() {
         <button className={!status ? 'active' : ''} onClick={() => setParams({})}>
           All
         </button>
-        {(
-          [
-            'PENDING',
-            'CONFIRMED',
-            'PREPARING',
-            'READY_FOR_PICKUP',
-            'COMPLETED',
-            'CANCELLED',
-          ] as OrderStatus[]
-        ).map((value) => (
-          <button
-            key={value}
-            className={status === value ? 'active' : ''}
-            onClick={() => setParams({ status: value })}
-          >
-            {value.replaceAll('_', ' ')}
-          </button>
-        ))}
+        {(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as OrderStatus[]).map(
+          (value) => (
+            <button
+              key={value}
+              className={status === value ? 'active' : ''}
+              onClick={() => setParams({ status: value })}
+            >
+              {value.replaceAll('_', ' ')}
+            </button>
+          ),
+        )}
       </div>
       {orders.isLoading ? <div className="panel-loading">Loading orders…</div> : null}
       {orders.isError ? <div className="form-error">{orders.error.message}</div> : null}

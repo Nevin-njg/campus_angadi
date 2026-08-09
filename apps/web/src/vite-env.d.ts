@@ -6,7 +6,6 @@ interface ImportMetaEnv {
   readonly VITE_BRAND_MARK?: string
   readonly VITE_CAMPUS_DISPLAY_NAME?: string
   readonly VITE_GOOGLE_CLIENT_ID?: string
-  readonly VITE_WEBRTC_ICE_SERVERS_JSON?: string
 }
 
 interface ImportMeta {

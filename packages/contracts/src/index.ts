@@ -38,6 +38,33 @@ export const verifyOtpInputSchema = z
 export const googleSignInInputSchema = z
   .object({ credential: z.string().trim().min(100).max(12_000) })
   .strict()
+export const accessRequestInputSchema = z
+  .object({
+    credential: z.string().trim().min(100).max(12_000),
+    fullName: z.string().trim().min(2).max(80),
+    affiliation: z.string().trim().min(2).max(120),
+    reason: z.string().trim().min(10).max(1000),
+  })
+  .strict()
+export const accessRequestStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED'])
+export const accessRequestSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  fullName: z.string(),
+  affiliation: z.string(),
+  reason: z.string(),
+  status: accessRequestStatusSchema,
+  reviewedBy: z.string().nullable(),
+  reviewNote: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+export const reviewAccessRequestInputSchema = z
+  .object({
+    decision: z.enum(['APPROVED', 'REJECTED']),
+    note: z.string().trim().max(500).nullable().optional(),
+  })
+  .strict()
 export const updateProfileInputSchema = z
   .object({
     fullName: z.string().trim().min(2).max(80).optional(),
@@ -531,6 +558,7 @@ export const dealerSchema = z.object({
 export const assignedDealerSchema = dealerSchema.pick({
   id: true,
   displayName: true,
+  phoneNumber: true,
 })
 
 export const assignedModeratorSchema = z.object({
@@ -612,38 +640,6 @@ export const assignOrderDealerInputSchema = z
   .strict()
 
 export const assignOrderModeratorInputSchema = z.object({ moderatorId: z.string().min(1) }).strict()
-
-export const chatMessageTypeSchema = z.enum(['TEXT', 'AUDIO', 'SYSTEM'])
-
-export const chatMessageSchema = z.object({
-  id: z.string(),
-  orderId: z.string(),
-  senderId: z.string(),
-  senderKind: z.enum(['BUYER', 'TEAM']),
-  senderName: z.string(),
-  type: chatMessageTypeSchema,
-  text: z.string().nullable(),
-  audioUrl: z.string().url().nullable(),
-  audioDurationSeconds: z.number().nonnegative().nullable(),
-  clientId: z.string().nullable(),
-  readAt: z.string().nullable(),
-  createdAt: z.string(),
-})
-
-export const chatMessagesPageSchema = z.object({
-  messages: z.array(chatMessageSchema),
-  nextCursor: z.string().nullable(),
-  assignedDealer: assignedDealerSchema.nullable(),
-  assignedModerator: assignedModeratorSchema.nullable(),
-  canChat: z.boolean(),
-})
-
-export const sendChatMessageInputSchema = z
-  .object({
-    text: z.string().trim().min(1).max(2000),
-    clientId: z.string().trim().min(1).max(100).optional(),
-  })
-  .strict()
 
 export const orderStatusSchema = z.enum([
   'PENDING',
@@ -1111,6 +1107,10 @@ export type AuthUser = z.infer<typeof authUserSchema>
 export type RequestOtpInput = z.infer<typeof requestOtpInputSchema>
 export type VerifyOtpInput = z.infer<typeof verifyOtpInputSchema>
 export type GoogleSignInInput = z.infer<typeof googleSignInInputSchema>
+export type AccessRequestInput = z.infer<typeof accessRequestInputSchema>
+export type AccessRequestStatus = z.infer<typeof accessRequestStatusSchema>
+export type AccessRequest = z.infer<typeof accessRequestSchema>
+export type ReviewAccessRequestInput = z.infer<typeof reviewAccessRequestInputSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>
 export type ProductType = z.infer<typeof productTypeSchema>
 export type SellerType = z.infer<typeof sellerTypeSchema>
@@ -1175,10 +1175,6 @@ export type DealerListQuery = z.infer<typeof dealerListQuerySchema>
 export type DealerAssignmentHistory = z.infer<typeof dealerAssignmentHistorySchema>
 export type AssignOrderDealerInput = z.infer<typeof assignOrderDealerInputSchema>
 export type AssignOrderModeratorInput = z.infer<typeof assignOrderModeratorInputSchema>
-export type ChatMessageType = z.infer<typeof chatMessageTypeSchema>
-export type ChatMessage = z.infer<typeof chatMessageSchema>
-export type ChatMessagesPage = z.infer<typeof chatMessagesPageSchema>
-export type SendChatMessageInput = z.infer<typeof sendChatMessageInputSchema>
 
 export type AdminDashboard = z.infer<typeof adminDashboardSchema>
 export type AdminUserSummary = z.infer<typeof adminUserSummarySchema>

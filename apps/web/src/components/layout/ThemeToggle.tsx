@@ -1,3 +1,3 @@
-export function ThemeToggle(_props: { className?: string }) {
+export function ThemeToggle() {
   return null
 }

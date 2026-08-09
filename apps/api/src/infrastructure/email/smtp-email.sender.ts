@@ -37,4 +37,14 @@ export class SmtpEmailSender implements EmailSender {
       html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px"><h2>${input.appName}</h2><p>Use this one-time code to sign in:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px">${input.code}</p><p>This code expires in ${input.expiresInMinutes} minutes and can be used only once.</p><p style="color:#666">If you did not request this code, ignore this email.</p></div>`,
     })
   }
+
+  async sendAccessApproved(input: { recipient: string; appName: string }): Promise<void> {
+    await this.transporter.sendMail({
+      from: { name: this.fromName, address: this.fromEmail },
+      to: input.recipient,
+      subject: `Your ${input.appName} access is approved`,
+      text: `Your email address has been approved. You can now sign in to ${input.appName} with Google.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px"><h2>Access approved</h2><p>Your email address has been approved.</p><p>You can now sign in to ${input.appName} with Google.</p></div>`,
+    })
+  }
 }

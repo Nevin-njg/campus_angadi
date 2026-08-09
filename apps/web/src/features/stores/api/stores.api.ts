@@ -152,6 +152,10 @@ export const storesApi = {
   adminList: () => apiRequest<Store[]>('/admin/stores'),
   create: (body: Record<string, unknown>) =>
     apiRequest<Store>('/admin/stores', { method: 'POST', body }),
+  remove: (id: string) =>
+    apiRequest<{ id: string }>(`/admin/stores/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
 
   seller: () => apiRequest<SellerOverview>('/seller/store'),
   sellerProducts: (query = '') =>

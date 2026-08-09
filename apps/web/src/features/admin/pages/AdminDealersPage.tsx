@@ -1,7 +1,7 @@
 import type { CreateDealerInput, Dealer, EnrollMediatorInput } from '@campusbaza/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { MessageIcon, TrashIcon } from '../../../components/ui/icons'
+import { UserIcon, TrashIcon } from '../../../components/ui/icons'
 import { useConfirmation } from '../../../components/feedback/confirmation-context'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import { adminPlatformApi } from '../api/admin-platform.api'
@@ -88,13 +88,11 @@ export function AdminDealersPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <span className="text-amber-400 font-bold tracking-wider text-xs uppercase mb-2 block">
-            Mediated order support
+            Order coordination
           </span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Order mediators
-          </h1>
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">Order contacts</h1>
           <p className="text-gray-400 text-lg">
-            Manage the team members who handle buyer chats, calls and order coordination.
+            Manage the administrator or moderator phone numbers assigned to buyers after checkout.
           </p>
         </div>
       </div>
@@ -143,7 +141,7 @@ export function AdminDealersPage() {
               if (
                 await confirm({
                   title: 'Enable mediator login?',
-                  description: `${accessForm.email} will be able to sign in and access buyer order conversations.`,
+                  description: `${accessForm.email} will be able to sign in and coordinate assigned orders.`,
                   confirmLabel: 'Enable access',
                 })
               )
@@ -365,7 +363,7 @@ export function AdminDealersPage() {
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center shrink-0 border border-green-500/20">
-                      <MessageIcon />
+                      <UserIcon />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -454,10 +452,10 @@ export function AdminDealersPage() {
             {dealers.data && !dealers.data.items.length && !dealers.isLoading && (
               <div className="col-span-1 md:col-span-2 text-center py-12 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl">
                 <strong className="text-white text-lg font-medium block mb-2">
-                  No dealers found
+                  No order contacts found
                 </strong>
                 <span className="text-gray-400">
-                  Add an order mediator to start managing buyer conversations.
+                  Add an administrator or moderator contact number to start assigning orders.
                 </span>
               </div>
             )}

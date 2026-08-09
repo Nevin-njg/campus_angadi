@@ -20,4 +20,9 @@ export class ConsoleEmailSender implements EmailSender {
     )
     return Promise.resolve()
   }
+
+  sendAccessApproved(input: { recipient: string; appName: string }): Promise<void> {
+    this.logger.info({ recipient: input.recipient }, `${input.appName} access approved`)
+    return Promise.resolve()
+  }
 }

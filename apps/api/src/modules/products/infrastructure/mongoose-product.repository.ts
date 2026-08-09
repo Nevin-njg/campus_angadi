@@ -21,6 +21,9 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+const objectIdString = (value: unknown) =>
+  typeof value === 'string' ? value : value instanceof Types.ObjectId ? value.toHexString() : ''
+
 function mapCategory(document: Record<string, unknown>): Category {
   return {
     id: String(document._id),
@@ -327,11 +330,7 @@ export class MongooseProductRepository implements ProductRepository {
     const productIds = documents.map((document) => document._id)
     const categoryIds = [...new Set(documents.map((document) => String(document.categoryId)))]
     const storeIds = [
-      ...new Set(
-        documents
-          .map((document) => String(document.storeId ?? ''))
-          .filter(Boolean),
-      ),
+      ...new Set(documents.map((document) => objectIdString(document.storeId)).filter(Boolean)),
     ]
 
     const [categoryDocuments, imageDocuments, storeDocuments] = await Promise.all([
@@ -351,9 +350,7 @@ export class MongooseProductRepository implements ProductRepository {
       categoryDocuments.map((category) => [String(category._id), mapCategory(category)]),
     )
 
-    const stores = new Map(
-      storeDocuments.map((store) => [String(store._id), store]),
-    )
+    const stores = new Map(storeDocuments.map((store) => [String(store._id), store]))
 
     for (const document of documents) {
       const categoryKey = String(document.categoryId)

@@ -19,6 +19,8 @@ import type {
   UpdateAdminUserInput,
   UpdatePlatformSettingsInput,
   UpdateReportInput,
+  AccessRequest,
+  ReviewAccessRequestInput,
 } from '@campusbaza/contracts'
 import { apiRequest, apiRequestEnvelope } from '../../../lib/api-client'
 function qs(input: Record<string, unknown>) {
@@ -54,4 +56,13 @@ export const adminPlatformApi = {
   operationsStatus: () => apiRequest<OperationsStatus>('/admin/operations/status'),
   operationIndexes: () => apiRequest<IndexDrift[]>('/admin/operations/indexes'),
   runCleanup: () => apiRequest<CleanupResult>('/admin/operations/cleanup', { method: 'POST' }),
+  accessRequests: (status = '') =>
+    apiRequest<AccessRequest[]>(
+      `/admin/access-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+    ),
+  reviewAccessRequest: (id: string, input: ReviewAccessRequestInput) =>
+    apiRequest<AccessRequest>(`/admin/access-requests/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: input,
+    }),
 }

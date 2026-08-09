@@ -51,6 +51,13 @@ const envSchema = z
     GOOGLE_HOSTED_DOMAINS: csv.default(''),
     ADMIN_EMAILS: csv.default(''),
     SUPER_ADMIN_EMAILS: csv.default(''),
+    SMTP_HOST: z.string().trim().optional().default(''),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: booleanFromString.default(false),
+    SMTP_USER: z.string().trim().optional().default(''),
+    SMTP_PASSWORD: z.string().optional().default(''),
+    SMTP_FROM_NAME: z.string().trim().default('Campus Angadi'),
+    SMTP_FROM_EMAIL: z.string().trim().email().optional().or(z.literal('')).default(''),
     JWT_ACCESS_SECRET: z.string().min(32),
     JWT_REFRESH_SECRET: z.string().min(32),
     ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
@@ -75,7 +82,6 @@ const envSchema = z
       .max(15_000_000)
       .default(5_000_000),
     PRODUCT_IMAGE_MAX_COUNT: z.coerce.number().int().min(1).max(8).default(8),
-    CHAT_AUDIO_MAX_BYTES: z.coerce.number().int().min(500_000).max(20_000_000).default(8_000_000),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production' && value.METRICS_ENABLED && !value.METRICS_TOKEN) {
@@ -99,6 +105,16 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['COOKIE_SECURE'],
         message: 'Production requires secure authentication cookies.',
+      })
+    }
+    if (
+      value.NODE_ENV === 'production' &&
+      (!value.SMTP_HOST || !value.SMTP_USER || !value.SMTP_PASSWORD || !value.SMTP_FROM_EMAIL)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SMTP_HOST'],
+        message: 'Production requires SMTP settings for access-approval emails.',
       })
     }
   })

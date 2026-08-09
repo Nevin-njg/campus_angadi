@@ -2,7 +2,7 @@ import type { OrderStatus } from '@campusbaza/contracts'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChevronLeftIcon, MessageIcon, PackageIcon } from '../../../components/ui/icons'
+import { ChevronLeftIcon, PackageIcon } from '../../../components/ui/icons'
 import { ordersApi } from '../../orders/api/orders.api'
 import { dealersApi } from '../api/dealers.api'
 import { OrderStatusBadge } from '../../orders/components/OrderStatusBadge'
@@ -11,11 +11,11 @@ import { useConfirmation } from '../../../components/feedback/confirmation-conte
 
 const nextStatuses: Record<OrderStatus, OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  WAITING_FOR_DEALER_ASSIGNMENT: ['CANCELLED', 'REJECTED'],
-  AWAITING_TEAM_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
+  WAITING_FOR_DEALER_ASSIGNMENT: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONTACTED: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  PREPARING: ['COMPLETED', 'CANCELLED'],
   READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
@@ -303,24 +303,16 @@ export function AdminOrderDetailPage() {
 
           <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Order mediator</h2>
-              {data.assignedDealer ? (
-                <Link className="button button-primary" to={`/admin/orders/${id}/chat`}>
-                  <MessageIcon /> Open chat
-                </Link>
-              ) : null}
+              <h2 className="text-xl font-bold text-white">Order contact</h2>
             </div>
 
             {data.assignedDealer ? (
               <div className="flex items-center gap-4 bg-green-500/10 border border-green-500/20 p-4 rounded-xl mb-6">
-                <div className="text-green-400">
-                  <MessageIcon />
-                </div>
                 <div>
                   <strong className="text-white block font-medium">
                     {data.assignedDealer.displayName}
                   </strong>
-                  <small className="text-gray-400">Buyer support and order coordination</small>
+                  <small className="text-gray-400">{data.assignedDealer.phoneNumber}</small>
                 </div>
               </div>
             ) : (

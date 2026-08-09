@@ -21,11 +21,11 @@ import type { NotificationRepository } from '../../notifications/domain/notifica
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  WAITING_FOR_DEALER_ASSIGNMENT: ['CANCELLED', 'REJECTED'],
-  AWAITING_TEAM_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
+  WAITING_FOR_DEALER_ASSIGNMENT: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONTACTED: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  PREPARING: ['COMPLETED', 'CANCELLED'],
   READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
@@ -36,6 +36,7 @@ const USER_CANCELLABLE: readonly OrderStatus[] = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
   'AWAITING_TEAM_CONFIRMATION',
+  'CONTACTED',
 ]
 
 export class OrderService {
@@ -119,10 +120,21 @@ export class OrderService {
       [...groups.values()],
       cartIdToClear,
     )
+    const assignedContacts = result.orders
+      .flatMap((order) => (order.assignedDealer ? [order.assignedDealer] : []))
+      .filter(
+        (contact, index, contacts) =>
+          contacts.findIndex((candidate) => candidate.id === contact.id) === index,
+      )
+    const contactMessage = assignedContacts.length
+      ? ` Your order contact${assignedContacts.length === 1 ? ' is' : 's are'} ${assignedContacts
+          .map((contact) => `${contact.displayName} (${contact.phoneNumber})`)
+          .join(', ')}.`
+      : ' An administrator will assign an order contact shortly.'
     await this.notifications?.sendToUser(buyerId, {
       type: 'ORDER',
       title: 'Order created',
-      message: `${result.orders.length} order${result.orders.length === 1 ? '' : 's'} created successfully.`,
+      message: `${result.orders.length} order${result.orders.length === 1 ? '' : 's'} created successfully.${contactMessage}`,
       referenceType: 'CHECKOUT',
       referenceId: result.checkoutGroupId,
     })
@@ -188,8 +200,8 @@ export class OrderService {
     const order = await this.orders.assignDealer(orderId, actorId, input)
     await this.notifications?.sendToUser(order.buyerId, {
       type: 'ORDER',
-      title: 'Sales dealer assigned',
-      message: `${order.assignedDealer?.displayName ?? 'A sales dealer'} is ready to assist with order ${order.orderNumber}.`,
+      title: 'Order contact assigned',
+      message: `${order.assignedDealer?.displayName ?? 'A Campus Angadi contact'} is ready to coordinate order ${order.orderNumber}.`,
       referenceType: 'ORDER',
       referenceId: order.id,
     })

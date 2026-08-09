@@ -52,27 +52,32 @@ function ProductActions({
   )
 
   const cartMutation = useMutation({
-    mutationFn: ({ checkout }: { checkout: boolean }) =>
-      cartApi.add({ productId: product.id, quantity: 1 }).then((cart) => ({ cart, checkout })),
-    onSuccess({ cart, checkout }) {
+    mutationFn: () => cartApi.add({ productId: product.id, quantity: 1 }),
+    onSuccess(cart) {
       if (user) queryClient.setQueryData(queryKeys.cart(user.id), cart)
-      if (checkout) {
-        void navigate('/checkout')
-        return
-      }
       setAdded(true)
       if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
       feedbackTimer.current = window.setTimeout(() => setAdded(false), 1500)
     },
   })
 
-  function add(checkout: boolean) {
+  function add() {
     if (product.stock <= 0 || cartMutation.isPending) return
     if (!user) {
       void navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`)
       return
     }
-    cartMutation.mutate({ checkout })
+    cartMutation.mutate()
+  }
+
+  function buyNow() {
+    if (product.stock <= 0) return
+    const destination = `/checkout?buyNow=${encodeURIComponent(product.slug)}&quantity=1`
+    if (!user) {
+      void navigate(`/login?returnTo=${encodeURIComponent(destination)}`)
+      return
+    }
+    void navigate(destination)
   }
 
   if (compact) {
@@ -85,7 +90,7 @@ function ProductActions({
           className="button button-primary"
           type="button"
           disabled={product.stock <= 0 || cartMutation.isPending}
-          onClick={() => add(false)}
+          onClick={add}
         >
           <CartIcon />
           {product.stock <= 0 ? 'Sold out' : cartMutation.isPending ? 'Adding…' : 'Add'}
@@ -100,24 +105,24 @@ function ProductActions({
         className="button button-primary"
         type="button"
         disabled={product.stock <= 0 || cartMutation.isPending}
-        onClick={() => add(false)}
+        onClick={add}
       >
         <CartIcon />
         {product.stock <= 0
           ? 'Sold out'
           : added
             ? 'Added'
-            : cartMutation.isPending && !cartMutation.variables?.checkout
+            : cartMutation.isPending
               ? 'Adding…'
               : 'Add to cart'}
       </button>
       <button
         className="button button-outline"
         type="button"
-        disabled={product.stock <= 0 || cartMutation.isPending}
-        onClick={() => add(true)}
+        disabled={product.stock <= 0}
+        onClick={buyNow}
       >
-        {cartMutation.isPending && cartMutation.variables?.checkout ? 'Opening…' : 'Buy now'}
+        Buy now
       </button>
       {cartMutation.isError ? (
         <small className="card-action-error" role="alert">

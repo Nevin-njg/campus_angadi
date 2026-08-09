@@ -38,7 +38,7 @@ const navigation = [
       { to: '/admin/products', label: 'Products', icon: PackageIcon },
       { to: '/admin/categories', label: 'Categories', icon: LayersIcon },
       { to: '/admin/homepage', label: 'Homepage', icon: FileTextIcon },
-      { to: '/admin/dealers', label: 'Order mediators', icon: MessageIcon },
+      { to: '/admin/dealers', label: 'Order contacts', icon: MessageIcon },
     ],
   },
   {
@@ -47,6 +47,7 @@ const navigation = [
       { to: '/admin/moderation', label: 'Moderation', icon: ShieldIcon },
       { to: '/admin/reports', label: 'Reports', icon: AlertIcon },
       { to: '/admin/users', label: 'Users', icon: UserIcon },
+      { to: '/admin/access-requests', label: 'Sign-in requests', icon: ShieldIcon },
       { to: '/admin/notifications', label: 'Notifications', icon: BellIcon },
     ],
   },
@@ -62,6 +63,7 @@ const navigation = [
 const routeTitles: Record<string, string> = {
   dashboard: 'Dashboard',
   users: 'Users',
+  'access-requests': 'Sign-in requests',
   products: 'Products',
   stores: 'Stores',
   categories: 'Categories',
@@ -69,7 +71,7 @@ const routeTitles: Record<string, string> = {
   moderation: 'Moderation',
   orders: 'Orders',
   mediator: 'Mediator inbox',
-  dealers: 'Order mediators',
+  dealers: 'Order contacts',
   sales: 'Sales analytics',
   reports: 'Reports',
   notifications: 'Notifications',

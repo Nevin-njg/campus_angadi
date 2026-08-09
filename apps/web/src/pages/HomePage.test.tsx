@@ -39,8 +39,8 @@ describe('HomePage', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('In-app order support')).toBeInTheDocument()
-    expect(screen.getByText('Private mediated chat')).toBeInTheDocument()
+    expect(screen.getByText('Human order support')).toBeInTheDocument()
+    expect(screen.getByText('Assigned contact number')).toBeInTheDocument()
     expect(await screen.findByText('Featured on Campus Angadi')).toBeInTheDocument()
     expect(screen.getByText('Official Campus Store')).toBeInTheDocument()
   })

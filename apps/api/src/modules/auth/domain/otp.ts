@@ -29,4 +29,5 @@ export interface EmailSender {
     expiresInMinutes: number
     appName: string
   }): Promise<void>
+  sendAccessApproved(input: { recipient: string; appName: string }): Promise<void>
 }

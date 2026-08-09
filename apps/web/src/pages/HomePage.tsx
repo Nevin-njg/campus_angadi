@@ -150,7 +150,7 @@ export function HomePage() {
             <div className="support-panel-head">
               <div>
                 <MessageIcon />
-                <strong>In-app order support</strong>
+                <strong>Human order support</strong>
               </div>
               <span>AVAILABLE</span>
             </div>
@@ -164,8 +164,8 @@ export function HomePage() {
             <div className="support-status">
               <ShieldIcon />
               <div>
-                <strong>Private mediated chat</strong>
-                <p>Buyers speak only with the Campus Angadi team—never directly with sellers.</p>
+                <strong>Assigned contact number</strong>
+                <p>Buyers receive a verified Campus Angadi contact for order coordination.</p>
               </div>
             </div>
             <div className="support-status">

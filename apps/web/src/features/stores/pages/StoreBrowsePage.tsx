@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowRightIcon,
@@ -264,14 +265,20 @@ export function StoreBrowsePage() {
 
           <div className="public-store-identity">
             <div className="public-store-logo" aria-hidden={!store.logoUrl}>
-              {store.logoUrl ? <img src={store.logoUrl} alt={`${store.name} logo`} /> : store.name[0]}
+              {store.logoUrl ? (
+                <img src={store.logoUrl} alt={`${store.name} logo`} />
+              ) : (
+                store.name[0]
+              )}
             </div>
             <div>
               <span className="public-store-label">
                 <ShieldIcon /> Official campus store
               </span>
               <h1>{store.name}</h1>
-              <p>{store.description || 'Campus essentials delivered conveniently inside campus.'}</p>
+              <p>
+                {store.description || 'Campus essentials delivered conveniently inside campus.'}
+              </p>
             </div>
           </div>
 

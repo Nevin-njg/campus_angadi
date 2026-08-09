@@ -13,7 +13,6 @@ import {
   ActivityIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
   EditIcon,
   EyeIcon,
   LayersIcon,
@@ -63,11 +62,14 @@ const statusLabel = (value: string) => value.replaceAll('_', ' ')
 
 const nextStatuses: Record<string, string[]> = {
   PENDING: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['DELIVERING_TO_CAMPUS', 'CANCELLED'],
-  DELIVERING_TO_CAMPUS: ['ARRIVED_AT_CAMPUS'],
-  ARRIVED_AT_CAMPUS: ['READY_FOR_PICKUP'],
-  READY_FOR_PICKUP: ['COMPLETED'],
+  WAITING_FOR_DEALER_ASSIGNMENT: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  CONTACTED: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  PREPARING: ['COMPLETED', 'CANCELLED'],
+  DELIVERING_TO_CAMPUS: ['COMPLETED', 'CANCELLED'],
+  ARRIVED_AT_CAMPUS: ['COMPLETED', 'CANCELLED'],
+  READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
 }
 
 const fieldClass =
@@ -251,7 +253,7 @@ export function SellerDashboardPage() {
     discountPercent: 10,
   })
 
-  const categories = overview?.store.categories ?? []
+  const categories = useMemo(() => overview?.store.categories ?? [], [overview?.store.categories])
 
   useEffect(() => {
     return () => {
@@ -1025,7 +1027,7 @@ export function SellerDashboardPage() {
                     </p>
                     <h2 className="mt-2 text-3xl font-extrabold text-white">Orders</h2>
                     <p className="mt-2 text-sm text-zinc-500">
-                      Accept orders and update each campus-delivery step.
+                      Confirm or reject new orders, then mark fulfilled orders complete.
                     </p>
                   </div>
                   <select
@@ -1034,21 +1036,13 @@ export function SellerDashboardPage() {
                     onChange={(event) => setOrderStatus(event.target.value)}
                   >
                     <option value="">All order statuses</option>
-                    {[
-                      'PENDING',
-                      'CONFIRMED',
-                      'PREPARING',
-                      'DELIVERING_TO_CAMPUS',
-                      'ARRIVED_AT_CAMPUS',
-                      'READY_FOR_PICKUP',
-                      'COMPLETED',
-                      'CANCELLED',
-                      'REJECTED',
-                    ].map((status) => (
-                      <option key={status} value={status}>
-                        {statusLabel(status)}
-                      </option>
-                    ))}
+                    {['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'].map(
+                      (status) => (
+                        <option key={status} value={status}>
+                          {statusLabel(status)}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
 

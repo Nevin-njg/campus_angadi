@@ -29,9 +29,13 @@ export class FakeGoogleIdentityVerifier implements GoogleIdentityVerifier {
 
 export class FakeEmailSender implements EmailSender {
   readonly messages: Array<{ recipient: string; code: string }> = []
+  readonly accessApprovals: string[] = []
 
   async sendLoginOtp(input: { recipient: string; code: string }): Promise<void> {
     this.messages.push({ recipient: input.recipient, code: input.code })
+  }
+  async sendAccessApproved(input: { recipient: string; appName: string }): Promise<void> {
+    this.accessApprovals.push(input.recipient)
   }
 }
 

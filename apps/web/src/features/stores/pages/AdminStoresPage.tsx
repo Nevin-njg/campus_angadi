@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { adminPlatformApi } from '../../admin/api/admin-platform.api'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 import { storesApi } from '../api/stores.api'
 
 interface CreateStoreForm {
@@ -25,6 +26,7 @@ const initialForm: CreateStoreForm = {
 
 export function AdminStoresPage() {
   const queryClient = useQueryClient()
+  const confirm = useConfirmation()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [ownerSearch, setOwnerSearch] = useState('')
   const [form, setForm] = useState<CreateStoreForm>(initialForm)
@@ -78,6 +80,16 @@ export function AdminStoresPage() {
     },
     onError: (error) => {
       setFormError(error instanceof Error ? error.message : 'The store could not be created.')
+    },
+  })
+
+  const removeStore = useMutation({
+    mutationFn: storesApi.remove,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stores'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+      ])
     },
   })
 
@@ -158,7 +170,7 @@ export function AdminStoresPage() {
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
               <tr className="border-b border-white/10 bg-white/[0.03]">
-                {['Store', 'Status', 'Commission', 'Seller'].map((heading) => (
+                {['Store', 'Status', 'Commission', 'Seller', 'Actions'].map((heading) => (
                   <th
                     key={heading}
                     className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400"
@@ -190,21 +202,38 @@ export function AdminStoresPage() {
                       {store.status}
                     </span>
                   </td>
-                  <td className="px-6 py-5 font-semibold text-white">
-                    {store.commissionPercent}%
-                  </td>
+                  <td className="px-6 py-5 font-semibold text-white">{store.commissionPercent}%</td>
                   <td className="px-6 py-5">
                     <strong className="block font-medium text-white">
                       {sellerNames.get(store.sellerId) || 'Seller account'}
                     </strong>
                     <small className="text-gray-500">{store.sellerId}</small>
                   </td>
+                  <td className="px-6 py-5">
+                    <button
+                      type="button"
+                      className="rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50"
+                      disabled={store.status === 'ARCHIVED' || removeStore.isPending}
+                      onClick={async () => {
+                        const approved = await confirm({
+                          title: `Delete ${store.name}?`,
+                          description:
+                            'The store and all of its products will be removed from the marketplace. Historical completed orders are retained for accounting and audit records.',
+                          confirmLabel: 'Delete store',
+                          tone: 'danger',
+                        })
+                        if (approved) removeStore.mutate(store.id)
+                      }}
+                    >
+                      {store.status === 'ARCHIVED' ? 'Deleted' : 'Delete'}
+                    </button>
+                  </td>
                 </tr>
               ))}
 
               {!stores.length && !storesQuery.isLoading && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center">
+                  <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="mx-auto max-w-md">
                       <h2 className="mb-2 text-xl font-bold text-white">No stores created yet</h2>
                       <p className="mb-5 text-gray-400">
@@ -224,7 +253,7 @@ export function AdminStoresPage() {
 
               {storesQuery.isLoading && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
+                  <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
                     Loading stores…
                   </td>
                 </tr>
@@ -320,17 +349,18 @@ export function AdminStoresPage() {
                   {ownerCandidatesQuery.isLoading && (
                     <p className="text-xs text-gray-500">Loading eligible users…</p>
                   )}
-                  {!ownerCandidatesQuery.isLoading &&
-                    !ownerCandidatesQuery.data?.items.length && (
-                      <p className="text-xs text-amber-300">
-                        No eligible USER account was found. The person must sign in once before you
-                        can assign the store.
-                      </p>
-                    )}
+                  {!ownerCandidatesQuery.isLoading && !ownerCandidatesQuery.data?.items.length && (
+                    <p className="text-xs text-amber-300">
+                      No eligible USER account was found. The person must sign in once before you
+                      can assign the store.
+                    </p>
+                  )}
                 </div>
 
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-gray-200">Commission percentage *</span>
+                  <span className="text-sm font-semibold text-gray-200">
+                    Commission percentage *
+                  </span>
                   <div className="relative">
                     <input
                       type="number"
@@ -359,7 +389,9 @@ export function AdminStoresPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-gray-200">Delivery time (minutes)</span>
+                  <span className="text-sm font-semibold text-gray-200">
+                    Delivery time (minutes)
+                  </span>
                   <input
                     type="number"
                     min="1"

@@ -33,16 +33,30 @@ function identity(email: string) {
 }
 
 describe('AuthService', () => {
-  it('rejects Google accounts outside configured email domains', async () => {
+  it('requires approval for a first login outside configured email domains', async () => {
     const { auth, google } = createSubject()
     google.set('outside-token', identity('student@outside.example'))
 
     await expect(
       auth.signInWithGoogle('outside-token', { ipAddress: null, userAgent: null }),
     ).rejects.toMatchObject({
-      code: 'EMAIL_DOMAIN_NOT_ALLOWED',
+      code: 'ACCESS_APPROVAL_REQUIRED',
       statusCode: 403,
     })
+  })
+
+  it('allows an approved external account to sign in again without another request', async () => {
+    const { auth, users, google } = createSubject()
+    const address = 'approved@outside.example'
+    await users.findOrCreateByEmail(address, 'USER')
+    google.set('approved-token', identity(address))
+
+    const result = await auth.signInWithGoogle('approved-token', {
+      ipAddress: null,
+      userAgent: null,
+    })
+
+    expect(result.user.email).toBe(address)
   })
 
   it('creates a profile on first Google login and reuses it later', async () => {

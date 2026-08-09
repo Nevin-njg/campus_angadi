@@ -11,7 +11,10 @@ import { createMetricsRouter } from '../core/observability/metrics.routes.js'
 import { rateLimitStoreOption } from '../core/rate-limit/rate-limit-store.factory.js'
 import { requestIdMiddleware } from '../core/middleware/request-id.js'
 import { isMongoReady } from '../infrastructure/database/mongoose.connection.js'
-import { createAuthRouter } from '../modules/auth/presentation/auth.routes.js'
+import {
+  createAdminAccessRequestRouter,
+  createAuthRouter,
+} from '../modules/auth/presentation/auth.routes.js'
 import { createHealthRouter } from '../modules/health/health.routes.js'
 import { createProfileRouter } from '../modules/users/presentation/profile.routes.js'
 import {
@@ -60,7 +63,6 @@ import { createMarketplaceGate } from '../modules/settings/presentation/marketpl
 import { createAdminCoreRouter } from '../modules/admin/presentation/admin.routes.js'
 import { requireRoles } from '../core/middleware/authenticate.js'
 import { createOperationsRouter } from '../modules/operations/presentation/operations.routes.js'
-import { createChatRouter } from '../modules/chat/presentation/chat.routes.js'
 import type { CompositionRoot } from './composition-root.js'
 
 export function createApp(root: CompositionRoot) {
@@ -143,7 +145,13 @@ export function createApp(root: CompositionRoot) {
   }
   api.use(
     '/auth',
-    createAuthRouter(root.authService, root.authenticate, root.env, root.rateLimitStoreFactory),
+    createAuthRouter(
+      root.authService,
+      root.authenticate,
+      root.env,
+      root.rateLimitStoreFactory,
+      root.accessRequestService,
+    ),
   )
   api.use('/profile', createProfileRouter(root.profileService, root.authenticate))
   api.use('/categories', createCategoryRouter(root.categoryService))
@@ -179,7 +187,6 @@ export function createApp(root: CompositionRoot) {
     createMarketplaceGate(root.settingsService, 'ORDERS'),
     createOrderRouter(root.orderService, root.authenticate, root.rateLimitStoreFactory),
   )
-  api.use('/chat', createChatRouter(root.chatService, root.authenticate))
   api.use('/notifications', createNotificationRouter(root.notificationService, root.authenticate))
   api.use('/reports', createReportRouter(root.reportService, root.authenticate))
   api.use('/settings', createSettingsRouter(root.settingsService))
@@ -190,6 +197,10 @@ export function createApp(root: CompositionRoot) {
     createAdminAuditMiddleware(root.auditService),
   )
   api.use('/admin', createAdminCoreRouter(root.adminService, root.authenticate))
+  api.use(
+    '/admin/access-requests',
+    createAdminAccessRequestRouter(root.accessRequestService, root.authenticate),
+  )
   api.use('/admin/categories', createAdminCategoryRouter(root.categoryService, root.authenticate))
   api.use('/admin/products', createAdminProductRouter(root.productService, root.authenticate))
   api.use('/admin/stores', createAdminStoreRouter(root.storeService, root.authenticate))

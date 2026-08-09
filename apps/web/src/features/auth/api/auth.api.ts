@@ -1,9 +1,22 @@
-import type { AuthUser, GoogleSignInInput, UpdateProfileInput } from '@campusbaza/contracts'
+import type {
+  AccessRequest,
+  AccessRequestInput,
+  AuthUser,
+  GoogleSignInInput,
+  UpdateProfileInput,
+} from '@campusbaza/contracts'
 import { apiRequest } from '../../../lib/api-client'
 
 export const authApi = {
   googleSignIn(input: GoogleSignInInput) {
     return apiRequest<{ accessToken: string; user: AuthUser }>('/auth/google', {
+      method: 'POST',
+      body: input,
+      retryOnUnauthorized: false,
+    })
+  },
+  requestAccess(input: AccessRequestInput) {
+    return apiRequest<AccessRequest>('/auth/access-requests', {
       method: 'POST',
       body: input,
       retryOnUnauthorized: false,

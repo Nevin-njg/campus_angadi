@@ -13,6 +13,9 @@ import type {
 } from '../domain/cart.js'
 import { CartModel } from './cart.model.js'
 
+const objectIdString = (value: unknown) =>
+  typeof value === 'string' ? value : value instanceof Types.ObjectId ? value.toHexString() : ''
+
 function mapRecord(document: Record<string, unknown>): CartRecord {
   const items = Array.isArray(document.items) ? document.items : []
   return {
@@ -97,7 +100,9 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
     ]
     const sellerIds = [...new Set(products.map((product) => String(product.sellerId)))]
     const storeIds = [
-      ...new Set(products.filter((product) => product.storeId).map((product) => String(product.storeId))),
+      ...new Set(
+        products.filter((product) => product.storeId).map((product) => String(product.storeId)),
+      ),
     ]
     const [categories, sellers, stores, images] = await Promise.all([
       CategoryModel.find({ _id: { $in: categoryIds }, deletedAt: null }).lean<
@@ -127,12 +132,15 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
     }
     const mapped = products.flatMap((product): CheckoutProduct[] => {
       const seller = sellerById.get(String(product.sellerId))
-      const store = product.storeId ? storeById.get(String(product.storeId)) : null
-      const storeCategories = (store?.categories as Array<Record<string, unknown>> | undefined) ?? []
+      const store = product.storeId ? storeById.get(objectIdString(product.storeId)) : null
+      const storeCategories =
+        (store?.categories as Array<Record<string, unknown>> | undefined) ?? []
       const storeCategory = storeCategories.find(
         (category) => String(category._id) === String(product.storeCategoryId),
       )
-      const category = product.storeId ? storeCategory : categoryById.get(String(product.categoryId))
+      const category = product.storeId
+        ? storeCategory
+        : categoryById.get(String(product.categoryId))
       if (!category || !seller || (product.storeId && !store)) return []
       const productImages = imagesByProduct.get(String(product._id)) ?? []
       const summary: ProductSummary = {
@@ -163,7 +171,7 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
         {
           summary,
           sellerId: String(product.sellerId),
-          storeId: product.storeId ? String(product.storeId) : null,
+          storeId: product.storeId ? objectIdString(product.storeId) : null,
           categoryActive:
             Boolean(category.isActive) && (!store || String(store.status) === 'ACTIVE'),
           sellerActive: seller.status === 'ACTIVE',

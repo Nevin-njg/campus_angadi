@@ -1,6 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Navbar } from '../components/layout/Navbar'
-import { LogOutIcon, MessageIcon, PackageIcon, UserIcon } from '../components/ui/icons'
+import {
+  LogOutIcon,
+  MessageIcon,
+  PackageIcon,
+  ShoppingBagIcon,
+  UserIcon,
+} from '../components/ui/icons'
 import { useAuthStore } from '../features/auth/store/use-auth-store'
 import { SkipLink } from '../components/accessibility/SkipLink'
 import { useConfirmation } from '../components/feedback/confirmation-context'
@@ -20,7 +26,7 @@ export function AccountLayout() {
             Profile
           </NavLink>
           <NavLink to="/account/orders">
-            <PackageIcon />
+            <ShoppingBagIcon />
             My orders
           </NavLink>
           <NavLink to="/account/listings">
@@ -37,7 +43,7 @@ export function AccountLayout() {
                 await confirm({
                   title: 'Sign out of Campus Angadi?',
                   description:
-                    'You will need to verify your email again before accessing your account.',
+                    'You will need to sign in with Google again before accessing your account.',
                   confirmLabel: 'Sign out',
                 })
               )

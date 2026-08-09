@@ -965,6 +965,30 @@ select:focus-visible {
   width: 100%;
   min-height: 45px;
 }
+.auth-access-request label {
+  display: grid;
+  gap: 7px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+.auth-access-request input,
+.auth-access-request textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 400;
+}
+.auth-access-request input:focus,
+.auth-access-request textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 .form-field {
   display: grid;
   gap: 7px;
@@ -1140,6 +1164,11 @@ select:focus-visible {
   font: 600 8px var(--font-mono);
 }
 .account-content {
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(22px, 2.6vw, 34px);
+}
+.account-content > * {
   min-width: 0;
 }
 .page-heading {
@@ -1374,11 +1403,14 @@ select:focus-visible {
   }
   .account-shell {
     grid-template-columns: 1fr;
+    gap: 18px;
+    padding-top: 24px;
   }
   .account-sidebar {
     position: static;
     display: flex;
     overflow-x: auto;
+    scrollbar-width: thin;
   }
   .account-sidebar-title {
     display: none;
@@ -1470,6 +1502,24 @@ select:focus-visible {
   }
   .page-heading {
     flex-direction: column;
+  }
+  .account-content {
+    padding: 18px;
+  }
+  .page-heading,
+  .page-title-row,
+  .listing-page-heading {
+    gap: 14px;
+  }
+  .page-heading h1,
+  .page-title-row h1,
+  .listing-page-heading h1 {
+    line-height: 1.12;
+  }
+  .page-title-row > .button,
+  .listing-page-heading > .button {
+    width: 100%;
+    justify-content: center;
   }
   .content-card {
     padding: 17px;
@@ -6200,7 +6250,7 @@ body {
   margin: 0;
   font-size: 11px;
 }
-.chat-assistance-panel .button {
+.order-contact-panel .button {
   width: 100%;
   margin-top: 10px;
 }

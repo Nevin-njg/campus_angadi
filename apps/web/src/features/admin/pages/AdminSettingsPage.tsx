@@ -242,10 +242,10 @@ export function AdminSettingsPage() {
             </label>
 
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <strong className="text-white block">In-app conversations</strong>
+              <strong className="text-white block">Order contact handoff</strong>
               <p className="text-sm text-gray-400 mt-1">
-                Order support runs through private buyer-to-team chat and voice notes. Buyers can
-                request a call; only the assigned mediator can initiate it.
+                Buyers receive an assigned administrator or moderator phone number for order
+                coordination. Contact profiles and workload limits are managed from Order contacts.
               </p>
             </div>
           </div>

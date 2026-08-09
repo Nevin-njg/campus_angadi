@@ -233,8 +233,11 @@ describe('OrderService', () => {
     expect(
       (await service.updateStatus('order-1', 'admin', { status: 'CONFIRMED', note: null })).status,
     ).toBe('CONFIRMED')
+    expect(
+      (await service.updateStatus('order-1', 'admin', { status: 'COMPLETED', note: null })).status,
+    ).toBe('COMPLETED')
     await expect(
-      service.updateStatus('order-1', 'admin', { status: 'COMPLETED', note: null }),
+      service.updateStatus('order-1', 'admin', { status: 'CONFIRMED', note: null }),
     ).rejects.toMatchObject({ code: 'INVALID_ORDER_TRANSITION' })
   })
 })

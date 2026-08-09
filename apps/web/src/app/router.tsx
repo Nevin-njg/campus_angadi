@@ -79,16 +79,6 @@ const OrderDetailsPage = lazy(() =>
     default: module.OrderDetailsPage,
   })),
 )
-const UserOrderChatPage = lazy(() =>
-  import('../features/chat/pages/OrderChatPage').then((module) => ({
-    default: module.UserOrderChatPage,
-  })),
-)
-const AdminOrderChatPage = lazy(() =>
-  import('../features/chat/pages/OrderChatPage').then((module) => ({
-    default: module.AdminOrderChatPage,
-  })),
-)
 const MyListingsPage = lazy(() =>
   import('../features/listings/pages/MyListingsPage').then((module) => ({
     default: module.MyListingsPage,
@@ -122,6 +112,11 @@ const AdminDashboardPage = lazy(() =>
 const AdminUsersPage = lazy(() =>
   import('../features/admin/pages/AdminUsersPage').then((module) => ({
     default: module.AdminUsersPage,
+  })),
+)
+const AdminAccessRequestsPage = lazy(() =>
+  import('../features/admin/pages/AdminAccessRequestsPage').then((module) => ({
+    default: module.AdminAccessRequestsPage,
   })),
 )
 const AdminUserDetailPage = lazy(() =>
@@ -259,7 +254,6 @@ export const router = createBrowserRouter([
       { path: 'profile', element: page(<ProfilePage />) },
       { path: 'orders', element: page(<MyOrdersPage />) },
       { path: 'orders/:id', element: page(<OrderDetailsPage />) },
-      { path: 'orders/:id/chat', element: page(<UserOrderChatPage />) },
       { path: 'listings', element: page(<MyListingsPage />) },
       { path: 'listings/new', element: page(<ListingFormPage />) },
       { path: 'listings/:id', element: page(<ListingDetailsPage />) },
@@ -279,6 +273,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="orders" replace /> },
       { path: 'dashboard', element: administratorPage(<AdminDashboardPage />) },
       { path: 'users', element: administratorPage(<AdminUsersPage />) },
+      { path: 'access-requests', element: administratorPage(<AdminAccessRequestsPage />) },
       { path: 'users/:id', element: administratorPage(<AdminUserDetailPage />) },
       { path: 'sales', element: administratorPage(<AdminSalesPage />) },
       { path: 'reports', element: administratorPage(<AdminReportsPage />) },
@@ -296,7 +291,6 @@ export const router = createBrowserRouter([
       { path: 'orders', element: page(<AdminOrdersPage />) },
       { path: 'mediator', element: page(<AdminOrdersPage />) },
       { path: 'orders/:id', element: page(<AdminOrderDetailPage />) },
-      { path: 'orders/:id/chat', element: page(<AdminOrderChatPage />) },
       { path: 'dealers', element: administratorPage(<AdminDealersPage />) },
     ],
   },

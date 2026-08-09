@@ -5,6 +5,9 @@ import { TokenService } from '../core/security/token-service.js'
 import { createRedis } from '../infrastructure/database/redis.connection.js'
 import { GoogleIdentityTokenVerifier } from '../infrastructure/google/google-identity.verifier.js'
 import { AuthService } from '../modules/auth/application/auth.service.js'
+import { AccessRequestService } from '../modules/auth/application/access-request.service.js'
+import { ConsoleEmailSender } from '../infrastructure/email/console-email.sender.js'
+import { SmtpEmailSender } from '../infrastructure/email/smtp-email.sender.js'
 import { MongooseSessionRepository } from '../modules/auth/infrastructure/mongoose-session.repository.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
 import { MongooseUserRepository } from '../modules/users/infrastructure/mongoose-user.repository.js'
@@ -41,8 +44,6 @@ import { createRateLimitStoreFactory } from '../core/rate-limit/rate-limit-store
 import { CleanupService } from '../modules/operations/application/cleanup.service.js'
 import { CleanupScheduler } from '../modules/operations/application/cleanup.scheduler.js'
 import { IndexInspectionService } from '../modules/operations/application/index-inspection.service.js'
-import { ChatService } from '../modules/chat/application/chat.service.js'
-import { CloudinaryAudioStorage } from '../modules/chat/infrastructure/cloudinary-audio-storage.js'
 import { StoreService } from '../modules/stores/application/store.service.js'
 
 export function createCompositionRoot() {
@@ -58,6 +59,17 @@ export function createCompositionRoot() {
 
   const redis = createRedis(env.REDIS_URL, logger)
   const googleIdentity = new GoogleIdentityTokenVerifier(env.GOOGLE_CLIENT_ID)
+  const emailSender = env.SMTP_HOST
+    ? new SmtpEmailSender(
+        env.SMTP_HOST,
+        env.SMTP_PORT,
+        env.SMTP_SECURE,
+        env.SMTP_USER,
+        env.SMTP_PASSWORD,
+        env.SMTP_FROM_NAME,
+        env.SMTP_FROM_EMAIL,
+      )
+    : new ConsoleEmailSender(logger)
 
   const authService = new AuthService(users, sessions, googleIdentity, tokenService, {
     allowedEmailDomains: env.ALLOWED_EMAIL_DOMAINS,
@@ -65,6 +77,13 @@ export function createCompositionRoot() {
     adminEmails: env.ADMIN_EMAILS,
     superAdminEmails: env.SUPER_ADMIN_EMAILS,
   })
+  const accessRequestService = new AccessRequestService(
+    googleIdentity,
+    users,
+    emailSender,
+    env.ALLOWED_EMAIL_DOMAINS,
+    env.APP_NAME,
+  )
   const profileService = new ProfileService(users)
   const categories = new MongooseCategoryRepository()
   const products = new MongooseProductRepository()
@@ -104,13 +123,6 @@ export function createCompositionRoot() {
   const cartService = new CartService(carts, checkoutCatalog, cartMapper)
   const orders = new MongooseOrderRepository()
   const orderService = new OrderService(orders, carts, checkoutCatalog, env.APP_NAME, notifications)
-  const chatAudioStorage = new CloudinaryAudioStorage(
-    env.CLOUDINARY_CLOUD_NAME,
-    env.CLOUDINARY_API_KEY,
-    env.CLOUDINARY_API_SECRET,
-    env.CLOUDINARY_FOLDER,
-  )
-  const chatService = new ChatService(chatAudioStorage, env.CHAT_AUDIO_MAX_BYTES)
   const dealers = new MongooseDealerRepository()
   const dealerService = new DealerService(dealers)
   const notificationService = new NotificationService(notifications)
@@ -148,6 +160,7 @@ export function createCompositionRoot() {
     tokenService,
     users,
     authService,
+    accessRequestService,
     profileService,
     categoryService,
     productService,
@@ -157,7 +170,6 @@ export function createCompositionRoot() {
     listingService,
     cartService,
     orderService,
-    chatService,
     dealerService,
     notificationService,
     reportService,

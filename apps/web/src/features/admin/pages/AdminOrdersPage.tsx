@@ -56,8 +56,8 @@ export function AdminOrdersPage() {
           <p className="text-gray-400 text-lg">
             {moderatorView || mediatorPage
               ? moderatorView
-                ? 'Open the buyer conversations assigned to you.'
-                : 'Manage buyer conversations and coordinate every active order.'
+                ? 'Coordinate the orders assigned to your contact profile.'
+                : 'Assign contacts and coordinate every active order.'
               : 'Manage and monitor marketplace transactions.'}
           </p>
         </div>
@@ -76,21 +76,13 @@ export function AdminOrdersPage() {
           onChange={(event) => update({ status: event.target.value })}
         >
           <option value="">All statuses</option>
-          {(
-            [
-              'PENDING',
-              'CONFIRMED',
-              'PREPARING',
-              'READY_FOR_PICKUP',
-              'COMPLETED',
-              'CANCELLED',
-              'REJECTED',
-            ] as OrderStatus[]
-          ).map((value) => (
-            <option key={value} value={value}>
-              {value.replaceAll('_', ' ')}
-            </option>
-          ))}
+          {(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as OrderStatus[]).map(
+            (value) => (
+              <option key={value} value={value}>
+                {value.replaceAll('_', ' ')}
+              </option>
+            ),
+          )}
         </select>
         <select
           className={`${inputClass} appearance-none min-w-[180px]`}
@@ -107,8 +99,8 @@ export function AdminOrdersPage() {
           onChange={(event) => update({ assignment: event.target.value })}
         >
           <option value="">All assignments</option>
-          <option value="ASSIGNED">Dealer assigned</option>
-          <option value="UNASSIGNED">Waiting for dealer</option>
+          <option value="ASSIGNED">Contact assigned</option>
+          <option value="UNASSIGNED">Waiting for contact</option>
         </select>
       </div>
 

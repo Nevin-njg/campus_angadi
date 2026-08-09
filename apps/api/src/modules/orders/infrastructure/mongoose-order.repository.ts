@@ -143,7 +143,7 @@ export class MongooseOrderRepository implements OrderRepository {
             const current = productById.get(item.product.summary.id)
             const categoryAvailable = current?.storeId
               ? activeStoreCategorySet.has(
-                  `${String(current.storeId)}:${String(current.storeCategoryId)}`,
+                  `${objectIdToString(current.storeId) ?? ''}:${objectIdToString(current.storeCategoryId) ?? ''}`,
                 )
               : activeCategorySet.has(String(current?.categoryId))
             if (
@@ -198,7 +198,7 @@ export class MongooseOrderRepository implements OrderRepository {
                 sellerType: group.sellerType,
                 sellerId: group.sellerId,
                 storeId: group.storeId,
-                status: group.storeId ? 'PENDING' : 'WAITING_FOR_DEALER_ASSIGNMENT',
+                status: 'PENDING',
                 subtotal,
                 totalAmount: subtotal,
                 itemCount: group.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -216,12 +216,8 @@ export class MongooseOrderRepository implements OrderRepository {
           )
           if (!order) throw new Error('Unable to create order')
           const orderId = String(order._id)
-          const dealer = group.storeId ? null : await this.acquireAutomaticDealer(session)
-          const initialStatus: OrderStatus = group.storeId
-            ? 'PENDING'
-            : dealer
-              ? 'AWAITING_TEAM_CONFIRMATION'
-              : 'WAITING_FOR_DEALER_ASSIGNMENT'
+          const dealer = await this.acquireAutomaticDealer(session)
+          const initialStatus: OrderStatus = 'PENDING'
           if (dealer) {
             await OrderModel.updateOne(
               { _id: orderId },
@@ -278,11 +274,9 @@ export class MongooseOrderRepository implements OrderRepository {
                 orderId,
                 fromStatus: null,
                 toStatus: initialStatus,
-                note: group.storeId
-                  ? 'Official store order created and sent directly to the store.'
-                  : dealer
-                    ? 'Order created and assigned to a sales dealer.'
-                    : 'Order created and waiting for an available sales dealer.',
+                note: dealer
+                  ? 'Order created and assigned to a Campus Angadi contact.'
+                  : 'Order created and waiting for an available Campus Angadi contact.',
                 actorId: buyerId,
               },
             ],
@@ -805,6 +799,7 @@ export class MongooseOrderRepository implements OrderRepository {
         ? {
             id: objectIdToString(document.assignedDealerId) ?? '',
             displayName: String(document.assignedDealerName),
+            phoneNumber: String(document.assignedDealerPhone),
           }
         : null,
       assignedModeratorId: objectIdToString(document.assignedModeratorId),

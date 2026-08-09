@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { AppError } from '../../../core/errors/app-error.js'
 import { StoreModel } from '../infrastructure/store.model.js'
 import { ProductImageModel, ProductModel } from '../../products/infrastructure/product.models.js'
@@ -76,11 +77,7 @@ const discountDetails = (product: any) => {
   }
 }
 
-const marketplaceProductView = (
-  product: any,
-  store: any,
-  imageUrl: string | null = null,
-) => {
+const marketplaceProductView = (product: any, store: any, imageUrl: string | null = null) => {
   const category = (store.categories ?? []).find(
     (item: any) => String(item._id) === String(product.storeCategoryId),
   )
@@ -124,11 +121,14 @@ const orderView = (order: any, items: any[] = []) => ({
 
 const sellerStatusTransitions: Record<string, string[]> = {
   PENDING: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
-  CONFIRMED: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['DELIVERING_TO_CAMPUS', 'CANCELLED'],
-  DELIVERING_TO_CAMPUS: ['ARRIVED_AT_CAMPUS'],
-  ARRIVED_AT_CAMPUS: ['READY_FOR_PICKUP'],
-  READY_FOR_PICKUP: ['COMPLETED'],
+  WAITING_FOR_DEALER_ASSIGNMENT: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  CONTACTED: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  PREPARING: ['COMPLETED', 'CANCELLED'],
+  DELIVERING_TO_CAMPUS: ['COMPLETED', 'CANCELLED'],
+  ARRIVED_AT_CAMPUS: ['COMPLETED', 'CANCELLED'],
+  READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
 }
 
 export class StoreService {
@@ -155,9 +155,7 @@ export class StoreService {
 
   async searchMarketplace(query = '') {
     const normalizedQuery = String(query).trim().slice(0, 80)
-    const searchPattern = normalizedQuery
-      ? new RegExp(escapeRegExp(normalizedQuery), 'i')
-      : null
+    const searchPattern = normalizedQuery ? new RegExp(escapeRegExp(normalizedQuery), 'i') : null
 
     const activeSellerIds = await UserModel.find({ status: 'ACTIVE' }).distinct('_id')
 
@@ -235,7 +233,9 @@ export class StoreService {
       .map((store) => {
         const matchingProducts = productsByStore.get(String(store._id)) ?? []
         const inStockProducts = matchingProducts.filter((product) => Number(product.stock) > 0)
-        const prices = matchingProducts.map((product) => Number(product.price)).filter(Number.isFinite)
+        const prices = matchingProducts
+          .map((product) => Number(product.price))
+          .filter(Number.isFinite)
         return {
           ...storeView(store),
           matchingProductCount: matchingProducts.length,
@@ -320,7 +320,7 @@ export class StoreService {
     const exists = await StoreModel.exists({ sellerId: seller._id })
     if (exists) throw new AppError(409, 'SELLER_HAS_STORE', 'A seller can manage only one store.')
 
-    seller.role = 'SELLER' as any
+    seller.role = 'SELLER'
     seller.canSell = true
     await seller.save()
 
@@ -337,11 +337,43 @@ export class StoreService {
     return storeView(store)
   }
 
+  async remove(id: string, actorId: string) {
+    const store = await StoreModel.findById(id)
+    if (!store) throw new AppError(404, 'STORE_NOT_FOUND', 'Store not found.')
+
+    const openOrders = await OrderModel.countDocuments({
+      storeId: store._id,
+      status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+    })
+    if (openOrders > 0) {
+      throw new AppError(
+        409,
+        'STORE_HAS_OPEN_ORDERS',
+        'Complete, cancel, or reject this store’s open orders before deleting it.',
+      )
+    }
+
+    const now = new Date()
+    await ProductModel.updateMany(
+      { storeId: store._id, deletedAt: null },
+      { $set: { deletedAt: now, deletedBy: actorId, status: 'DELETED', published: false } },
+    )
+    store.status = 'ARCHIVED'
+    await store.save()
+    await UserModel.updateOne(
+      { _id: store.sellerId, role: 'SELLER' },
+      { $set: { role: 'USER', canSell: true } },
+    )
+    return { id: String(store._id) }
+  }
+
   async addCategory(sellerId: string, input: any) {
     const store = await this.sellerDocument(sellerId)
     const name = String(input.name ?? '').trim()
     if (name.length < 2) throw new AppError(400, 'CATEGORY_NAME_INVALID', 'Enter a category name.')
-    if (store.categories.some((category: any) => category.name.toLowerCase() === name.toLowerCase())) {
+    if (
+      store.categories.some((category: any) => category.name.toLowerCase() === name.toLowerCase())
+    ) {
       throw new AppError(409, 'CATEGORY_EXISTS', 'This category already exists in your store.')
     }
 
@@ -351,7 +383,7 @@ export class StoreService {
       description: String(input.description ?? '').trim() || null,
       displayOrder: Number(input.displayOrder ?? store.categories.length),
       isActive: true,
-    } as any)
+    })
     await store.save()
     return storeView(store.toObject())
   }
@@ -365,9 +397,11 @@ export class StoreService {
       category.name = input.name.trim()
       category.slug = slugify(category.name)
     }
-    if (typeof input.description === 'string') category.description = input.description.trim() || null
+    if (typeof input.description === 'string')
+      category.description = input.description.trim() || null
     if (typeof input.isActive === 'boolean') category.isActive = input.isActive
-    if (Number.isFinite(Number(input.displayOrder))) category.displayOrder = Number(input.displayOrder)
+    if (Number.isFinite(Number(input.displayOrder)))
+      category.displayOrder = Number(input.displayOrder)
     await store.save()
     return storeView(store.toObject())
   }
@@ -383,11 +417,17 @@ export class StoreService {
     ])
 
     const completedOrders = orders.filter((order: any) => order.status === 'COMPLETED')
-    const activeOrders = orders.filter((order: any) =>
-      ['PENDING', 'CONFIRMED', 'PREPARING', 'DELIVERING_TO_CAMPUS', 'ARRIVED_AT_CAMPUS', 'READY_FOR_PICKUP'].includes(order.status),
+    const activeOrders = orders.filter(
+      (order: any) => !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(order.status),
     )
-    const grossSales = completedOrders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0)
-    const pendingRevenue = activeOrders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0)
+    const grossSales = completedOrders.reduce(
+      (sum: number, order: any) => sum + (order.totalAmount || 0),
+      0,
+    )
+    const pendingRevenue = activeOrders.reduce(
+      (sum: number, order: any) => sum + (order.totalAmount || 0),
+      0,
+    )
     const commissionAmount = money((grossSales * store.commissionPercent) / 100)
 
     return {
@@ -432,10 +472,13 @@ export class StoreService {
     const category: any = store.categories.id(categoryId)
 
     if (title.length < 2) throw new AppError(400, 'PRODUCT_TITLE_INVALID', 'Enter a product name.')
-    if (description.length < 5) throw new AppError(400, 'PRODUCT_DESCRIPTION_INVALID', 'Add a short description.')
+    if (description.length < 5)
+      throw new AppError(400, 'PRODUCT_DESCRIPTION_INVALID', 'Add a short description.')
     if (!category) throw new AppError(400, 'STORE_CATEGORY_REQUIRED', 'Select a store category.')
-    if (price <= 0) throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
-    if (!Number.isInteger(stock) || stock < 0) throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
+    if (price <= 0)
+      throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
+    if (!Number.isInteger(stock) || stock < 0)
+      throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
 
     const imageUploadId = String(input.imageUploadId ?? '').trim()
     const uploadedImage = imageUploadId
@@ -512,12 +555,14 @@ export class StoreService {
     }
     if (input.price !== undefined) {
       const price = money(input.price)
-      if (price <= 0) throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
+      if (price <= 0)
+        throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
       product.price = price
     }
     if (input.stock !== undefined) {
       const stock = Number(input.stock)
-      if (!Number.isInteger(stock) || stock < 0) throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
+      if (!Number.isInteger(stock) || stock < 0)
+        throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
       product.stock = stock
       product.status = stock > 0 ? 'APPROVED' : 'OUT_OF_STOCK'
     }
@@ -547,7 +592,9 @@ export class StoreService {
         })
       }
     } else {
-      imageUrl = (await ProductImageModel.findOne({ productId: product._id, isPrimary: true }).lean())?.url ?? null
+      imageUrl =
+        (await ProductImageModel.findOne({ productId: product._id, isPrimary: true }).lean())
+          ?.url ?? null
     }
     return productView(product.toObject(), imageUrl)
   }
@@ -568,7 +615,9 @@ export class StoreService {
     const filter: Record<string, unknown> = { storeId: store._id }
     if (status) filter.status = status
     const orders = await OrderModel.find(filter).sort({ createdAt: -1 }).lean()
-    const items = await OrderItemModel.find({ orderId: { $in: orders.map((order) => order._id) } }).lean()
+    const items = await OrderItemModel.find({
+      orderId: { $in: orders.map((order) => order._id) },
+    }).lean()
     const itemsByOrder = new Map<string, any[]>()
     for (const item of items) {
       const key = String(item.orderId)
@@ -584,7 +633,11 @@ export class StoreService {
 
     const allowed = sellerStatusTransitions[String(order.status)] ?? []
     if (!allowed.includes(nextStatus)) {
-      throw new AppError(409, 'ORDER_STATUS_INVALID', 'This order cannot move to the selected status.')
+      throw new AppError(
+        409,
+        'ORDER_STATUS_INVALID',
+        'This order cannot move to the selected status.',
+      )
     }
 
     const previousStatus = order.status
@@ -621,7 +674,8 @@ export class StoreService {
     }
 
     const products: any[] = await ProductModel.find(filter)
-    if (!products.length) throw new AppError(404, 'OFFER_TARGET_EMPTY', 'No products matched this offer.')
+    if (!products.length)
+      throw new AppError(404, 'OFFER_TARGET_EMPTY', 'No products matched this offer.')
 
     for (const product of products) {
       if (discountPercent === 0) {

@@ -13,7 +13,6 @@ import {
 import { AuditLogModel } from '../modules/audit/infrastructure/audit-log.model.js'
 import { SessionModel } from '../modules/auth/infrastructure/session.model.js'
 import { CartModel } from '../modules/cart/infrastructure/cart.model.js'
-import { ChatMessageModel } from '../modules/chat/infrastructure/chat-message.model.js'
 import { HomepageSelectionModel } from '../modules/homepage/infrastructure/homepage.model.js'
 import { ModerationHistoryModel } from '../modules/listings/infrastructure/moderation-history.model.js'
 import { NotificationModel } from '../modules/notifications/infrastructure/notification.model.js'
@@ -379,39 +378,6 @@ async function seed() {
       },
     ])
     logger.info('Orders, OrderItems, and OrderStatusHistories seeded')
-
-    // 10. ChatMessageModel
-    await ChatMessageModel.deleteMany({})
-    await ChatMessageModel.insertMany([
-      {
-        orderId: order2._id,
-        senderId: buyer._id,
-        senderKind: 'BUYER',
-        senderName: buyerProfile?.displayName ?? 'Demo Buyer',
-        type: 'TEXT',
-        text: 'Hi, is the order ready for pickup?',
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      },
-      {
-        orderId: order2._id,
-        senderId: dealer.mediatorUserId,
-        senderKind: 'TEAM',
-        senderName: dealer.displayName,
-        type: 'TEXT',
-        text: 'Yes! It is ready at the NITC Main Gate. You can collect it anytime before 8 PM.',
-        createdAt: new Date(Date.now() - 3.8 * 60 * 60 * 1000),
-      },
-      {
-        orderId: order2._id,
-        senderId: buyer._id,
-        senderKind: 'BUYER',
-        senderName: buyerProfile?.displayName ?? 'Demo Buyer',
-        type: 'TEXT',
-        text: 'Great, thanks! I am on my way.',
-        createdAt: new Date(Date.now() - 3.5 * 60 * 60 * 1000),
-      },
-    ])
-    logger.info('ChatMessages seeded')
 
     // 11. DealerAssignmentHistory
     await DealerAssignmentHistoryModel.deleteMany({})

@@ -3,6 +3,12 @@ import { asyncHandler } from '../../../core/http/async-handler.js'
 import { requireRoles } from '../../../core/middleware/authenticate.js'
 import type { StoreService } from '../application/store.service.js'
 
+function requestText(value: unknown, key: string): string {
+  if (typeof value !== 'object' || value === null) return ''
+  const entry = (value as Record<string, unknown>)[key]
+  return typeof entry === 'string' ? entry : ''
+}
+
 export function createStoreRouter(service: StoreService) {
   const router = Router()
   router.get(
@@ -11,7 +17,7 @@ export function createStoreRouter(service: StoreService) {
       response.json({
         success: true,
         message: 'Stores retrieved.',
-        data: await service.list(String(request.query.q || '')),
+        data: await service.list(requestText(request.query, 'q')),
       })
     }),
   )
@@ -21,7 +27,7 @@ export function createStoreRouter(service: StoreService) {
       response.json({
         success: true,
         message: 'Marketplace search completed.',
-        data: await service.searchMarketplace(String(request.query.q || '')),
+        data: await service.searchMarketplace(requestText(request.query, 'q')),
       })
     }),
   )
@@ -31,7 +37,7 @@ export function createStoreRouter(service: StoreService) {
       response.json({
         success: true,
         message: 'Store retrieved.',
-        data: await service.browse(String(request.params.slug), String(request.query.q || '')),
+        data: await service.browse(String(request.params.slug), requestText(request.query, 'q')),
       })
     }),
   )
@@ -44,7 +50,11 @@ export function createAdminStoreRouter(service: StoreService, authenticate: Requ
   router.get(
     '/',
     asyncHandler(async (_request, response) => {
-      response.json({ success: true, message: 'Stores retrieved.', data: await service.adminList() })
+      response.json({
+        success: true,
+        message: 'Stores retrieved.',
+        data: await service.adminList(),
+      })
     }),
   )
   router.post(
@@ -64,6 +74,16 @@ export function createAdminStoreRouter(service: StoreService, authenticate: Requ
         success: true,
         message: 'Store updated.',
         data: await service.update(String(request.params.id), request.body),
+      })
+    }),
+  )
+  router.delete(
+    '/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store removed from the marketplace.',
+        data: await service.remove(String(request.params.id), request.auth!.user.id),
       })
     }),
   )
@@ -90,7 +110,7 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       response.json({
         success: true,
         message: 'Products retrieved.',
-        data: await service.sellerProducts(request.auth!.user.id, String(request.query.q || '')),
+        data: await service.sellerProducts(request.auth!.user.id, requestText(request.query, 'q')),
       })
     }),
   )
@@ -110,7 +130,11 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       response.json({
         success: true,
         message: 'Product updated.',
-        data: await service.updateProduct(request.auth!.user.id, String(request.params.id), request.body),
+        data: await service.updateProduct(
+          request.auth!.user.id,
+          String(request.params.id),
+          request.body,
+        ),
       })
     }),
   )
@@ -154,7 +178,10 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       response.json({
         success: true,
         message: 'Orders retrieved.',
-        data: await service.sellerOrders(request.auth!.user.id, String(request.query.status || '')),
+        data: await service.sellerOrders(
+          request.auth!.user.id,
+          requestText(request.query, 'status'),
+        ),
       })
     }),
   )
@@ -167,8 +194,8 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
         data: await service.updateOrderStatus(
           request.auth!.user.id,
           String(request.params.id),
-          String(request.body.status || ''),
-          String(request.body.note || ''),
+          requestText(request.body, 'status'),
+          requestText(request.body, 'note'),
         ),
       })
     }),

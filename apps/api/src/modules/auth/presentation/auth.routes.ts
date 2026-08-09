@@ -1,9 +1,14 @@
 import { Router, type CookieOptions, type RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import * as contracts from '@campusbaza/contracts'
-import type { GoogleSignInInput } from '@campusbaza/contracts'
+import type {
+  AccessRequestInput,
+  GoogleSignInInput,
+  ReviewAccessRequestInput,
+} from '@campusbaza/contracts'
 
-const { googleSignInInputSchema } = contracts
+const { accessRequestInputSchema, googleSignInInputSchema, reviewAccessRequestInputSchema } =
+  contracts
 import type { AppEnv } from '../../../config/env.js'
 import { AppError } from '../../../core/errors/app-error.js'
 import { asyncHandler } from '../../../core/http/async-handler.js'
@@ -14,8 +19,16 @@ import {
   type RateLimitStoreFactory,
 } from '../../../core/rate-limit/rate-limit-store.factory.js'
 import type { AuthService } from '../application/auth.service.js'
+import type { AccessRequestService } from '../application/access-request.service.js'
+import { requireRoles } from '../../../core/middleware/authenticate.js'
 
 const REFRESH_COOKIE = 'campusbaza_refresh'
+
+function queryText(value: unknown, key: string): string {
+  if (typeof value !== 'object' || value === null) return ''
+  const entry = (value as Record<string, unknown>)[key]
+  return typeof entry === 'string' ? entry : ''
+}
 
 function cookieOptions(env: AppEnv, expiresAt?: Date): CookieOptions {
   return {
@@ -33,6 +46,7 @@ export function createAuthRouter(
   authenticate: RequestHandler,
   env: AppEnv,
   storeFactory: RateLimitStoreFactory,
+  accessRequests?: AccessRequestService,
 ): Router {
   const router = Router()
 
@@ -105,6 +119,22 @@ export function createAuthRouter(
     }),
   )
 
+  if (accessRequests) {
+    router.post(
+      '/access-requests',
+      googleSignInLimiter,
+      validateBody(accessRequestInputSchema),
+      asyncHandler(async (request, response) => {
+        const data = await accessRequests.request(request.body as AccessRequestInput)
+        response.status(201).json({
+          success: true,
+          message: 'Your access request was sent to the administrators.',
+          data,
+        })
+      }),
+    )
+  }
+
   router.post(
     '/refresh',
     asyncHandler(async (request, response) => {
@@ -151,5 +181,39 @@ export function createAuthRouter(
     })
   })
 
+  return router
+}
+
+export function createAdminAccessRequestRouter(
+  service: AccessRequestService,
+  authenticate: RequestHandler,
+) {
+  const router = Router()
+  router.use(authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'))
+  router.get(
+    '/',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Access requests retrieved.',
+        data: await service.list(queryText(request.query, 'status')),
+      })
+    }),
+  )
+  router.patch(
+    '/:id',
+    validateBody(reviewAccessRequestInputSchema),
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Access request reviewed.',
+        data: await service.review(
+          String(request.params.id),
+          request.auth!.user.id,
+          request.body as ReviewAccessRequestInput,
+        ),
+      })
+    }),
+  )
   return router
 }

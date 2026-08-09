@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { ChevronLeftIcon, MessageIcon, PackageIcon } from '../../../components/ui/icons'
+import { ChevronLeftIcon, PackageIcon } from '../../../components/ui/icons'
 import { LoadingSkeleton } from '../../../components/ui/LoadingSkeleton'
 import { ordersApi } from '../api/orders.api'
 import { OrderStatusBadge } from '../components/OrderStatusBadge'
@@ -15,7 +15,12 @@ function price(value: number) {
     maximumFractionDigits: 0,
   }).format(value)
 }
-const cancellable = ['PENDING', 'WAITING_FOR_DEALER_ASSIGNMENT', 'AWAITING_TEAM_CONFIRMATION']
+const cancellable = [
+  'PENDING',
+  'WAITING_FOR_DEALER_ASSIGNMENT',
+  'AWAITING_TEAM_CONFIRMATION',
+  'CONTACTED',
+]
 
 export function OrderDetailsPage() {
   const { id = '' } = useParams()
@@ -135,30 +140,31 @@ export function OrderDetailsPage() {
               ) : null}
             </dl>
           </section>
-          <section className="detail-panel chat-assistance-panel">
-            <h2>Sales assistance</h2>
+          <section className="detail-panel order-contact-panel">
+            <h2>Your order contact</h2>
             {data.assignedDealer ? (
               <>
                 <div className="assigned-dealer-row">
-                  <MessageIcon />
                   <div>
                     <strong>{data.assignedDealer.displayName}</strong>
-                    <small>Your assigned Campus Angadi dealer</small>
+                    <small>Campus Angadi order coordinator</small>
                   </div>
                 </div>
                 <p>
-                  Chat privately with our team about availability, payment and campus pickup. The
-                  seller is never added to this conversation.
+                  Contact this number for payment and delivery coordination. Your coordinator will
+                  securely pass the required delivery details to the seller.
                 </p>
-                <Link className="button button-primary" to={`/account/orders/${id}/chat`}>
-                  <MessageIcon />
-                  Open secure chat
-                </Link>
+                <a
+                  className="button button-primary"
+                  href={`tel:${data.assignedDealer.phoneNumber}`}
+                >
+                  Call {data.assignedDealer.phoneNumber}
+                </a>
               </>
             ) : (
               <p>
-                No dealer is available yet. Your order is saved safely and the administration can
-                assign a sales contact shortly.
+                Your order is saved. An administrator will assign a contact number shortly; it will
+                appear here as soon as it is available.
               </p>
             )}
           </section>
