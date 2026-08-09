@@ -37,7 +37,8 @@
 - [ ] notification references open the correct buyer or staff screen
 - [ ] dealer capacity and least-load assignment work under concurrent checkout
 - [ ] no available dealer preserves the order in the waiting state
-- [ ] Buyer-to-team chat, voice notes and audio-call signaling work
+- [ ] buyer sees the assigned coordinator phone contact and no unassigned private contact details
+- [ ] admin-managed coordinators can be activated, deactivated, and assigned by least load
 - [ ] completion/cancellation releases dealer workload exactly once
 - [ ] blocking a user revokes active sessions
 - [ ] marketplace listing/order switches are enforced by the API
@@ -50,7 +51,7 @@
 - [ ] skip link reaches the main content
 - [ ] visible focus indicators remain present
 - [ ] forms expose labels and errors
-- [ ] dark and light themes meet readable contrast
+- [ ] the light theme meets readable contrast
 - [ ] reduced-motion mode avoids long animations
 - [ ] mobile search, cart, account, listing, checkout, and admin tables are usable
 

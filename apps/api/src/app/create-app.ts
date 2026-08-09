@@ -95,11 +95,7 @@ export function createApp(root: CompositionRoot) {
   app.options('*path', cors(corsOptions))
   app.use(cors(corsOptions))
   app.use(helmet())
-  // Express 5 exposes these built-in parser factories at runtime; TypeScript validates their
-  // middleware shape, while the current type-aware ESLint resolver cannot resolve the overload.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   app.use(express.json({ limit: '32kb', strict: true }))
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   app.use(express.urlencoded({ extended: false, limit: '16kb' }))
   app.use(cookieParser())
   app.use(

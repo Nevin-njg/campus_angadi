@@ -40,16 +40,15 @@ METRICS_TOKEN=<long-random-secret>
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
-CHAT_AUDIO_MAX_BYTES=8000000
 
 # Web build-time variables
 VITE_API_URL=https://api.campusbaza.example.edu/api/v1
 VITE_GOOGLE_CLIENT_ID=<same-google-web-client-id>.apps.googleusercontent.com
-VITE_WEBRTC_ICE_SERVERS_JSON=[{"urls":"stun:stun.example.edu:3478"},{"urls":"turns:turn.example.edu:5349","username":"short-lived-user","credential":"short-lived-credential"}]
 ```
 
-Configure a TURN service for reliable audio calls across campus, mobile, and restrictive networks.
-Prefer short-lived TURN credentials issued by your infrastructure provider.
+Order coordination uses administrator-managed phone contacts. Add active coordinators in the admin
+panel before accepting orders and verify that buyers can see only the coordinator assigned to their
+order.
 
 Generate unrelated secrets for access tokens, refresh tokens, and metrics. Do not reuse a password or commit the environment file. Configure the frontend origins in the Google OAuth client before deployment.
 
@@ -136,8 +135,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Request-Id $request_id;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
         proxy_read_timeout 35s;
     }
 }

@@ -253,7 +253,7 @@ export function HomePage() {
               'Find a product',
               'Create the order',
               'Get a dealer',
-              'Chat with our team',
+              'Connect with your coordinator',
               'Collect on campus',
             ].map((step, index) => (
               <div className="step-card" key={step}>

@@ -39,7 +39,6 @@ export class TokenService {
     const accessToken = jwt.sign({ role, type: 'access' }, this.accessSecret, {
       subject: userId,
       // jsonwebtoken's declaration narrows duration strings more than the runtime API.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       expiresIn: this.accessExpiresIn as JwtExpiresIn,
     })
     const refreshToken = jwt.sign(
@@ -47,7 +46,6 @@ export class TokenService {
       this.refreshSecret,
       {
         subject: userId,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         expiresIn: this.refreshExpiresIn as JwtExpiresIn,
       },
     )

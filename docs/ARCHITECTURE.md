@@ -6,7 +6,7 @@ consistent, feature-first architecture across the React web app and the Node.js 
 ## Repository boundaries
 
 - `apps/web`: React presentation and browser orchestration.
-- `apps/api`: Express HTTP/API and Socket.IO runtime.
+- `apps/api`: Express HTTP/API runtime.
 - `packages/contracts`: shared request, response, and validation contracts. Cross-app payloads are
   defined here first.
 - `packages/config`: shared non-secret product defaults.
@@ -24,7 +24,7 @@ layers:
    other delivery/database details.
 2. `application`: use-case services. Services validate business rules and depend on domain ports.
 3. `infrastructure`: Mongoose, Redis, Google identity verification, Cloudinary, and other port implementations.
-4. `presentation`: thin Express routes, middleware, and socket adapters. Controllers validate a
+4. `presentation`: thin Express routes and middleware. Controllers validate a
    shared contract, call one application service, and serialize the result.
 
 `app/composition-root.ts` is the only dependency-composition entry point. `app/create-app.ts` owns
