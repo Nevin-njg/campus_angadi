@@ -51,19 +51,9 @@ const envSchema = z
     GOOGLE_HOSTED_DOMAINS: csv.default(''),
     ADMIN_EMAILS: csv.default(''),
     SUPER_ADMIN_EMAILS: csv.default(''),
-<<<<<<< HEAD
-=======
     TEST_LOGIN_ENABLED: booleanFromString.default(false),
     TEST_LOGIN_EMAIL: z.string().trim().email().optional().or(z.literal('')).default(''),
     TEST_LOGIN_PASSWORD: z.string().optional().default(''),
-    SMTP_HOST: z.string().trim().optional().default(''),
-    SMTP_PORT: z.coerce.number().int().positive().default(587),
-    SMTP_SECURE: booleanFromString.default(false),
-    SMTP_USER: z.string().trim().optional().default(''),
-    SMTP_PASSWORD: z.string().optional().default(''),
-    SMTP_FROM_NAME: z.string().trim().default('Campus Angadi'),
-    SMTP_FROM_EMAIL: z.string().trim().email().optional().or(z.literal('')).default(''),
->>>>>>> 860cce2bf60fd128bac6bddb6d69e16d7266b134
     JWT_ACCESS_SECRET: z.string().min(32),
     JWT_REFRESH_SECRET: z.string().min(32),
     ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
