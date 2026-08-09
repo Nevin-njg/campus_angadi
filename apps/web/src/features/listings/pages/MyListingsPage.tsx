@@ -33,16 +33,15 @@ export function MyListingsPage() {
     <section>
       <div className="page-heading listing-page-heading">
         <div>
-          <span className="section-kicker">Seller account</span>
-          <h1>My listings</h1>
-          <p>Track approvals, review admin feedback and manage your second-hand products.</p>
+          <h1>Listings</h1>
+          <p>Manage the items you are selling.</p>
         </div>
         <Link className="button button-primary" to="/account/listings/new">
           Sell an item
         </Link>
       </div>
 
-      <div className="listing-toolbar content-card">
+      <div className="listing-toolbar student-toolbar">
         <input
           type="search"
           placeholder="Search your listings"

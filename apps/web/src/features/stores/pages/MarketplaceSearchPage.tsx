@@ -329,24 +329,15 @@ export function MarketplaceSearchPage() {
 
   return (
     <main className="marketplace-search-page">
-      <section className="marketplace-search-hero">
-        <div className="container marketplace-search-hero-inner">
-          <div className="marketplace-search-copy">
-            <span className="eyebrow">
-              <span /> Campus stores
-            </span>
-            <h1>Find products from every campus store.</h1>
-            <p>
-              Search by product or store, then choose whether you want to browse verified sellers or
-              see every matching product in one place.
-            </p>
-          </div>
+      <section className="marketplace-search-header">
+        <div className="container marketplace-search-header-inner">
+          <h1>Search the campus marketplace</h1>
           <form className="marketplace-global-search" onSubmit={submitSearch} role="search">
             <SearchIcon />
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search products or stores, like shoes or Campus Mart"
+              placeholder="Search products or stores"
               aria-label="Search stores and products"
               autoComplete="off"
             />
@@ -375,7 +366,7 @@ export function MarketplaceSearchPage() {
               </button>
             ))}
             <button type="button" className="marketplace-browse-campus" onClick={browseCampus}>
-              Browse campus <ArrowRightIcon />
+              View everything <ArrowRightIcon />
             </button>
           </div>
         </div>
@@ -402,10 +393,7 @@ export function MarketplaceSearchPage() {
             <>
               <div className="marketplace-result-summary">
                 <div>
-                  <span className="section-kicker">
-                    {query ? 'Search results' : 'Explore stores'}
-                  </span>
-                  <h2>{query ? `Results for “${query}”` : 'Stores and products around campus'}</h2>
+                  <h2>{query ? `Results for “${query}”` : 'Browse campus stores'}</h2>
                   <p>
                     {marketplace.data?.meta.storeCount ?? 0} stores ·{' '}
                     {marketplace.data?.meta.productCount ?? 0} products ·{' '}
@@ -433,9 +421,7 @@ export function MarketplaceSearchPage() {
                 >
                   <div className="marketplace-section-heading">
                     <div>
-                      <span className="section-kicker">Popular around campus</span>
-                      <h2 id="top-campus-picks">Top picks from campus stores</h2>
-                      <p>In-stock products recently added by verified sellers.</p>
+                      <h2 id="top-campus-picks">Popular products</h2>
                     </div>
                     <button
                       type="button"
@@ -484,13 +470,9 @@ export function MarketplaceSearchPage() {
                 <section className="marketplace-result-section" aria-labelledby="matching-stores">
                   <div className="marketplace-section-heading">
                     <div>
-                      <span className="section-kicker">
-                        {query ? 'Stores matching your search' : 'Campus store directory'}
-                      </span>
                       <h2 id="matching-stores">
-                        {query ? `Stores for “${query}”` : 'Browse verified campus stores'}
+                        {query ? `Stores for “${query}”` : 'Campus stores'}
                       </h2>
-                      <p>Open a store to search its catalogue and browse products by category.</p>
                     </div>
                   </div>
                   {(marketplace.data?.stores.length ?? 0) > 0 ? (
@@ -521,13 +503,9 @@ export function MarketplaceSearchPage() {
                 >
                   <div className="marketplace-section-heading marketplace-comparison-heading">
                     <div>
-                      <span className="section-kicker">Products from different stores</span>
                       <h2 id="all-product-results">
-                        {query ? `Products for “${query}”` : 'All products around campus'}
+                        {query ? `Products for “${query}”` : 'All products'}
                       </h2>
-                      <p>
-                        Compare sellers, prices, availability and delivery before adding to cart.
-                      </p>
                     </div>
                     <div className="marketplace-result-controls">
                       <label className="marketplace-stock-toggle">

@@ -18,43 +18,43 @@ export function AccountLayout() {
     <div className="site-shell">
       <SkipLink />
       <Navbar />
-      <div className="container account-shell">
-        <aside className="account-sidebar" aria-label="Account navigation">
-          <p className="account-sidebar-title">My Campus Angadi</p>
-          <NavLink to="/account/profile">
-            <UserIcon />
-            Profile
-          </NavLink>
-          <NavLink to="/account/orders">
-            <ShoppingBagIcon />
-            My orders
-          </NavLink>
-          <NavLink to="/account/listings">
-            <PackageIcon />
-            My listings
-          </NavLink>
-          <NavLink to="/account/reports">
-            <MessageIcon />
-            My reports
-          </NavLink>
-          <button
-            onClick={async () => {
-              if (
-                await confirm({
-                  title: 'Sign out of Campus Angadi?',
-                  description:
-                    'You will need to sign in with Google again before accessing your account.',
-                  confirmLabel: 'Sign out',
-                })
-              )
-                await logout()
-            }}
-          >
-            <LogOutIcon />
-            Sign out
-          </button>
-        </aside>
-        <main className="account-content" id="main-content" tabIndex={-1}>
+      <div className="student-account-layout">
+        <div className="student-account-bar">
+          <nav className="container student-account-nav" aria-label="Account navigation">
+            <NavLink to="/account/profile">
+              <UserIcon />
+              Profile
+            </NavLink>
+            <NavLink to="/account/orders">
+              <ShoppingBagIcon />
+              Orders
+            </NavLink>
+            <NavLink to="/account/listings">
+              <PackageIcon />
+              Listings
+            </NavLink>
+            <NavLink to="/account/reports">
+              <MessageIcon />
+              Reports
+            </NavLink>
+            <button
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: 'Sign out?',
+                    description: 'You will need to sign in again to access your account.',
+                    confirmLabel: 'Sign out',
+                  })
+                )
+                  await logout()
+              }}
+            >
+              <LogOutIcon />
+              Sign out
+            </button>
+          </nav>
+        </div>
+        <main className="container student-account-main" id="main-content" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

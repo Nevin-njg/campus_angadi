@@ -9,8 +9,10 @@ import {
   BellIcon,
   CartIcon,
   CloseIcon,
+  ImagePlusIcon,
   MapPinIcon,
   MenuIcon,
+  PackageIcon,
   SearchIcon,
   UserIcon,
 } from '../ui/icons'
@@ -177,8 +179,6 @@ export function Navbar() {
                 </NavLink>
               ))}
             </nav>
-            <span>Verified campus sellers</span>
-            <Link to="/search">Compare prices across stores</Link>
           </div>
         </div>
       </header>
@@ -246,6 +246,38 @@ export function Navbar() {
           )}
         </nav>
       </aside>
+      <nav className="mobile-bottom-nav" aria-label="Mobile shopping navigation">
+        <NavLink to="/" end>
+          <PackageIcon />
+          <span>Home</span>
+        </NavLink>
+        <NavLink
+          to="/search"
+          className={({ isActive }: { isActive: boolean }) =>
+            isActive || location.pathname === '/second-hand-store' ? 'active' : undefined
+          }
+        >
+          <SearchIcon />
+          <span>Browse</span>
+        </NavLink>
+        <NavLink className="mobile-bottom-sell" to="/account/listings/new">
+          <span className="mobile-bottom-sell-icon">
+            <ImagePlusIcon />
+          </span>
+          <span>Sell</span>
+        </NavLink>
+        <NavLink className="mobile-bottom-cart" to="/cart">
+          <CartIcon />
+          {(cart.data?.totalItems ?? 0) > 0 ? (
+            <small>{Math.min(cart.data?.totalItems ?? 0, 99)}</small>
+          ) : null}
+          <span>Cart</span>
+        </NavLink>
+        <NavLink to={user ? '/account/profile' : '/login'}>
+          <UserIcon />
+          <span>{user ? 'Account' : 'Sign in'}</span>
+        </NavLink>
+      </nav>
     </>
   )
 }

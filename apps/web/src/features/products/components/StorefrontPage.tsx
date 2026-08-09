@@ -3,7 +3,13 @@ import { useQuery } from '@tanstack/react-query'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FilterIcon, PackageIcon, SearchIcon, ShieldIcon } from '../../../components/ui/icons'
+import {
+  CloseIcon,
+  FilterIcon,
+  PackageIcon,
+  SearchIcon,
+  ShieldIcon,
+} from '../../../components/ui/icons'
 import { catalogApi } from '../api/catalog.api'
 import { ProductGrid, ProductGridSkeleton } from './ProductGrid'
 
@@ -14,8 +20,22 @@ interface StorefrontPageProps {
 export function StorefrontPage({ kind }: StorefrontPageProps) {
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState(params.get('q') ?? '')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const official = kind === 'official'
   useEffect(() => setSearch(params.get('q') ?? ''), [params])
+  useEffect(() => {
+    if (!filtersOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFiltersOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [filtersOpen])
 
   const query = {
     q: params.get('q') || undefined,
@@ -39,6 +59,10 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
     queryKey: ['products', query],
     queryFn: () => catalogApi.products(query),
   })
+  const filterCount = [query.category, query.condition, query.minPrice, query.maxPrice].filter(
+    Boolean,
+  ).length
+  const selectedCategory = categories.data?.find((category) => category.slug === query.category)
 
   function update(key: string, value?: string) {
     const next = new URLSearchParams(params)
@@ -79,15 +103,52 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
             />
             <button className="button button-primary">Search</button>
           </form>
+          <div className="storefront-category-chips" aria-label="Product categories">
+            <button
+              type="button"
+              className={!query.category ? 'is-active' : ''}
+              onClick={() => update('category')}
+            >
+              All
+            </button>
+            {(categories.data ?? []).slice(0, 8).map((category) => (
+              <button
+                type="button"
+                className={query.category === category.slug ? 'is-active' : ''}
+                onClick={() => update('category', category.slug)}
+                key={category.id}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
       <section className="section storefront-catalog">
         <div className="container catalog-layout">
-          <aside className="catalog-filters storefront-filters">
+          <button
+            type="button"
+            className={`storefront-filter-backdrop ${filtersOpen ? 'is-open' : ''}`}
+            onClick={() => setFiltersOpen(false)}
+            aria-label="Close filters"
+            tabIndex={filtersOpen ? 0 : -1}
+          />
+          <aside
+            className={`catalog-filters storefront-filters ${filtersOpen ? 'is-open' : ''}`}
+            aria-label="Product filters"
+          >
             <div className="storefront-filter-title">
               <FilterIcon />
               <strong>Filters</strong>
+              <button
+                type="button"
+                className="mobile-filter-close"
+                onClick={() => setFiltersOpen(false)}
+                aria-label="Close filters"
+              >
+                <CloseIcon />
+              </button>
             </div>
             <label>
               Category
@@ -141,20 +202,39 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 placeholder="Any price"
               />
             </label>
-            <button
-              type="button"
-              className="button button-outline"
-              onClick={() => {
-                setSearch('')
-                setParams({})
-              }}
-            >
-              Clear filters
-            </button>
+            <div className="storefront-filter-actions">
+              <button
+                type="button"
+                className="button button-outline"
+                onClick={() => {
+                  setSearch('')
+                  setParams({})
+                }}
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                className="button button-primary mobile-filter-apply"
+                onClick={() => setFiltersOpen(false)}
+              >
+                Show {products.data?.meta.total ?? 0} {official ? 'products' : 'listings'}
+              </button>
+            </div>
           </aside>
 
           <div className="catalog-results">
             <div className="catalog-toolbar storefront-toolbar">
+              <button
+                type="button"
+                className="mobile-filter-trigger"
+                onClick={() => setFiltersOpen(true)}
+                aria-expanded={filtersOpen}
+              >
+                <FilterIcon />
+                Filters
+                {filterCount ? <span>{filterCount}</span> : null}
+              </button>
               <span>
                 <strong>{products.data?.meta.total ?? 0}</strong>{' '}
                 {official ? 'products' : 'listings'}
@@ -170,6 +250,30 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
                 </select>
               </label>
             </div>
+            {filterCount ? (
+              <div className="storefront-active-filters" aria-label="Active filters">
+                {selectedCategory ? (
+                  <button type="button" onClick={() => update('category')}>
+                    {selectedCategory.name} <CloseIcon />
+                  </button>
+                ) : null}
+                {query.condition ? (
+                  <button type="button" onClick={() => update('condition')}>
+                    {query.condition.replaceAll('_', ' ').toLowerCase()} <CloseIcon />
+                  </button>
+                ) : null}
+                {query.minPrice ? (
+                  <button type="button" onClick={() => update('minPrice')}>
+                    From ₹{query.minPrice.toLocaleString('en-IN')} <CloseIcon />
+                  </button>
+                ) : null}
+                {query.maxPrice ? (
+                  <button type="button" onClick={() => update('maxPrice')}>
+                    Up to ₹{query.maxPrice.toLocaleString('en-IN')} <CloseIcon />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
 
             {products.isLoading ? (
               <ProductGridSkeleton count={8} />

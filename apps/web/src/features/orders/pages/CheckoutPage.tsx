@@ -120,11 +120,9 @@ export function CheckoutPage() {
     <section className="section">
       <div className="container checkout-grid">
         <div>
-          <span className="section-kicker">Order details</span>
           <h1>Checkout</h1>
           <p className="page-lead">
-            Confirm your campus contact and pickup details. Products from different sellers become
-            separate orders, each coordinated privately by a Campus Angadi team member.
+            Enter your contact and campus pickup details. Each seller will have a separate order.
           </p>
           {issues.length ? (
             <div className="cart-issues">
@@ -216,8 +214,7 @@ export function CheckoutPage() {
           </form>
         </div>
         <aside className="checkout-items-card">
-          <span className="section-kicker">Review</span>
-          <h2>{totalItems} items</h2>
+          <h2>Order summary · {totalItems} items</h2>
           {checkoutItems.map((item) => (
             <div className="checkout-mini-item" key={item.product.id}>
               {item.product.primaryImage ? (

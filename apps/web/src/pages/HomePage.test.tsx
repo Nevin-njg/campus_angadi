@@ -21,7 +21,7 @@ const section = (key: 'FEATURED' | 'OFFICIAL' | 'SECOND_HAND' | 'RECENT') => ({
 })
 
 describe('HomePage', () => {
-  it('describes the private mediated order flow and live catalogue sections', async () => {
+  it('starts with student shopping actions and live catalogue sections', async () => {
     vi.mocked(catalogApi.homepage).mockResolvedValue({
       categories: [],
       sections: {
@@ -39,9 +39,13 @@ describe('HomePage', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    expect(screen.getByText('Human order support')).toBeInTheDocument()
-    expect(screen.getByText('Assigned contact number')).toBeInTheDocument()
-    expect(await screen.findByText('Featured on Campus Angadi')).toBeInTheDocument()
-    expect(screen.getByText('Official Campus Store')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'What do you need today?' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('textbox', { name: 'Search the campus marketplace' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Sell an item' })).toBeInTheDocument()
+    expect(await screen.findByText('Popular on campus')).toBeInTheDocument()
+    expect(screen.getByText('Official campus essentials')).toBeInTheDocument()
+    expect(screen.queryByText('Human order support')).not.toBeInTheDocument()
   })
 })

@@ -43,9 +43,7 @@ export function NotificationsPage() {
     <section className="container notifications-page">
       <div className="page-title-row">
         <div>
-          <span className="section-kicker">Account updates</span>
           <h1>Notifications</h1>
-          <p>Order, product, report and account messages.</p>
         </div>
         <button
           className="button button-outline"

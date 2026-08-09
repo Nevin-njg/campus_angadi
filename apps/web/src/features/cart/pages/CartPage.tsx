@@ -75,7 +75,6 @@ export function CartPage() {
         <div>
           <div className="page-title-row">
             <div>
-              <span className="section-kicker">Your basket</span>
               <h1>Cart</h1>
             </div>
             <button
@@ -206,6 +205,19 @@ export function CartPage() {
             Continue shopping
           </Link>
         </aside>
+      </div>
+      <div className="mobile-cart-checkout" aria-label="Cart total and checkout">
+        <div>
+          <small>Total</small>
+          <strong>{price(data.subtotal)}</strong>
+        </div>
+        <Link
+          className={`button button-primary ${data.issues.length ? 'disabled-link' : ''}`}
+          aria-disabled={Boolean(data.issues.length)}
+          to={data.issues.length ? '#' : '/checkout'}
+        >
+          Checkout
+        </Link>
       </div>
     </section>
   )
