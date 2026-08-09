@@ -27,7 +27,7 @@ export function HomePage() {
         <div className="container home-discovery-inner">
           <div className="home-discovery-heading">
             <div>
-              <span>Campus Angadi · NIT Calicut</span>
+              <span>Campus Angadi · Campus marketplace</span>
               <h1>What do you need today?</h1>
               <p>Campus essentials and student-to-student deals, all in one place.</p>
             </div>

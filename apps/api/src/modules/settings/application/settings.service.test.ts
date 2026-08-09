@@ -6,7 +6,7 @@ describe('SettingsService', () => {
   const defaults = {
     appName: 'Campus Angadi',
     brandMark: 'CA',
-    campusDisplayName: 'NIT Calicut',
+    campusDisplayName: 'Campus',
   }
 
   beforeEach(async () => {
@@ -19,7 +19,7 @@ describe('SettingsService', () => {
     const updated = await service.update({
       appName: 'Campus Angadi',
       brandMark: 'CA',
-      campusDisplayName: 'NIT Calicut',
+      campusDisplayName: 'Campus',
       listingExpirationDays: 45,
     })
 

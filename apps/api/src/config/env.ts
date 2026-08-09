@@ -19,7 +19,7 @@ const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     APP_NAME: z.string().min(1).default('Campus Angadi'),
     BRAND_MARK: z.string().min(1).max(8).default('CA'),
-    CAMPUS_DISPLAY_NAME: z.string().min(1).default('NIT Calicut'),
+    CAMPUS_DISPLAY_NAME: z.string().min(1).default('Campus'),
     WEB_URL: z.string().url().default('http://localhost:5173'),
     API_URL: z.string().url().default('http://localhost:5000'),
     API_PORT: z.coerce.number().int().positive().default(5000),

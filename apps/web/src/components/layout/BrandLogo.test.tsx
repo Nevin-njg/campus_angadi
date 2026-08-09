@@ -27,6 +27,7 @@ describe('BrandLogo', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByText('Campus Angadi')).toBeInTheDocument()
+    expect(screen.queryByText('Your Campus')).not.toBeInTheDocument()
     expect(document.querySelector('img[src="/brand/campus-angadi-logo.png"]')).toBeInTheDocument()
   })
 })

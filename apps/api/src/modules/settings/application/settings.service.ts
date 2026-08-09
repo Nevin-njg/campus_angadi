@@ -56,7 +56,7 @@ export class SettingsService {
       ['My College', 'Your College', 'Your College Name', 'Your Campus'].includes(
         String(d.campusDisplayName),
       ) &&
-      this.defaults.campusDisplayName === 'NIT Calicut'
+      this.defaults.campusDisplayName === 'Campus'
     ) {
       legacyBrandUpdate.campusDisplayName = this.defaults.campusDisplayName
     }

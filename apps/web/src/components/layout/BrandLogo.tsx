@@ -10,7 +10,6 @@ export function BrandLogo() {
     staleTime: 5 * 60_000,
   })
   const appName = settings.data?.appName ?? webEnv.appName
-  const campusName = settings.data?.campusDisplayName ?? webEnv.campusDisplayName
   return (
     <Link to="/" className="brand-logo" aria-label={`${appName} home`}>
       <span className="brand-mark" aria-hidden="true">
@@ -18,7 +17,6 @@ export function BrandLogo() {
       </span>
       <span className="brand-copy">
         <strong>{appName}</strong>
-        <small>{campusName}</small>
       </span>
     </Link>
   )

@@ -90,7 +90,7 @@ export function StorefrontPage({ kind }: StorefrontPageProps) {
             <p>
               {official
                 ? 'Verified merchandise, supplies and everyday essentials managed by the Campus Angadi team.'
-                : 'Approved pre-loved books, electronics and hostel essentials from the NITC community.'}
+                : 'Approved pre-loved books, electronics and hostel essentials from the campus community.'}
             </p>
           </div>
           <form className="storefront-search" onSubmit={submitSearch}>

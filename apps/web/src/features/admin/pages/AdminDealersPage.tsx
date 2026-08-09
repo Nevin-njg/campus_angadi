@@ -112,7 +112,7 @@ export function AdminDealersPage() {
               aria-label="Search order contacts"
               className={inputClass}
               type="email"
-              placeholder="team@nitc.ac.in"
+              placeholder="team@campus.edu"
               value={accessForm.email}
               onChange={(event) => setAccessForm({ ...accessForm, email: event.target.value })}
             />

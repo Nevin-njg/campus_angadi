@@ -20,7 +20,7 @@ export function PublicLayout() {
             <Link to="/account/listings/new">Sell</Link>
             <Link to="/login">Sign in</Link>
           </nav>
-          <span>© {new Date().getFullYear()} Campus Angadi · NIT Calicut</span>
+          <span>© {new Date().getFullYear()} Campus Angadi · Campus marketplace</span>
         </div>
       </footer>
     </div>

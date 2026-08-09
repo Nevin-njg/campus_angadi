@@ -113,7 +113,7 @@ export function LoginPage() {
       </header>
       <main className="simple-auth-main">
         <div className="simple-auth-panel">
-          <span className="simple-auth-campus">NIT Calicut marketplace</span>
+          <span className="simple-auth-campus">Campus marketplace</span>
           <h1>Sign in</h1>
           <p>Use your approved Google account to continue to Campus Angadi.</p>
           {!requestCredential ? (
@@ -133,7 +133,7 @@ export function LoginPage() {
               onSubmit={(event) => void submitAccessRequest(event)}
             >
               <div className="form-alert">
-                This email needs approval. Tell us how you are connected to NIT Calicut.
+                This email needs approval. Tell us how you are connected to the campus.
               </div>
               <label>
                 Full name

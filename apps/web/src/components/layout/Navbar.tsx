@@ -86,11 +86,11 @@ export function Navbar() {
       <header className="navbar">
         <div className="container nav-inner">
           <BrandLogo />
-          <Link className="nav-location" to="/search" aria-label="Shop stores at NIT Calicut">
+          <Link className="nav-location" to="/search" aria-label="Shopping at campus">
             <MapPinIcon />
             <span>
               <small>Shopping at</small>
-              <strong>NIT Calicut</strong>
+              <strong>campus</strong>
             </span>
           </Link>
           <form className="nav-search" onSubmit={submitSearch} role="search">
