@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/store/use-auth-store'
 import { cartApi } from '../../features/cart/api/cart.api'
 import { notificationsApi } from '../../features/notifications/api/notifications.api'
 import { BrandLogo } from './BrandLogo'
-import { ThemeToggle } from './ThemeToggle'
-import { BellIcon, CartIcon, CloseIcon, MenuIcon, UserIcon } from '../ui/icons'
+import {
+  BellIcon,
+  CartIcon,
+  CloseIcon,
+  MapPinIcon,
+  MenuIcon,
+  SearchIcon,
+  UserIcon,
+} from '../ui/icons'
 import { queryKeys } from '../../lib/query-keys'
 
 const links = [
@@ -18,7 +25,9 @@ const links = [
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const location = useLocation()
+  const navigate = useNavigate()
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const user = useAuthStore((state) => state.user)
@@ -36,6 +45,11 @@ export function Navbar() {
   })
 
   useEffect(() => setOpen(false), [location.pathname])
+
+  useEffect(() => {
+    const currentQuery = new URLSearchParams(location.search).get('q') ?? ''
+    setSearch(currentQuery)
+  }, [location.search])
 
   useEffect(() => {
     if (!open) return
@@ -59,20 +73,40 @@ export function Navbar() {
     window.requestAnimationFrame(() => menuButtonRef.current?.focus())
   }
 
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const query = search.trim()
+    void navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search')
+  }
+
   return (
     <>
       <header className="navbar">
         <div className="container nav-inner">
           <BrandLogo />
-          <nav className="desktop-nav" aria-label="Primary navigation">
-            {links.map((link) => (
-              <NavLink key={link.label} to={link.to} end={link.to === '/'}>
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
+          <Link className="nav-location" to="/search" aria-label="Shop stores at NIT Calicut">
+            <MapPinIcon />
+            <span>
+              <small>Shopping at</small>
+              <strong>NIT Calicut</strong>
+            </span>
+          </Link>
+          <form className="nav-search" onSubmit={submitSearch} role="search">
+            <label className="sr-only" htmlFor="site-search">
+              Search products and stores
+            </label>
+            <input
+              id="site-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products and campus stores"
+              autoComplete="off"
+            />
+            <button type="submit" aria-label="Search">
+              <SearchIcon />
+            </button>
+          </form>
           <div className="nav-actions">
-            <ThemeToggle />
             {user ? (
               <Link
                 className="icon-button nav-cart-button"
@@ -132,6 +166,19 @@ export function Navbar() {
             >
               <MenuIcon />
             </button>
+          </div>
+        </div>
+        <div className="nav-commerce-bar">
+          <div className="container nav-commerce-inner">
+            <nav className="desktop-nav" aria-label="Primary navigation">
+              {links.map((link) => (
+                <NavLink key={link.label} to={link.to} end={link.to === '/'}>
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+            <span>Verified campus sellers</span>
+            <Link to="/search">Compare prices across stores</Link>
           </div>
         </div>
       </header>

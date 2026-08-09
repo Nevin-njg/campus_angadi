@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { BrandLogo } from './BrandLogo'
 
 describe('BrandLogo', () => {
-  it('uses the Campus Angadi brand and temporary CA mark', () => {
+  it('uses the Campus Angadi brand and official logo', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     client.setQueryData(['settings', 'public'], {
       appName: 'Campus Angadi',
@@ -27,6 +27,6 @@ describe('BrandLogo', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByText('Campus Angadi')).toBeInTheDocument()
-    expect(screen.getByText('CA')).toBeInTheDocument()
+    expect(document.querySelector('img[src="/brand/campus-angadi-logo.png"]')).toBeInTheDocument()
   })
 })

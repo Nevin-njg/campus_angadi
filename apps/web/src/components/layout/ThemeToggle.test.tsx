@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { initializeTheme } from '../../lib/theme'
 import { ThemeToggle } from './ThemeToggle'
@@ -25,36 +25,9 @@ describe('ThemeToggle', () => {
     initializeTheme()
   })
 
-  it('switches theme and persists the choice', () => {
-    render(<ThemeToggle />)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark theme' }))
-
-    expect(document.documentElement).toHaveClass('dark')
-    expect(window.localStorage.getItem('campus-angadi-theme')).toBe('dark')
-    expect(screen.getByRole('button', { name: 'Switch to light theme' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-  })
-
-  it('follows system changes until the user chooses a theme', () => {
-    const { media, listeners } = installMatchMedia(false)
-    render(<ThemeToggle />)
-
-    media.matches = true
-    listeners.forEach((listener) => listener())
-
-    expect(document.documentElement).toHaveClass('dark')
-    expect(screen.getByRole('button', { name: 'Switch to light theme' })).toBeInTheDocument()
-  })
-
-  it('unsubscribes from browser listeners when removed', () => {
-    const { media } = installMatchMedia(false)
+  it('renders no switch because the marketplace is light-only', () => {
     const view = render(<ThemeToggle />)
-
-    view.unmount()
-
-    expect(media.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(view.container).toBeEmptyDOMElement()
+    expect(document.documentElement).not.toHaveClass('dark')
   })
 })

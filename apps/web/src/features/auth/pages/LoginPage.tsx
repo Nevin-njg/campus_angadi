@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BrandLogo } from '../../../components/layout/BrandLogo'
-import { ThemeToggle } from '../../../components/layout/ThemeToggle'
 import { ShieldIcon } from '../../../components/ui/icons'
 import { webEnv } from '../../../config/env'
 import { ApiClientError } from '../../../lib/api-client'
@@ -58,9 +57,6 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-theme-control">
-        <ThemeToggle />
-      </div>
       <div className="auth-visual">
         <BrandLogo />
         <div className="auth-visual-copy">

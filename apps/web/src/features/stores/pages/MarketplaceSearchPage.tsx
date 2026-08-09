@@ -229,18 +229,18 @@ function SearchProductCard({
 }
 
 type SortOption = 'recommended' | 'price_asc' | 'price_desc' | 'discount' | 'delivery'
+type ResultView = 'stores' | 'products'
 
 export function MarketplaceSearchPage() {
   const [params, setParams] = useSearchParams()
   const query = (params.get('q') ?? '').trim()
+  const resultView: ResultView = params.get('type') === 'products' ? 'products' : 'stores'
   const [searchInput, setSearchInput] = useState(query)
   const [sort, setSort] = useState<SortOption>('recommended')
   const [inStockOnly, setInStockOnly] = useState(false)
-  const [showAllComparison, setShowAllComparison] = useState(false)
 
   useEffect(() => {
     setSearchInput(query)
-    setShowAllComparison(false)
   }, [query])
 
   const marketplace = useQuery({
@@ -259,7 +259,7 @@ export function MarketplaceSearchPage() {
       if (sort === 'delivery') {
         return left.store.deliveryTimeMinutes - right.store.deliveryTimeMinutes
       }
-      if ((left.stock > 0) !== (right.stock > 0)) return left.stock > 0 ? -1 : 1
+      if (left.stock > 0 !== right.stock > 0) return left.stock > 0 ? -1 : 1
       if (right.discountPercent !== left.discountPercent) {
         return right.discountPercent - left.discountPercent
       }
@@ -267,25 +267,33 @@ export function MarketplaceSearchPage() {
     })
   }, [inStockOnly, marketplace.data?.products, sort])
 
-  const bestPrice = useMemo(() => {
-    const availablePrices = products
-      .filter((product) => product.stock > 0)
-      .map((product) => product.price)
-    return availablePrices.length ? Math.min(...availablePrices) : null
-  }, [products])
+  const featuredProducts = useMemo(
+    () => (marketplace.data?.products ?? []).filter((product) => product.stock > 0).slice(0, 8),
+    [marketplace.data?.products],
+  )
 
-  const returnTo = query ? `/search?q=${encodeURIComponent(query)}` : '/search'
-  const comparisonProducts = showAllComparison ? products : products.slice(0, 8)
+  const returnTo = query
+    ? `/search?q=${encodeURIComponent(query)}&type=${resultView}`
+    : `/search?type=${resultView}`
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextQuery = searchInput.trim()
-    setParams(nextQuery ? { q: nextQuery } : {})
+    setParams(nextQuery ? { q: nextQuery, type: resultView } : { type: resultView })
   }
 
   function searchFor(value: string) {
     setSearchInput(value)
-    setParams({ q: value })
+    setParams({ q: value, type: 'stores' })
+  }
+
+  function selectView(view: ResultView) {
+    setParams(query ? { q: query, type: view } : { type: view })
+  }
+
+  function browseCampus() {
+    setSearchInput('')
+    setParams({ type: 'stores' })
   }
 
   return (
@@ -296,10 +304,10 @@ export function MarketplaceSearchPage() {
             <span className="eyebrow">
               <span /> Campus stores
             </span>
-            <h1>Search once. Compare every store.</h1>
+            <h1>Find products from every campus store.</h1>
             <p>
-              Find a store by name or compare the same kind of product across nearby campus stores
-              by price, offer, stock and delivery time.
+              Search by product or store, then choose whether you want to browse verified sellers or
+              see every matching product in one place.
             </p>
           </div>
           <form className="marketplace-global-search" onSubmit={submitSearch} role="search">
@@ -307,7 +315,7 @@ export function MarketplaceSearchPage() {
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search a store or product, like shoes or mouse"
+              placeholder="Search products or stores, like shoes or Campus Mart"
               aria-label="Search stores and products"
               autoComplete="off"
             />
@@ -325,7 +333,7 @@ export function MarketplaceSearchPage() {
               </button>
             ) : null}
             <button className="button button-primary" type="submit">
-              Compare
+              Search
             </button>
           </form>
           <div className="marketplace-quick-searches" aria-label="Popular searches">
@@ -335,6 +343,9 @@ export function MarketplaceSearchPage() {
                 {item}
               </button>
             ))}
+            <button type="button" className="marketplace-browse-campus" onClick={browseCampus}>
+              Browse campus <ArrowRightIcon />
+            </button>
           </div>
         </div>
       </section>
@@ -360,7 +371,9 @@ export function MarketplaceSearchPage() {
             <>
               <div className="marketplace-result-summary">
                 <div>
-                  <span className="section-kicker">{query ? 'Search results' : 'Explore stores'}</span>
+                  <span className="section-kicker">
+                    {query ? 'Search results' : 'Explore stores'}
+                  </span>
                   <h2>{query ? `Results for “${query}”` : 'Stores and products around campus'}</h2>
                   <p>
                     {marketplace.data?.meta.storeCount ?? 0} stores ·{' '}
@@ -382,169 +395,148 @@ export function MarketplaceSearchPage() {
                 ) : null}
               </div>
 
-              {(marketplace.data?.stores.length ?? 0) > 0 ? (
-                <section className="marketplace-result-section" aria-labelledby="matching-stores">
+              {!query && featuredProducts.length ? (
+                <section
+                  className="marketplace-featured-section"
+                  aria-labelledby="top-campus-picks"
+                >
                   <div className="marketplace-section-heading">
                     <div>
-                      <span className="section-kicker">Store matches</span>
-                      <h2 id="matching-stores">
-                        {query ? 'Stores selling what you searched' : 'Browse campus stores'}
-                      </h2>
+                      <span className="section-kicker">Popular around campus</span>
+                      <h2 id="top-campus-picks">Top picks from campus stores</h2>
+                      <p>In-stock products recently added by verified sellers.</p>
                     </div>
-                    <Link className="button button-ghost" to="/stores">
-                      View store directory <ArrowRightIcon />
-                    </Link>
+                    <button
+                      type="button"
+                      className="button button-ghost"
+                      onClick={() => selectView('products')}
+                    >
+                      See all products <ArrowRightIcon />
+                    </button>
                   </div>
-                  <div className="marketplace-store-grid">
-                    {marketplace.data?.stores.map((store) => (
-                      <StoreResultCard store={store} key={store.id} />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              <section className="marketplace-result-section" aria-labelledby="compare-products">
-                <div className="marketplace-section-heading marketplace-comparison-heading">
-                  <div>
-                    <span className="section-kicker">Store-wise comparison</span>
-                    <h2 id="compare-products">Compare matching products</h2>
-                    <p>Check every store’s price, offer, availability and delivery before buying.</p>
-                  </div>
-                  <div className="marketplace-result-controls">
-                    <label className="marketplace-stock-toggle">
-                      <input
-                        type="checkbox"
-                        checked={inStockOnly}
-                        onChange={(event) => setInStockOnly(event.target.checked)}
-                      />
-                      In stock only
-                    </label>
-                    <label>
-                      <span className="sr-only">Sort products</span>
-                      <select
-                        value={sort}
-                        onChange={(event) => setSort(event.target.value as SortOption)}
-                      >
-                        <option value="recommended">Recommended</option>
-                        <option value="price_asc">Price: low to high</option>
-                        <option value="price_desc">Price: high to low</option>
-                        <option value="discount">Biggest offer</option>
-                        <option value="delivery">Fastest delivery</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                {products.length ? (
-                  <>
-                    <div className="marketplace-comparison-table" role="table">
-                      <div className="marketplace-comparison-row is-header" role="row">
-                        <span role="columnheader">Store</span>
-                        <span role="columnheader">Product</span>
-                        <span role="columnheader">Price</span>
-                        <span role="columnheader">Offer</span>
-                        <span role="columnheader">Stock</span>
-                        <span role="columnheader">Delivery</span>
-                        <span role="columnheader">Action</span>
-                      </div>
-                      {comparisonProducts.map((product) => (
-                        <div className="marketplace-comparison-row" role="row" key={product.id}>
-                          <div className="marketplace-compare-store" role="cell" data-label="Store">
-                            <span>
-                              {product.store.logoUrl ? (
-                                <img src={product.store.logoUrl} alt="" loading="lazy" />
-                              ) : (
-                                product.store.name.slice(0, 1)
-                              )}
-                            </span>
-                            <Link to={`/stores/${product.store.slug}`}>{product.store.name}</Link>
-                          </div>
-                          <div className="marketplace-compare-product" role="cell" data-label="Product">
-                            {product.primaryImage ? (
-                              <img src={product.primaryImage} alt="" loading="lazy" />
-                            ) : (
-                              <span className="marketplace-compare-image-fallback">
-                                <PackageIcon />
-                              </span>
-                            )}
-                            <div>
-                              <Link to={`/products/${product.slug}`}>{product.title}</Link>
-                              <small>{product.storeCategoryName || 'Store product'}</small>
-                            </div>
-                          </div>
-                          <div className="marketplace-compare-price" role="cell" data-label="Price">
-                            <strong>{formatPrice(product.price)}</strong>
-                            {product.originalPrice ? <del>{formatPrice(product.originalPrice)}</del> : null}
-                            {bestPrice !== null && product.price === bestPrice && product.stock > 0 ? (
-                              <span>Best price</span>
-                            ) : null}
-                          </div>
-                          <div role="cell" data-label="Offer">
-                            {product.discountPercent > 0 ? (
-                              <strong className="marketplace-offer-value">
-                                {product.discountPercent}% off
-                              </strong>
-                            ) : (
-                              <span className="marketplace-muted-value">No offer</span>
-                            )}
-                          </div>
-                          <div role="cell" data-label="Stock">
-                            <span
-                              className={`marketplace-stock-value ${product.stock > 0 ? 'is-available' : 'is-unavailable'}`}
-                            >
-                              <i /> {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
-                            </span>
-                          </div>
-                          <div role="cell" data-label="Delivery">
-                            <span className="marketplace-delivery-value">
-                              <ClockIcon /> {product.store.deliveryTimeMinutes} min
-                            </span>
-                          </div>
-                          <div role="cell" data-label="Action">
-                            <ProductActions product={product} returnTo={returnTo} compact />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {products.length > 8 ? (
-                      <button
-                        type="button"
-                        className="button button-outline marketplace-show-more"
-                        onClick={() => setShowAllComparison((value) => !value)}
-                      >
-                        {showAllComparison ? 'Show fewer comparisons' : `Compare all ${products.length} products`}
-                      </button>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="marketplace-no-products">
-                    <SearchIcon />
-                    <h3>{query ? 'No store products matched this search' : 'No store products yet'}</h3>
-                    <p>
-                      {query
-                        ? 'Try a broader product name or search for a store directly.'
-                        : 'Products added by campus stores will appear here.'}
-                    </p>
-                  </div>
-                )}
-              </section>
-
-              {products.length ? (
-                <section className="marketplace-result-section" aria-labelledby="all-product-results">
-                  <div className="marketplace-section-heading">
-                    <div>
-                      <span className="section-kicker">Product results</span>
-                      <h2 id="all-product-results">Products from different stores</h2>
-                    </div>
-                    <span className="marketplace-product-count">{products.length} results</span>
-                  </div>
-                  <div className="marketplace-product-grid">
-                    {products.map((product) => (
+                  <div className="marketplace-featured-rail">
+                    {featuredProducts.map((product) => (
                       <SearchProductCard product={product} returnTo={returnTo} key={product.id} />
                     ))}
                   </div>
                 </section>
               ) : null}
+
+              <div className="marketplace-result-switch" aria-label="Choose result type">
+                <button
+                  type="button"
+                  className={resultView === 'stores' ? 'is-active' : ''}
+                  onClick={() => selectView('stores')}
+                  aria-pressed={resultView === 'stores'}
+                >
+                  <ShoppingBagIcon />
+                  <span>
+                    <strong>Stores</strong>
+                    <small>{marketplace.data?.meta.storeCount ?? 0} verified sellers</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={resultView === 'products' ? 'is-active' : ''}
+                  onClick={() => selectView('products')}
+                  aria-pressed={resultView === 'products'}
+                >
+                  <PackageIcon />
+                  <span>
+                    <strong>Products</strong>
+                    <small>{marketplace.data?.meta.productCount ?? 0} matching items</small>
+                  </span>
+                </button>
+              </div>
+
+              {resultView === 'stores' ? (
+                <section className="marketplace-result-section" aria-labelledby="matching-stores">
+                  <div className="marketplace-section-heading">
+                    <div>
+                      <span className="section-kicker">
+                        {query ? 'Stores matching your search' : 'Campus store directory'}
+                      </span>
+                      <h2 id="matching-stores">
+                        {query ? `Stores for “${query}”` : 'Browse verified campus stores'}
+                      </h2>
+                      <p>Open a store to search its catalogue and browse products by category.</p>
+                    </div>
+                  </div>
+                  {(marketplace.data?.stores.length ?? 0) > 0 ? (
+                    <div className="marketplace-store-grid">
+                      {marketplace.data?.stores.map((store) => (
+                        <StoreResultCard store={store} key={store.id} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="marketplace-no-products">
+                      <ShoppingBagIcon />
+                      <h3>No stores matched this search</h3>
+                      <p>Try the Products filter or use a broader search.</p>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => selectView('products')}
+                      >
+                        Search products instead
+                      </button>
+                    </div>
+                  )}
+                </section>
+              ) : (
+                <section
+                  className="marketplace-result-section"
+                  aria-labelledby="all-product-results"
+                >
+                  <div className="marketplace-section-heading marketplace-comparison-heading">
+                    <div>
+                      <span className="section-kicker">Products from different stores</span>
+                      <h2 id="all-product-results">
+                        {query ? `Products for “${query}”` : 'All products around campus'}
+                      </h2>
+                      <p>
+                        Compare sellers, prices, availability and delivery before adding to cart.
+                      </p>
+                    </div>
+                    <div className="marketplace-result-controls">
+                      <label className="marketplace-stock-toggle">
+                        <input
+                          type="checkbox"
+                          checked={inStockOnly}
+                          onChange={(event) => setInStockOnly(event.target.checked)}
+                        />
+                        In stock only
+                      </label>
+                      <label>
+                        <span className="sr-only">Sort products</span>
+                        <select
+                          value={sort}
+                          onChange={(event) => setSort(event.target.value as SortOption)}
+                        >
+                          <option value="recommended">Recommended</option>
+                          <option value="price_asc">Price: low to high</option>
+                          <option value="price_desc">Price: high to low</option>
+                          <option value="discount">Biggest offer</option>
+                          <option value="delivery">Fastest delivery</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                  {products.length ? (
+                    <div className="marketplace-product-grid">
+                      {products.map((product) => (
+                        <SearchProductCard product={product} returnTo={returnTo} key={product.id} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="marketplace-no-products">
+                      <SearchIcon />
+                      <h3>No products matched this search</h3>
+                      <p>Try a broader product name or turn off the in-stock filter.</p>
+                    </div>
+                  )}
+                </section>
+              )}
             </>
           )}
         </div>

@@ -79,18 +79,18 @@ export function HomePage() {
                 Shop second-hand
               </Link>
             </div>
-            <div className="trust-row">
+            <div className="trust-row live-stats-row" aria-label="Live marketplace activity">
               <span>
-                <CheckIcon />
-                Domain-restricted users
+                <i className="live-stat-dot" />
+                Marketplace live
               </span>
               <span>
-                <CheckIcon />
-                Admin-reviewed listings
+                <strong>{data?.sections?.RECENT?.products.length ?? 0}</strong>
+                recently added
               </span>
               <span>
-                <CheckIcon />
-                Safe campus pickup
+                <strong>{data?.sections?.FEATURED?.products.length ?? 0}</strong>
+                featured now
               </span>
             </div>
           </div>

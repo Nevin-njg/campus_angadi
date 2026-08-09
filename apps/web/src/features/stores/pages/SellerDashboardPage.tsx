@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { Link } from 'react-router-dom'
 import { BrandLogo } from '../../../components/layout/BrandLogo'
-import { ThemeToggle } from '../../../components/layout/ThemeToggle'
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -163,7 +170,15 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-function EmptyState({ title, message, action }: { title: string; message: string; action?: ReactNode }) {
+function EmptyState({
+  title,
+  message,
+  action,
+}: {
+  title: string
+  message: string
+  action?: ReactNode
+}) {
   return (
     <div className="grid min-h-64 place-items-center rounded-2xl border border-dashed border-white/10 bg-white/[0.025] p-8 text-center">
       <div>
@@ -178,7 +193,17 @@ function EmptyState({ title, message, action }: { title: string; message: string
   )
 }
 
-function Modal({ title, subtitle, children, onClose }: { title: string; subtitle: string; children: ReactNode; onClose: () => void }) {
+function Modal({
+  title,
+  subtitle,
+  children,
+  onClose,
+}: {
+  title: string
+  subtitle: string
+  children: ReactNode
+  onClose: () => void
+}) {
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
       <div className="my-6 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#202020] shadow-2xl shadow-black/50">
@@ -461,7 +486,7 @@ export function SellerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[#171717] text-white">
+      <div className="seller-workspace grid min-h-screen place-items-center bg-[#171717] text-white">
         <div className="text-center">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-amber-500/20 border-t-amber-500" />
           <p className="mt-4 text-sm text-zinc-500">Preparing your seller workspace…</p>
@@ -472,11 +497,13 @@ export function SellerDashboardPage() {
 
   if (!overview) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[#171717] p-6 text-white">
+      <div className="seller-workspace grid min-h-screen place-items-center bg-[#171717] p-6 text-white">
         <div className="max-w-md rounded-3xl border border-red-500/20 bg-red-500/5 p-8 text-center">
           <AlertTriangleIcon className="mx-auto h-8 w-8 text-red-400" />
           <h1 className="mt-4 text-xl font-bold">Seller panel unavailable</h1>
-          <p className="mt-2 text-sm text-zinc-400">{error ?? 'No store is assigned to this account.'}</p>
+          <p className="mt-2 text-sm text-zinc-400">
+            {error ?? 'No store is assigned to this account.'}
+          </p>
           <Link className="button button-primary mt-6" to="/">
             Return to storefront
           </Link>
@@ -489,7 +516,7 @@ export function SellerDashboardPage() {
   const sellerName = user?.profile.displayName || user?.profile.fullName || user?.email || 'Seller'
 
   return (
-    <div className="min-h-screen bg-[#171717] text-zinc-100">
+    <div className="seller-workspace min-h-screen bg-[#171717] text-zinc-100">
       <div className="flex min-h-screen">
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/10 bg-[#202020] p-4 lg:flex">
           <div className="px-2 py-2">
@@ -586,7 +613,6 @@ export function SellerDashboardPage() {
                 >
                   <RefreshCwIcon className="h-4 w-4" />
                 </button>
-                <ThemeToggle />
                 <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 sm:flex">
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-500 text-xs font-black text-zinc-950">
                     {sellerName.slice(0, 1).toUpperCase()}
@@ -713,13 +739,17 @@ export function SellerDashboardPage() {
                               <ShoppingBagIcon />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <strong className="block text-sm text-white">{order.orderNumber}</strong>
+                              <strong className="block text-sm text-white">
+                                {order.orderNumber}
+                              </strong>
                               <span className="mt-1 block truncate text-xs text-zinc-500">
                                 {order.fullName} · {order.itemCount} item(s)
                               </span>
                             </div>
                             <StatusPill status={order.status} />
-                            <strong className="text-sm text-white">{money(order.totalAmount)}</strong>
+                            <strong className="text-sm text-white">
+                              {money(order.totalAmount)}
+                            </strong>
                           </div>
                         ))}
                       </div>
@@ -742,7 +772,9 @@ export function SellerDashboardPage() {
                       </div>
                       <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                         <dt className="text-zinc-500">Delivery time</dt>
-                        <dd className="font-semibold text-white">{store.deliveryTimeMinutes} min</dd>
+                        <dd className="font-semibold text-white">
+                          {store.deliveryTimeMinutes} min
+                        </dd>
                       </div>
                       <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                         <dt className="text-zinc-500">Minimum order</dt>
@@ -825,7 +857,8 @@ export function SellerDashboardPage() {
                                       {product.title}
                                     </strong>
                                     <span className="mt-1 block text-xs text-zinc-600">
-                                      Added {new Date(product.createdAt).toLocaleDateString('en-IN')}
+                                      Added{' '}
+                                      {new Date(product.createdAt).toLocaleDateString('en-IN')}
                                     </span>
                                   </div>
                                 </div>
@@ -834,7 +867,9 @@ export function SellerDashboardPage() {
                                 {categoryName.get(product.storeCategoryId ?? '') ?? 'Uncategorised'}
                               </td>
                               <td className="px-5 py-4">
-                                <strong className="text-sm text-white">{money(product.price)}</strong>
+                                <strong className="text-sm text-white">
+                                  {money(product.price)}
+                                </strong>
                                 {product.originalPrice ? (
                                   <span className="ml-2 text-xs text-zinc-600 line-through">
                                     {money(product.originalPrice)}
@@ -851,7 +886,9 @@ export function SellerDashboardPage() {
                                 </span>
                               </td>
                               <td className="px-5 py-4">
-                                <StatusPill status={product.published ? product.status : 'HIDDEN'} />
+                                <StatusPill
+                                  status={product.published ? product.status : 'HIDDEN'}
+                                />
                               </td>
                               <td className="px-5 py-4">
                                 <div className="flex justify-end gap-2">
@@ -886,7 +923,11 @@ export function SellerDashboardPage() {
                       title="No products yet"
                       message="Add the first product to start selling through your campus store."
                       action={
-                        <button type="button" onClick={openNewProduct} className="button button-primary">
+                        <button
+                          type="button"
+                          onClick={openNewProduct}
+                          className="button button-primary"
+                        >
                           Add first product
                         </button>
                       }
@@ -1025,12 +1066,16 @@ export function SellerDashboardPage() {
                             </span>
                             <div>
                               <strong className="text-sm text-white">{order.orderNumber}</strong>
-                              <span className="mt-1 block text-xs text-zinc-500">{date(order.createdAt)}</span>
+                              <span className="mt-1 block text-xs text-zinc-500">
+                                {date(order.createdAt)}
+                              </span>
                             </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-3">
                             <StatusPill status={order.status} />
-                            <strong className="text-base text-white">{money(order.totalAmount)}</strong>
+                            <strong className="text-base text-white">
+                              {money(order.totalAmount)}
+                            </strong>
                           </div>
                         </div>
                         <div className="grid gap-5 p-5 lg:grid-cols-[1fr_0.8fr_0.9fr]">
@@ -1038,8 +1083,12 @@ export function SellerDashboardPage() {
                             <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-600">
                               Customer
                             </p>
-                            <strong className="mt-2 block text-sm text-white">{order.fullName}</strong>
-                            <span className="mt-1 block text-sm text-zinc-500">{order.phoneNumber}</span>
+                            <strong className="mt-2 block text-sm text-white">
+                              {order.fullName}
+                            </strong>
+                            <span className="mt-1 block text-sm text-zinc-500">
+                              {order.phoneNumber}
+                            </span>
                             <span className="mt-1 block text-sm text-zinc-500">
                               Pickup: {order.pickupLocation}
                             </span>
@@ -1061,7 +1110,9 @@ export function SellerDashboardPage() {
                                   </div>
                                 ))
                               ) : (
-                                <span className="text-sm text-zinc-500">{order.itemCount} item(s)</span>
+                                <span className="text-sm text-zinc-500">
+                                  {order.itemCount} item(s)
+                                </span>
                               )}
                             </div>
                           </div>

@@ -12,11 +12,11 @@ function readStoredTheme(): ThemeMode | null {
 }
 
 export function getSystemTheme(): ThemeMode {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'light'
 }
 
 export function getPreferredTheme(): ThemeMode {
-  return readStoredTheme() ?? getSystemTheme()
+  return 'light'
 }
 
 export function getActiveTheme(): ThemeMode {
@@ -27,25 +27,24 @@ export function hasStoredTheme(): boolean {
   return readStoredTheme() !== null
 }
 
-export function applyTheme(theme: ThemeMode, persist = false): void {
+export function applyTheme(_theme: ThemeMode, persist = false): void {
   const root = document.documentElement
-  root.classList.toggle('dark', theme === 'dark')
-  root.dataset.theme = theme
+  root.classList.remove('dark', 'admin-dark')
+  root.dataset.theme = 'light'
 
-  const themeColor = theme === 'dark' ? '#1a1a1a' : '#f7f7f8'
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor)
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#ffffff')
 
   if (!persist) return
 
   try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light')
   } catch {
     // The selected theme still applies for this session when storage is unavailable.
   }
 }
 
 export function initializeTheme(): void {
-  applyTheme(getPreferredTheme())
+  applyTheme('light', true)
 }
 
 export function isThemeStorageEvent(event: StorageEvent): boolean {
