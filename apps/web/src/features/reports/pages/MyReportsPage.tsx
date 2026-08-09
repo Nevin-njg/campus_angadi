@@ -45,13 +45,12 @@ export function MyReportsPage() {
     <section>
       <div className="page-title-row">
         <div>
-          <span className="section-kicker">Trust and safety</span>
-          <h1>My reports</h1>
-          <p>Report a product or seller and track the review outcome.</p>
+          <h1>Reports</h1>
+          <p>Report a product or seller and check its status.</p>
         </div>
       </div>
       <form
-        className="admin-card admin-form report-submit"
+        className="student-form-panel admin-form report-submit"
         onSubmit={(event) => void submit(event)}
       >
         <label>
@@ -62,8 +61,8 @@ export function MyReportsPage() {
               setForm({ ...form, targetType: e.target.value as CreateReportInput['targetType'] })
             }
           >
-            <option>PRODUCT</option>
-            <option>USER</option>
+            <option value="PRODUCT">Product</option>
+            <option value="USER">Seller or user</option>
           </select>
         </label>
         <label>
@@ -80,14 +79,14 @@ export function MyReportsPage() {
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value as ReportType })}
           >
-            <option>MISLEADING_PRODUCT</option>
-            <option>PROHIBITED_ITEM</option>
-            <option>FRAUD</option>
-            <option>DUPLICATE_LISTING</option>
-            <option>INAPPROPRIATE_CONTENT</option>
-            <option>INCORRECT_CONDITION</option>
-            <option>SELLER_ISSUE</option>
-            <option>OTHER</option>
+            <option value="MISLEADING_PRODUCT">Misleading product information</option>
+            <option value="PROHIBITED_ITEM">Prohibited item</option>
+            <option value="FRAUD">Fraud or scam</option>
+            <option value="DUPLICATE_LISTING">Duplicate listing</option>
+            <option value="INAPPROPRIATE_CONTENT">Inappropriate content</option>
+            <option value="INCORRECT_CONDITION">Incorrect item condition</option>
+            <option value="SELLER_ISSUE">Seller issue</option>
+            <option value="OTHER">Other</option>
           </select>
         </label>
         <label className="wide-field">
@@ -104,7 +103,7 @@ export function MyReportsPage() {
       </form>
       <div className="report-list account-report-list">
         {q.data?.items.map((x) => (
-          <article className="admin-card" key={x.id}>
+          <article className="student-report-row" key={x.id}>
             <div className="section-heading">
               <h2>{x.type.replaceAll('_', ' ')}</h2>
               <span className="status-pill">{x.status}</span>

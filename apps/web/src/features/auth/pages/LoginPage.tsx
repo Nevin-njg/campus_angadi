@@ -1,7 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BrandLogo } from '../../../components/layout/BrandLogo'
-import { ShieldIcon } from '../../../components/ui/icons'
 import { webEnv } from '../../../config/env'
 import { ApiClientError } from '../../../lib/api-client'
 import { authApi } from '../api/auth.api'
@@ -102,44 +101,21 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-visual">
+    <div className="simple-auth-page">
+      <header className="simple-auth-header">
         <BrandLogo />
-        <div className="auth-visual-copy">
-          <span className="eyebrow">
-            <span />
-            Secure campus access
+        <Link className="simple-auth-back" to="/" aria-label="Back to marketplace">
+          <span className="simple-auth-back-full">Back to marketplace</span>
+          <span className="simple-auth-back-short" aria-hidden="true">
+            Back
           </span>
-          <h1>
-            One Google account.
-            <br />
-            One secure sign-in.
-            <br />
-            <em>No OTP to wait for.</em>
-          </h1>
-          <p>
-            Sign in using an approved Google account. Campus Angadi verifies the Google ID token on
-            the server before creating your session.
-          </p>
-          <div className="auth-trust">
-            <ShieldIcon />
-            <div>
-              <strong>Protected by Google identity verification</strong>
-              <span>Your password is never shared with Campus Angadi.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <main className="auth-form-panel">
-        <div className="auth-form-card">
-          <div className="auth-mobile-brand">
-            <BrandLogo />
-          </div>
-          <div className="auth-icon">
-            <ShieldIcon />
-          </div>
-          <h2>Sign in to Campus Angadi</h2>
-          <p>Continue with an approved Google account.</p>
+        </Link>
+      </header>
+      <main className="simple-auth-main">
+        <div className="simple-auth-panel">
+          <span className="simple-auth-campus">NIT Calicut marketplace</span>
+          <h1>Sign in</h1>
+          <p>Use your approved Google account to continue to Campus Angadi.</p>
           {!requestCredential ? (
             <GoogleSignInButton
               clientId={webEnv.googleClientId}
@@ -149,8 +125,7 @@ export function LoginPage() {
             />
           ) : requestSent ? (
             <div className="form-alert" role="status">
-              Request sent. An administrator will review it and you will receive an email after
-              approval. You can then sign in with this Google account.
+              Request sent. We’ll email you after an administrator reviews it.
             </div>
           ) : (
             <form
@@ -158,8 +133,7 @@ export function LoginPage() {
               onSubmit={(event) => void submitAccessRequest(event)}
             >
               <div className="form-alert">
-                This is an external email. Tell the administrators how you are connected to the
-                campus to request first-time access.
+                This email needs approval. Tell us how you are connected to NIT Calicut.
               </div>
               <label>
                 Full name
@@ -209,37 +183,42 @@ export function LoginPage() {
             </form>
           )}
           {!requestCredential && webEnv.testLoginEnabled ? (
-            <form className="auth-access-request" onSubmit={(event) => void submitTestLogin(event)}>
-              <div className="auth-footnote">Local testing only</div>
-              <label>
-                Test account email
-                <input
-                  autoComplete="username"
-                  required
-                  type="email"
-                  value={testCredentials.email}
-                  onChange={(event) =>
-                    setTestCredentials((value) => ({ ...value, email: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Test password
-                <input
-                  autoComplete="current-password"
-                  minLength={8}
-                  required
-                  type="password"
-                  value={testCredentials.password}
-                  onChange={(event) =>
-                    setTestCredentials((value) => ({ ...value, password: event.target.value }))
-                  }
-                />
-              </label>
-              <button className="button button-outline" disabled={signingIn} type="submit">
-                {signingIn ? 'Signing in…' : 'Sign in for testing'}
-              </button>
-            </form>
+            <details className="test-login-disclosure">
+              <summary>Developer test login</summary>
+              <form
+                className="auth-access-request"
+                onSubmit={(event) => void submitTestLogin(event)}
+              >
+                <label>
+                  Email
+                  <input
+                    autoComplete="username"
+                    required
+                    type="email"
+                    value={testCredentials.email}
+                    onChange={(event) =>
+                      setTestCredentials((value) => ({ ...value, email: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    autoComplete="current-password"
+                    minLength={8}
+                    required
+                    type="password"
+                    value={testCredentials.password}
+                    onChange={(event) =>
+                      setTestCredentials((value) => ({ ...value, password: event.target.value }))
+                    }
+                  />
+                </label>
+                <button className="button button-outline" disabled={signingIn} type="submit">
+                  {signingIn ? 'Signing in…' : 'Sign in for testing'}
+                </button>
+              </form>
+            </details>
           ) : null}
           {signingIn ? <p className="auth-signing-in">Signing you in securely…</p> : null}
           {serverError ? (
@@ -247,12 +226,7 @@ export function LoginPage() {
               {serverError}
             </div>
           ) : null}
-          <p className="auth-footnote">
-            Only email domains approved by Campus Angadi are accepted by the backend.
-          </p>
-          <Link className="back-link" to="/">
-            ← Return to homepage
-          </Link>
+          <p className="simple-auth-note">Your Google password is never shared with us.</p>
         </div>
       </main>
     </div>

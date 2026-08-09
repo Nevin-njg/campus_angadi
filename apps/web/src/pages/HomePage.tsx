@@ -2,14 +2,7 @@ import type { ProductSummary } from '@campusbaza/contracts'
 import { useQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  MessageIcon,
-  PackageIcon,
-  SearchIcon,
-  ShieldIcon,
-} from '../components/ui/icons'
+import { ArrowRightIcon, PackageIcon, SearchIcon } from '../components/ui/icons'
 import { catalogApi } from '../features/products/api/catalog.api'
 import { ProductGrid, ProductGridSkeleton } from '../features/products/components/ProductGrid'
 
@@ -30,25 +23,24 @@ export function HomePage() {
 
   return (
     <>
-      <section className="hero-section">
-        <div className="hero-ambient hero-ambient-one" aria-hidden="true" />
-        <div className="hero-ambient hero-ambient-two" aria-hidden="true" />
-        <div className="container hero-grid">
-          <div className="hero-copy">
-            <span className="eyebrow">
-              <span />
-              Made at NIT Calicut, for NIT Calicut
-            </span>
-            <h1>
-              Your campus has
-              <br /> everything you need.
-              <br /> <em>Find it here.</em>
-            </h1>
-            <p>
-              Shop verified essentials, discover great second-hand finds, and sell to people you
-              already share a campus with. Simple, safe, and unmistakably NITC.
-            </p>
-            <form className="hero-search" onSubmit={submitSearch} role="search">
+      <section className="home-discovery">
+        <div className="container home-discovery-inner">
+          <div className="home-discovery-heading">
+            <div>
+              <span>Campus Angadi · NIT Calicut</span>
+              <h1>What do you need today?</h1>
+              <p>Campus essentials and student-to-student deals, all in one place.</p>
+            </div>
+            <Link className="home-sell-link" to="/account/listings/new" aria-label="Sell an item">
+              <span className="home-sell-label-full">Sell an item</span>
+              <span className="home-sell-label-short" aria-hidden="true">
+                Sell
+              </span>
+              <ArrowRightIcon />
+            </Link>
+          </div>
+          <form className="home-product-search" onSubmit={submitSearch} role="search">
+            <div>
               <SearchIcon />
               <label className="sr-only" htmlFor="homepage-search">
                 Search the campus marketplace
@@ -57,142 +49,32 @@ export function HomePage() {
                 id="homepage-search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search stores, shoes, snacks, electronics…"
+                placeholder="Search books, cycles, electronics, hostel essentials…"
                 autoComplete="off"
               />
-              <button className="button button-primary" type="submit">
-                Search
-              </button>
-            </form>
-            <div className="hero-quick-links" aria-label="Popular categories">
-              <span>Popular:</span>
-              <Link to="/search?q=books">Books</Link>
-              <Link to="/search?q=cycles">Cycles</Link>
-              <Link to="/search?q=electronics">Electronics</Link>
-              <Link to="/search?q=hostel">Hostel essentials</Link>
             </div>
-            <div className="hero-actions">
-              <Link className="button button-primary button-large" to="/search">
-                Browse campus stores <ArrowRightIcon />
-              </Link>
-              <Link className="button button-outline button-large" to="/second-hand-store">
-                Shop second-hand
-              </Link>
-            </div>
-            <div className="trust-row live-stats-row" aria-label="Live marketplace activity">
-              <span>
-                <i className="live-stat-dot" />
-                Marketplace live
-              </span>
-              <span>
-                <strong>{data?.sections?.RECENT?.products.length ?? 0}</strong>
-                recently added
-              </span>
-              <span>
-                <strong>{data?.sections?.FEATURED?.products.length ?? 0}</strong>
-                featured now
-              </span>
-            </div>
+            <button type="submit">Search</button>
+          </form>
+          <nav className="home-shortcuts" aria-label="Popular student searches">
+            <span>Popular</span>
+            <Link to="/search?q=books">Books</Link>
+            <Link to="/search?q=cycles">Cycles</Link>
+            <Link to="/search?q=electronics">Electronics</Link>
+            <Link to="/search?q=hostel">Hostel essentials</Link>
+            <Link to="/second-hand-store">All second-hand</Link>
+          </nav>
+          <div className="home-commerce-links">
+            <Link to="/search">
+              <strong>Official stores</strong>
+              <span>Shop new campus essentials</span>
+              <ArrowRightIcon />
+            </Link>
+            <Link to="/second-hand-store">
+              <strong>Student marketplace</strong>
+              <span>Find affordable pre-owned items</span>
+              <ArrowRightIcon />
+            </Link>
           </div>
-          <div className="hero-market-card">
-            <div className="hero-market-topline">
-              <span>LIVE ON CAMPUS</span>
-              <small>Updated now</small>
-            </div>
-            <div className="hero-market-visual">
-              <div className="market-tile market-tile-main">
-                <span className="market-icon">
-                  <PackageIcon />
-                </span>
-                <small>Featured find</small>
-                <strong>
-                  Everything campus,
-                  <br />
-                  one marketplace.
-                </strong>
-                <Link to="/search">
-                  Browse stores <ArrowRightIcon />
-                </Link>
-              </div>
-              <div className="market-tile market-tile-mini">
-                <span>OFFICIAL</span>
-                <strong>
-                  Campus
-                  <br />
-                  essentials
-                </strong>
-              </div>
-              <div className="market-tile market-tile-mini warm">
-                <span>PRE-LOVED</span>
-                <strong>
-                  Better deals.
-                  <br />
-                  Less waste.
-                </strong>
-              </div>
-            </div>
-            <div className="hero-market-proof">
-              <div>
-                <strong>Verified</strong>
-                <span>NITC community</span>
-              </div>
-              <div>
-                <strong>Reviewed</strong>
-                <span>Safer listings</span>
-              </div>
-              <div>
-                <strong>Local</strong>
-                <span>Easy pickup</span>
-              </div>
-            </div>
-          </div>
-          <div className="support-panel hero-support-panel">
-            <div className="support-panel-head">
-              <div>
-                <MessageIcon />
-                <strong>Human order support</strong>
-              </div>
-              <span>AVAILABLE</span>
-            </div>
-            <div className="support-status">
-              <span className="status-orb" />
-              <div>
-                <strong>Sales team assignment</strong>
-                <p>Every saved order is routed to an available Campus Angadi dealer.</p>
-              </div>
-            </div>
-            <div className="support-status">
-              <ShieldIcon />
-              <div>
-                <strong>Assigned contact number</strong>
-                <p>Buyers receive a verified Campus Angadi contact for order coordination.</p>
-              </div>
-            </div>
-            <div className="support-status">
-              <PackageIcon />
-              <div>
-                <strong>Safer campus handoff</strong>
-                <p>Payment and pickup details are coordinated after the order is confirmed.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="market-strip" aria-label="Marketplace highlights">
-        <div className="container market-strip-inner">
-          <span>
-            <ShieldIcon /> Campus access controlled
-          </span>
-          <span>
-            <PackageIcon /> Official + student listings
-          </span>
-          <span>
-            <MessageIcon /> Human-assisted ordering
-          </span>
-          <span>
-            <CheckIcon /> No hidden platform fee
-          </span>
         </div>
       </section>
 
@@ -210,61 +92,33 @@ export function HomePage() {
       ) : (
         <>
           <HomepageSection
-            title="Featured on Campus Angadi"
-            kicker="Selected for you"
+            title="Popular on campus"
             products={data?.sections?.FEATURED?.products ?? []}
             loading={homepage.isLoading}
+            storePath="/search"
           />
           <HomepageSection
             id="official"
-            title="Official Campus Store"
-            kicker="Administration"
+            title="Official campus essentials"
             products={data?.sections?.OFFICIAL?.products ?? []}
             loading={homepage.isLoading}
             storePath="/search"
           />
           <HomepageSection
             id="secondhand"
-            title="Second-Hand Marketplace"
-            kicker="Community"
+            title="Deals from students"
             products={data?.sections?.SECOND_HAND?.products ?? []}
             loading={homepage.isLoading}
             storePath="/second-hand-store"
           />
           <HomepageSection
             title="Recently added"
-            kicker="Fresh listings"
             products={data?.sections?.RECENT?.products ?? []}
             loading={homepage.isLoading}
+            storePath="/search"
           />
         </>
       )}
-
-      <section className="section" id="how-it-works">
-        <div className="container">
-          <div className="section-heading">
-            <div>
-              <span className="section-kicker">Simple workflow</span>
-              <h2>From “I need it” to “got it”</h2>
-            </div>
-          </div>
-          <div className="steps-grid">
-            {[
-              'Find a product',
-              'Create the order',
-              'Get a dealer',
-              'Connect with your coordinator',
-              'Collect on campus',
-            ].map((step, index) => (
-              <div className="step-card" key={step}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <strong>{step}</strong>
-                {index < 4 ? <ArrowRightIcon /> : null}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   )
 }
@@ -272,14 +126,12 @@ export function HomePage() {
 function HomepageSection({
   id,
   title,
-  kicker,
   products,
   loading,
   storePath,
 }: {
   id?: string
   title: string
-  kicker: string
   products?: ProductSummary[]
   loading: boolean
   storePath?: string
@@ -288,10 +140,7 @@ function HomepageSection({
     <section className="section" id={id}>
       <div className="container">
         <div className="section-heading">
-          <div>
-            <span className="section-kicker">{kicker}</span>
-            <h2>{title}</h2>
-          </div>
+          <h2>{title}</h2>
           {storePath ? (
             <Link to={storePath}>
               See all <ArrowRightIcon />

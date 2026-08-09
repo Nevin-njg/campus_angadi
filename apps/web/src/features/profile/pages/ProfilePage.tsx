@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Button } from '../../../components/ui/Button'
 import { FormField, TextAreaField } from '../../../components/ui/FormField'
-import { ShieldIcon, UserIcon } from '../../../components/ui/icons'
+import { ShieldIcon } from '../../../components/ui/icons'
 import { ApiClientError } from '../../../lib/api-client'
 import { authApi } from '../../auth/api/auth.api'
 import { useAuthStore } from '../../auth/store/use-auth-store'
@@ -109,29 +109,23 @@ export function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <div className="page-heading">
+      <div className="page-heading student-page-heading">
         <div>
-          <span className="section-kicker">Account</span>
-          <h1>Your profile</h1>
-          <p>Complete the required details before listing a second-hand product.</p>
+          <h1>Profile</h1>
+          <p>Keep your contact and campus details up to date.</p>
         </div>
         <span className={`completion-pill ${user.profileCompleted ? 'complete' : ''}`}>
           {user.profileCompleted ? 'Profile complete' : 'Profile incomplete'}
         </span>
       </div>
 
-      <div className="profile-grid">
-        <section className="content-card">
-          <div className="card-heading">
-            <div className="auth-icon small">
-              <UserIcon />
-            </div>
-            <div>
-              <h2>Campus details</h2>
-              <p>Your verified email and role cannot be changed here.</p>
-            </div>
+      <div className="profile-simple-layout">
+        <section className="profile-details-section">
+          <div className="profile-section-heading">
+            <h2>Personal details</h2>
+            <p>Used for orders, listings and campus pickup.</p>
           </div>
-          <div className="verified-email">
+          <div className="profile-email-row">
             <ShieldIcon />
             <div>
               <span>Verified email</span>
@@ -212,9 +206,9 @@ export function ProfilePage() {
           </form>
         </section>
 
-        <aside className="profile-side">
-          <div className="content-card">
-            <h3>Account access</h3>
+        <aside className="profile-account-panel">
+          <div>
+            <h3>Account</h3>
             <dl>
               <div>
                 <dt>Role</dt>
@@ -230,9 +224,9 @@ export function ProfilePage() {
               </div>
             </dl>
           </div>
-          <div className="content-card danger-card">
-            <h3>Session security</h3>
-            <p>Sign out every device currently connected to this account.</p>
+          <div className="profile-security-section">
+            <h3>Security</h3>
+            <p>Sign out this account on every connected device.</p>
             <Button
               variant="danger"
               onClick={() => {

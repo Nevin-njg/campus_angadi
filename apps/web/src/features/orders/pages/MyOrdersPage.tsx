@@ -29,19 +29,16 @@ export function MyOrdersPage() {
     <div>
       <div className="page-title-row">
         <div>
-          <span className="section-kicker">Purchases</span>
-          <h1>My orders</h1>
+          <h1>Orders</h1>
         </div>
         <Link className="button button-primary" to="/search">
-          Shop official store
+          Continue shopping
         </Link>
       </div>
       {created ? (
         <div className="success-banner">
-          <strong>Your orders were created.</strong>
-          <span>
-            Each seller group has its own order number and assigned Campus Angadi contact.
-          </span>
+          <strong>Order placed successfully.</strong>
+          <span>You can track each seller order here.</span>
         </div>
       ) : null}
       <div className="order-filter-row">
@@ -55,7 +52,10 @@ export function MyOrdersPage() {
               className={status === value ? 'active' : ''}
               onClick={() => setParams({ status: value })}
             >
-              {value.replaceAll('_', ' ')}
+              {value
+                .replaceAll('_', ' ')
+                .toLowerCase()
+                .replace(/^./, (letter) => letter.toUpperCase())}
             </button>
           ),
         )}

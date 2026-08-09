@@ -183,12 +183,8 @@ export function ListingFormPage() {
     <section className="listing-form-page">
       <div className="page-heading">
         <div>
-          <span className="section-kicker">Second-hand marketplace</span>
           <h1>{editing ? 'Edit and resubmit' : 'Sell an item'}</h1>
-          <p>
-            User products are always marked second-hand and remain private until an administrator
-            approves them.
-          </p>
+          <p>Add clear details and photos so students can decide quickly.</p>
         </div>
       </div>
 

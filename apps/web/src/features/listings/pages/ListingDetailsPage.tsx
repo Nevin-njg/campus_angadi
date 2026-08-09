@@ -49,7 +49,6 @@ export function ListingDetailsPage() {
     <section>
       <div className="page-heading listing-page-heading">
         <div>
-          <span className="section-kicker">My listing</span>
           <h1>{value.title}</h1>
           <p>
             Submitted{' '}
