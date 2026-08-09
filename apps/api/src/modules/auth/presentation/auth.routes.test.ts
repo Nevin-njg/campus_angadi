@@ -13,6 +13,7 @@ import { createAuthRouter } from './auth.routes.js'
 describe('Auth Routes', () => {
   let app: express.Application
   let google: FakeGoogleIdentityVerifier
+  let users: MongooseUserRepository
 
   const credential = 'google-id-token-'.padEnd(120, 'x')
   const env = {
@@ -21,12 +22,15 @@ describe('Auth Routes', () => {
     COOKIE_SECURE: false,
     COOKIE_SAME_SITE: 'lax' as const,
     COOKIE_DOMAIN: '',
+    TEST_LOGIN_ENABLED: true,
+    TEST_LOGIN_EMAIL: 'admin@campus.edu',
+    TEST_LOGIN_PASSWORD: 'local-testing-password',
   } as any
 
   beforeEach(() => {
     env.NODE_ENV = 'test'
 
-    const users = new MongooseUserRepository()
+    users = new MongooseUserRepository()
     const sessions = new MongooseSessionRepository()
     google = new FakeGoogleIdentityVerifier()
     const tokens = new TokenService(
@@ -97,6 +101,31 @@ describe('Auth Routes', () => {
 
     expect(response.status).toBe(401)
     expect(response.body.error.code).toBe('GOOGLE_TOKEN_INVALID')
+  })
+
+  it('POST /auth/test-login signs in an existing configured test account', async () => {
+    await users.findOrCreateByEmail('admin@campus.edu', 'SUPER_ADMIN')
+
+    const response = await request(app).post('/auth/test-login').send({
+      email: 'admin@campus.edu',
+      password: 'local-testing-password',
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.body.data.user.role).toBe('SUPER_ADMIN')
+    expect(response.headers['set-cookie'][0]).toContain('campusbaza_refresh')
+  })
+
+  it('POST /auth/test-login rejects incorrect credentials without identifying the field', async () => {
+    await users.findOrCreateByEmail('admin@campus.edu', 'SUPER_ADMIN')
+
+    const response = await request(app).post('/auth/test-login').send({
+      email: 'admin@campus.edu',
+      password: 'incorrect-password',
+    })
+
+    expect(response.status).toBe(401)
+    expect(response.body.error.code).toBe('TEST_LOGIN_INVALID')
   })
 
   it('allows unsafe production auth requests from a configured origin', async () => {

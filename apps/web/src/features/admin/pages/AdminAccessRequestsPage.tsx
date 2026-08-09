@@ -29,6 +29,7 @@ export function AdminAccessRequestsPage() {
           </p>
         </div>
         <select
+          aria-label="Filter sign-in requests by status"
           className="rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white"
           value={status}
           onChange={(event) => setStatus(event.target.value as AccessRequestStatus | '')}

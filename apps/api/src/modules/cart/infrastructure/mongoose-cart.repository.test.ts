@@ -56,4 +56,26 @@ describe('DefaultCartMapper', () => {
     expect(cart.subtotal).toBe(0)
     expect(cart.issues[0]?.code).toBe('PRODUCT_UNAVAILABLE')
   })
+
+  it('blocks checkout when a store subtotal is below its advertised minimum', () => {
+    const storeProduct = checkoutProduct({ price: 421 })
+    storeProduct.storeId = 'store-1'
+    storeProduct.storeName = 'AMR'
+    storeProduct.storeMinimumOrderAmount = 500
+    const cart = new DefaultCartMapper().map(
+      {
+        ...record,
+        items: [{ productId: 'product-1', quantity: 1, priceAtAddition: 421 }],
+      },
+      [storeProduct],
+      'buyer-1',
+    )
+
+    expect(cart.issues).toEqual([
+      expect.objectContaining({
+        code: 'STORE_MINIMUM_NOT_MET',
+        message: 'AMR requires a minimum order of ₹500. Add ₹79 more from this store.',
+      }),
+    ])
+  })
 })

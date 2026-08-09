@@ -60,7 +60,7 @@ export interface MarketplaceSearchProduct extends StoreProduct {
     campusLocation: string | null
     deliveryTimeMinutes: number
     minimumOrderAmount: number
-  }
+  } | null
 }
 
 export interface MarketplaceSearchResult {

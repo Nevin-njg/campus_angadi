@@ -28,11 +28,13 @@ export function AdminUsersPage() {
 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-4">
         <input
+          aria-label="Search users"
           className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500"
           placeholder="Search email or name"
           onChange={(e) => setQ({ ...q, q: e.target.value || undefined, page: 1 })}
         />
         <select
+          aria-label="Filter users by status"
           className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all appearance-none min-w-[200px]"
           onChange={(e) =>
             setQ({
@@ -48,6 +50,7 @@ export function AdminUsersPage() {
           <option value="DELETED">DELETED</option>
         </select>
         <select
+          aria-label="Filter users by role"
           className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all appearance-none min-w-[200px]"
           onChange={(e) =>
             setQ({

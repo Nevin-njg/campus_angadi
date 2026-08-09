@@ -142,7 +142,13 @@ export function OrderDetailsPage() {
           </section>
           <section className="detail-panel order-contact-panel">
             <h2>Your order contact</h2>
-            {data.assignedDealer ? (
+            {data.status === 'CANCELLED' ? (
+              <p>This order was cancelled. No further pickup coordination is required.</p>
+            ) : data.status === 'REJECTED' ? (
+              <p>This order was not accepted. No pickup contact will be assigned.</p>
+            ) : data.status === 'COMPLETED' && !data.assignedDealer ? (
+              <p>This order is complete. No additional pickup coordination is required.</p>
+            ) : data.assignedDealer ? (
               <>
                 <div className="assigned-dealer-row">
                   <div>

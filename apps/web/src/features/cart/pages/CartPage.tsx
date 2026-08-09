@@ -68,6 +68,7 @@ export function CartPage() {
     )
   }
   const busy = update.isPending || remove.isPending || review.isPending || clear.isPending
+  const hasReviewableIssue = data.issues.some((issue) => issue.code !== 'STORE_MINIMUM_NOT_MET')
   return (
     <section className="section">
       <div className="container cart-page-grid">
@@ -103,13 +104,15 @@ export function CartPage() {
                 {data.issues.map((issue) => (
                   <p key={`${issue.productId}-${issue.code}`}>{issue.message}</p>
                 ))}
-                <button
-                  className="button button-outline cart-review-button"
-                  disabled={review.isPending}
-                  onClick={() => review.mutate()}
-                >
-                  {review.isPending ? 'Applying…' : 'Accept current prices and availability'}
-                </button>
+                {hasReviewableIssue ? (
+                  <button
+                    className="button button-outline cart-review-button"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate()}
+                  >
+                    {review.isPending ? 'Applying…' : 'Accept current prices and availability'}
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -138,6 +141,7 @@ export function CartPage() {
                 </div>
                 <div className="quantity-control" aria-label={`Quantity for ${item.product.title}`}>
                   <button
+                    aria-label={`Decrease quantity of ${item.product.title}`}
                     disabled={busy || item.quantity <= 1}
                     onClick={() =>
                       update.mutate({ productId: item.product.id, quantity: item.quantity - 1 })
@@ -147,6 +151,7 @@ export function CartPage() {
                   </button>
                   <span>{item.quantity}</span>
                   <button
+                    aria-label={`Increase quantity of ${item.product.title}`}
                     disabled={busy || item.quantity >= item.product.stock || item.quantity >= 20}
                     onClick={() =>
                       update.mutate({ productId: item.product.id, quantity: item.quantity + 1 })

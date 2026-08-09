@@ -37,6 +37,7 @@ export function AdminAuditPage() {
             <SearchIcon />
           </div>
           <input
+            aria-label="Search audit logs"
             className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500"
             placeholder="Search action, actor or entity"
             onChange={(e) => setQ({ ...q, q: e.target.value || undefined, page: 1 })}
@@ -47,6 +48,7 @@ export function AdminAuditPage() {
             <FilterIcon />
           </div>
           <input
+            aria-label="Filter audit logs by entity type"
             className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500"
             placeholder="Filter by entity type"
             onChange={(e) => setQ({ ...q, entityType: e.target.value || undefined, page: 1 })}

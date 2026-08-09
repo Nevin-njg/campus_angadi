@@ -3,6 +3,7 @@ import type {
   AccessRequestInput,
   AuthUser,
   GoogleSignInInput,
+  TestSignInInput,
   UpdateProfileInput,
 } from '@campusbaza/contracts'
 import { apiRequest } from '../../../lib/api-client'
@@ -10,6 +11,13 @@ import { apiRequest } from '../../../lib/api-client'
 export const authApi = {
   googleSignIn(input: GoogleSignInInput) {
     return apiRequest<{ accessToken: string; user: AuthUser }>('/auth/google', {
+      method: 'POST',
+      body: input,
+      retryOnUnauthorized: false,
+    })
+  },
+  testSignIn(input: TestSignInInput) {
+    return apiRequest<{ accessToken: string; user: AuthUser }>('/auth/test-login', {
       method: 'POST',
       body: input,
       retryOnUnauthorized: false,

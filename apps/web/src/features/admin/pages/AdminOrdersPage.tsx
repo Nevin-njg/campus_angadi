@@ -1,5 +1,6 @@
 import type { OrderStatus, SellerType } from '@campusbaza/contracts'
 import { useQuery } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { PackageIcon } from '../../../components/ui/icons'
 import { ordersApi } from '../../orders/api/orders.api'
@@ -18,6 +19,8 @@ export function AdminOrdersPage() {
   const moderatorView = useAuthStore((state) => state.user?.role === 'MODERATOR')
   const mediatorPage = useLocation().pathname.includes('/admin/mediator')
   const [params, setParams] = useSearchParams()
+  const latestParams = useRef(params)
+  latestParams.current = params
   const q = params.get('q') ?? ''
   const status = (params.get('status') || undefined) as OrderStatus | undefined
   const sellerType = (params.get('sellerType') || undefined) as SellerType | undefined
@@ -32,11 +35,12 @@ export function AdminOrdersPage() {
   })
 
   const update = (values: Record<string, string>) => {
-    const next = new URLSearchParams(params)
+    const next = new URLSearchParams(latestParams.current)
     Object.entries(values).forEach(([key, value]) =>
       value ? next.set(key, value) : next.delete(key),
     )
     next.delete('page')
+    latestParams.current = next
     setParams(next)
   }
 
@@ -65,12 +69,14 @@ export function AdminOrdersPage() {
 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-4 flex-wrap">
         <input
+          aria-label="Search orders"
           className={`${inputClass} flex-1 min-w-[250px]`}
           placeholder="Order number, buyer or phone"
           value={q}
           onChange={(event) => update({ q: event.target.value })}
         />
         <select
+          aria-label="Filter orders by status"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={status ?? ''}
           onChange={(event) => update({ status: event.target.value })}
@@ -85,6 +91,7 @@ export function AdminOrdersPage() {
           )}
         </select>
         <select
+          aria-label="Filter orders by seller type"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={sellerType ?? ''}
           onChange={(event) => update({ sellerType: event.target.value })}
@@ -94,6 +101,7 @@ export function AdminOrdersPage() {
           <option value="USER">Second-hand</option>
         </select>
         <select
+          aria-label="Filter orders by assignment"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={assignment ?? ''}
           onChange={(event) => update({ assignment: event.target.value })}

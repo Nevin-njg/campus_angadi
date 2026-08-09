@@ -172,6 +172,8 @@ export class MongooseCheckoutCatalogRepository implements CheckoutCatalogReposit
           summary,
           sellerId: String(product.sellerId),
           storeId: product.storeId ? objectIdString(product.storeId) : null,
+          storeName: store ? String(store.name) : null,
+          storeMinimumOrderAmount: store ? Number(store.minimumOrderAmount ?? 0) : 0,
           categoryActive:
             Boolean(category.isActive) && (!store || String(store.status) === 'ACTIVE'),
           sellerActive: seller.status === 'ACTIVE',
@@ -237,6 +239,30 @@ export class DefaultCartMapper implements CartMapper {
       }
       return [{ product, quantity, lineTotal: product.price * quantity }]
     })
+    const storeGroups = new Map<string, CheckoutProduct[]>()
+    for (const product of products) {
+      if (!product.storeId || !items.some((item) => item.product.id === product.summary.id))
+        continue
+      storeGroups.set(product.storeId, [...(storeGroups.get(product.storeId) ?? []), product])
+    }
+    for (const storeProducts of storeGroups.values()) {
+      const minimum = Math.max(
+        ...storeProducts.map((product) => product.storeMinimumOrderAmount ?? 0),
+      )
+      const storeProductIds = new Set(storeProducts.map((product) => product.summary.id))
+      const storeSubtotal = items
+        .filter((item) => storeProductIds.has(item.product.id))
+        .reduce((total, item) => total + item.lineTotal, 0)
+      if (minimum > 0 && storeSubtotal < minimum) {
+        const store = storeProducts[0]!
+        const remaining = minimum - storeSubtotal
+        issues.push({
+          productId: store.summary.id,
+          code: 'STORE_MINIMUM_NOT_MET',
+          message: `${store.storeName ?? 'This store'} requires a minimum order of ₹${minimum.toLocaleString('en-IN')}. Add ₹${remaining.toLocaleString('en-IN')} more from this store.`,
+        })
+      }
+    }
     return {
       id: record.id,
       userId: record.userId,

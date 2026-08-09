@@ -38,6 +38,12 @@ export const verifyOtpInputSchema = z
 export const googleSignInInputSchema = z
   .object({ credential: z.string().trim().min(100).max(12_000) })
   .strict()
+export const testSignInInputSchema = z
+  .object({
+    email: z.string().trim().email().max(254),
+    password: z.string().min(8).max(200),
+  })
+  .strict()
 export const accessRequestInputSchema = z
   .object({
     credential: z.string().trim().min(100).max(12_000),
@@ -467,6 +473,7 @@ export const cartIssueCodeSchema = z.enum([
   'PRICE_CHANGED',
   'INSUFFICIENT_STOCK',
   'OWN_PRODUCT',
+  'STORE_MINIMUM_NOT_MET',
 ])
 
 export const cartIssueSchema = z.object({
@@ -504,12 +511,12 @@ export const updateCartItemInputSchema = z
 
 export const checkoutInputSchema = z
   .object({
-    fullName: z.string().trim().min(2).max(80),
-    phoneNumber: z.string().trim().min(7).max(20),
+    fullName: z.string().trim().min(2, 'Enter your full name.').max(80),
+    phoneNumber: z.string().trim().min(7, 'Enter a valid phone number.').max(20),
     campusId: z.string().trim().max(60).nullable().optional(),
     department: z.string().trim().max(80).nullable().optional(),
     building: z.string().trim().max(100).nullable().optional(),
-    pickupLocation: z.string().trim().min(2).max(160),
+    pickupLocation: z.string().trim().min(2, 'Enter a pickup location.').max(160),
     preferredPickupTime: z.string().trim().max(100).nullable().optional(),
     notes: z.string().trim().max(1000).nullable().optional(),
   })
@@ -1107,6 +1114,7 @@ export type AuthUser = z.infer<typeof authUserSchema>
 export type RequestOtpInput = z.infer<typeof requestOtpInputSchema>
 export type VerifyOtpInput = z.infer<typeof verifyOtpInputSchema>
 export type GoogleSignInInput = z.infer<typeof googleSignInInputSchema>
+export type TestSignInInput = z.infer<typeof testSignInInputSchema>
 export type AccessRequestInput = z.infer<typeof accessRequestInputSchema>
 export type AccessRequestStatus = z.infer<typeof accessRequestStatusSchema>
 export type AccessRequest = z.infer<typeof accessRequestSchema>

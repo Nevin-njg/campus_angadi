@@ -109,6 +109,7 @@ export function AdminDealersPage() {
           <label className={labelClass}>
             Email address
             <input
+              aria-label="Search order contacts"
               className={inputClass}
               type="email"
               placeholder="team@nitc.ac.in"
@@ -422,6 +423,7 @@ export function AdminDealersPage() {
                       Edit
                     </button>
                     <button
+                      aria-label={`Remove ${dealer.displayName}`}
                       className="px-3 py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                       title={
                         dealer.currentOpenOrders > 0

@@ -50,6 +50,7 @@ export function MyListingsPage() {
           onChange={(event) => setSearch(event.target.value)}
         />
         <select
+          aria-label="Filter listings by status"
           value={status}
           onChange={(event) => setStatus(event.target.value as '' | ProductStatus)}
         >

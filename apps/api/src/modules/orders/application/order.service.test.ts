@@ -37,7 +37,7 @@ function product(id: string, sellerId: string, sellerType: 'ADMIN' | 'USER'): Ch
     completedOrderCount: 0,
     createdAt: new Date().toISOString(),
   }
-  return { summary, sellerId, categoryActive: true, sellerActive: true }
+  return { summary, sellerId, storeId: null, categoryActive: true, sellerActive: true }
 }
 
 class CartFake implements CartRepository {
@@ -205,6 +205,31 @@ describe('OrderService', () => {
         checkoutInput,
       ),
     ).rejects.toMatchObject({ code: 'CART_REQUIRES_REVIEW' })
+  })
+
+  it('enforces a store minimum on the server before creating orders', async () => {
+    const storeProduct = product('store-product', 'seller', 'ADMIN')
+    storeProduct.storeId = 'store-1'
+    storeProduct.storeName = 'AMR'
+    storeProduct.storeMinimumOrderAmount = 500
+    const cart = new CartFake({
+      id: 'cart',
+      userId: 'buyer',
+      updatedAt: new Date(),
+      items: [{ productId: storeProduct.summary.id, quantity: 1, priceAtAddition: 100 }],
+    })
+    const orders = new OrderFake()
+
+    await expect(
+      new OrderService(orders, cart, new CatalogFake([storeProduct])).checkout(
+        'buyer',
+        checkoutInput,
+      ),
+    ).rejects.toMatchObject({
+      code: 'STORE_MINIMUM_NOT_MET',
+      message: 'AMR requires a minimum order of ₹500. Add ₹400 more from this store.',
+    })
+    expect(orders.groups).toHaveLength(0)
   })
 
   it('allows buyers to cancel only early-stage orders', async () => {

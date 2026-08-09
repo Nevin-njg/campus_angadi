@@ -8,6 +8,7 @@ import {
   OrderStatusHistoryModel,
 } from '../../orders/infrastructure/order.models.js'
 import { UserModel } from '../../users/infrastructure/user.models.js'
+import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import type { ImageUploadService } from '../../uploads/application/image-upload.service.js'
 
 const slugify = (value: string) =>
@@ -97,6 +98,17 @@ const marketplaceProductView = (product: any, store: any, imageUrl: string | nul
   }
 }
 
+const officialMarketplaceProductView = (
+  product: any,
+  categoryName: string | null,
+  imageUrl: string | null = null,
+) => ({
+  ...productView(product, imageUrl),
+  ...discountDetails(product),
+  storeCategoryName: categoryName,
+  store: null,
+})
+
 const orderView = (order: any, items: any[] = []) => ({
   id: String(order._id),
   orderNumber: order.orderNumber,
@@ -167,15 +179,6 @@ export class StoreService {
       .lean()
     const activeStoreIds = activeStores.map((store) => store._id)
 
-    if (!activeStoreIds.length) {
-      return {
-        query: normalizedQuery,
-        stores: [],
-        products: [],
-        meta: { storeCount: 0, productCount: 0, inStockCount: 0 },
-      }
-    }
-
     const directlyMatchingStores = searchPattern
       ? activeStores.filter((store) =>
           [store.name, store.slug, store.description, store.campusLocation]
@@ -186,22 +189,28 @@ export class StoreService {
     const directlyMatchingStoreIds = directlyMatchingStores.map((store) => store._id)
 
     const productFilter: Record<string, unknown> = {
-      storeId: { $in: activeStoreIds },
       productType: 'NEW',
       status: 'APPROVED',
       published: true,
       deletedAt: null,
       sellerId: { $in: activeSellerIds },
+      $and: [
+        {
+          $or: [{ storeId: { $in: activeStoreIds } }, { sellerType: 'ADMIN', storeId: null }],
+        },
+      ],
     }
     if (searchPattern) {
-      productFilter.$or = [
-        { title: searchPattern },
-        { description: searchPattern },
-        { tags: { $in: [searchPattern] } },
-        ...(directlyMatchingStoreIds.length
-          ? [{ storeId: { $in: directlyMatchingStoreIds } }]
-          : []),
-      ]
+      ;(productFilter.$and as Record<string, unknown>[]).push({
+        $or: [
+          { title: searchPattern },
+          { description: searchPattern },
+          { tags: { $in: [searchPattern] } },
+          ...(directlyMatchingStoreIds.length
+            ? [{ storeId: { $in: directlyMatchingStoreIds } }]
+            : []),
+        ],
+      })
     }
 
     const products: any[] = await ProductModel.find(productFilter)
@@ -210,15 +219,31 @@ export class StoreService {
       .lean()
 
     const storeById = new Map(activeStores.map((store) => [String(store._id), store]))
-    const visibleProducts = products.filter((product) => storeById.has(String(product.storeId)))
-    const images = await ProductImageModel.find({
-      productId: { $in: visibleProducts.map((product) => product._id) },
-      isPrimary: true,
-    }).lean()
+    const visibleProducts = products.filter(
+      (product) =>
+        storeById.has(String(product.storeId)) ||
+        (product.sellerType === 'ADMIN' && !product.storeId),
+    )
+    const officialCategoryIds = visibleProducts
+      .filter((product) => product.sellerType === 'ADMIN' && !product.storeId)
+      .map((product) => product.categoryId)
+    const [images, officialCategories] = await Promise.all([
+      ProductImageModel.find({
+        productId: { $in: visibleProducts.map((product) => product._id) },
+        isPrimary: true,
+      }).lean(),
+      CategoryModel.find({ _id: { $in: officialCategoryIds }, deletedAt: null })
+        .select('_id name')
+        .lean(),
+    ])
     const imageByProduct = new Map(images.map((image) => [String(image.productId), image.url]))
+    const categoryNameById = new Map(
+      officialCategories.map((category) => [String(category._id), category.name]),
+    )
 
     const productsByStore = new Map<string, any[]>()
     for (const product of visibleProducts) {
+      if (!product.storeId) continue
       const key = String(product.storeId)
       productsByStore.set(key, [...(productsByStore.get(key) ?? []), product])
     }
@@ -257,13 +282,17 @@ export class StoreService {
         return left.name.localeCompare(right.name)
       })
 
-    const productViews = visibleProducts.map((product) =>
-      marketplaceProductView(
-        product,
-        storeById.get(String(product.storeId)),
-        imageByProduct.get(String(product._id)) ?? null,
-      ),
-    )
+    const productViews = visibleProducts.map((product) => {
+      const store = storeById.get(String(product.storeId))
+      const imageUrl = imageByProduct.get(String(product._id)) ?? null
+      return store
+        ? marketplaceProductView(product, store, imageUrl)
+        : officialMarketplaceProductView(
+            product,
+            categoryNameById.get(String(product.categoryId)) ?? null,
+            imageUrl,
+          )
+    })
 
     return {
       query: normalizedQuery,
@@ -358,12 +387,11 @@ export class StoreService {
       { storeId: store._id, deletedAt: null },
       { $set: { deletedAt: now, deletedBy: actorId, status: 'DELETED', published: false } },
     )
-    store.status = 'ARCHIVED'
-    await store.save()
     await UserModel.updateOne(
       { _id: store.sellerId, role: 'SELLER' },
       { $set: { role: 'USER', canSell: true } },
     )
+    await StoreModel.deleteOne({ _id: store._id })
     return { id: String(store._id) }
   }
 

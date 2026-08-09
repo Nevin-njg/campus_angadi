@@ -47,6 +47,7 @@ export function AdminModerationPage() {
             <SearchIcon />
           </div>
           <input
+            aria-label="Search moderation queue"
             className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500"
             type="search"
             placeholder="Search product title or seller email"
@@ -57,6 +58,7 @@ export function AdminModerationPage() {
 
         <div className="flex w-full md:w-auto items-center gap-4">
           <select
+            aria-label="Filter moderation queue by status"
             className="w-full md:w-auto bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all appearance-none pr-10"
             value={status}
             onChange={(event) => setStatus(event.target.value as ProductStatus)}

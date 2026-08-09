@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@500&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8150,27 +8150,6 @@ body {
   grid-template-columns: 1fr 1fr;
 }
 
-.admin-app-shell {
-  color-scheme: light;
-  --bg-page: #f7f7f6;
-  --bg-card: #ffffff;
-  --bg-elevated: #f8f8f7;
-  --bg-hover: #f1f1ef;
-  --bg-input: #ffffff;
-  --border: #cfd4da;
-  --border-soft: #e5e7eb;
-  --text-primary: #242424;
-  --text-secondary: #595959;
-  --text-tertiary: #858585;
-  --accent: #e39a69;
-  --accent-text: #91451f;
-  --accent-contrast: #202020;
-  --green: #147d55;
-  --red: #c7352e;
-  --shadow: 0 8px 24px rgba(23, 33, 43, 0.08);
-  background: var(--bg-page);
-}
-
 @media (max-width: 1180px) {
   .nav-location {
     display: none;
@@ -8594,6 +8573,10 @@ body {
 
 .brand-copy small {
   color: var(--accent-text);
+}
+
+.admin-app-shell .brand-copy strong {
+  color: #ffffff;
 }
 
 .navbar::before {

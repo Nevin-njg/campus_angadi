@@ -90,10 +90,14 @@ export class SettingsService {
     }
   }
   async update(input: UpdatePlatformSettingsInput) {
+    // Provision defaults first. Combining user-provided fields in `$set` with the
+    // same default fields in `$setOnInsert` causes MongoDB error 40
+    // (ConflictingUpdateOperators), even when the settings document exists.
+    await this.ensure()
     const d = await PlatformSettingModel.findByIdAndUpdate(
       'platform',
-      { $set: input, $setOnInsert: { _id: 'platform', ...this.defaults } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { $set: input },
+      { new: true, runValidators: true },
     ).lean<Record<string, unknown>>()
     if (!d) throw new Error('Unable to update settings')
     return map(d)

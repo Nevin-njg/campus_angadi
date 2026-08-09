@@ -26,6 +26,7 @@ export function AdminSalesPage() {
           </p>
         </div>
         <select
+          aria-label="Sales period"
           className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all min-w-[150px] appearance-none"
           value={period}
           onChange={(e) => setPeriod(e.target.value as SalesPeriod)}
