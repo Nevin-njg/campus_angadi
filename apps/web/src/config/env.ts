@@ -6,4 +6,5 @@ export const webEnv = {
   brandMark: import.meta.env.VITE_BRAND_MARK ?? DEFAULT_BRAND.brandMark,
   campusDisplayName: import.meta.env.VITE_CAMPUS_DISPLAY_NAME ?? DEFAULT_BRAND.campusDisplayName,
   googleClientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+  testLoginEnabled: import.meta.env.VITE_TEST_LOGIN_ENABLED === 'true',
 }

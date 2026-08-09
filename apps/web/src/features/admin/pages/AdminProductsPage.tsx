@@ -30,7 +30,13 @@ export function AdminProductsPage() {
   })
   const products = useQuery({
     queryKey: ['admin', 'products'],
-    queryFn: () => adminCatalogApi.products({ page: 1, limit: 24, sort: 'latest' }),
+    queryFn: () =>
+      adminCatalogApi.products({
+        sellerType: 'ADMIN',
+        page: 1,
+        limit: 24,
+        sort: 'latest',
+      }),
   })
 
   const [form, setForm] = useState<CreateOfficialProductInput>(initial)

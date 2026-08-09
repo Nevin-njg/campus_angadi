@@ -4,9 +4,54 @@ import { ProductModel } from '../../products/infrastructure/product.models.js'
 import { OrderModel } from '../../orders/infrastructure/order.models.js'
 import { UserModel } from '../../users/infrastructure/user.models.js'
 import { StoreModel } from '../infrastructure/store.model.js'
+import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { StoreService } from './store.service.js'
 
 describe('StoreService administration', () => {
+  it('includes official products in marketplace search without requiring a seller store', async () => {
+    const admin = await UserModel.create({
+      email: 'official-search@nitc.ac.in',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      emailVerified: true,
+      canSell: false,
+      profileCompleted: false,
+    })
+    const category = await CategoryModel.create({
+      name: 'Electronics',
+      slug: 'official-search-electronics',
+      isActive: true,
+    })
+    const calculator = await ProductModel.create({
+      title: 'Scientific Calculator',
+      slug: 'official-scientific-calculator',
+      description: 'An approved calculator from the official campus catalogue.',
+      categoryId: category._id,
+      price: 1099,
+      originalPrice: 1299,
+      stock: 12,
+      condition: 'NEW',
+      productType: 'NEW',
+      sellerType: 'ADMIN',
+      sellerId: admin._id,
+      status: 'APPROVED',
+      published: true,
+    })
+    const service = new StoreService({} as ImageUploadService)
+
+    const result = await service.searchMarketplace('calculator')
+
+    expect(result.meta).toEqual({ storeCount: 0, productCount: 1, inStockCount: 1 })
+    expect(result.products).toEqual([
+      expect.objectContaining({
+        id: String(calculator._id),
+        title: 'Scientific Calculator',
+        storeCategoryName: 'Electronics',
+        store: null,
+      }),
+    ])
+  })
+
   it('removes a store from the marketplace and releases its seller account', async () => {
     const seller = await UserModel.create({
       email: 'seller@nitc.ac.in',

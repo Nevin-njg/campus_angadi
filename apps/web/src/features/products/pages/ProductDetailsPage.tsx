@@ -152,11 +152,16 @@ export function ProductDetailsPage() {
           </div>
           <div className="product-purchase-row">
             <div className="quantity-control large">
-              <button disabled={quantity <= 1} onClick={() => setQuantity((value) => value - 1)}>
+              <button
+                aria-label={`Decrease quantity of ${product.title}`}
+                disabled={quantity <= 1}
+                onClick={() => setQuantity((value) => value - 1)}
+              >
                 −
               </button>
               <span>{quantity}</span>
               <button
+                aria-label={`Increase quantity of ${product.title}`}
                 disabled={quantity >= Math.min(product.stock, 20)}
                 onClick={() => setQuantity((value) => value + 1)}
               >

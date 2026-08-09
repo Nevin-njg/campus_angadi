@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto'
 import { Router, type CookieOptions, type RequestHandler } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import * as contracts from '@campusbaza/contracts'
@@ -5,10 +6,15 @@ import type {
   AccessRequestInput,
   GoogleSignInInput,
   ReviewAccessRequestInput,
+  TestSignInInput,
 } from '@campusbaza/contracts'
 
-const { accessRequestInputSchema, googleSignInInputSchema, reviewAccessRequestInputSchema } =
-  contracts
+const {
+  accessRequestInputSchema,
+  googleSignInInputSchema,
+  reviewAccessRequestInputSchema,
+  testSignInInputSchema,
+} = contracts
 import type { AppEnv } from '../../../config/env.js'
 import { AppError } from '../../../core/errors/app-error.js'
 import { asyncHandler } from '../../../core/http/async-handler.js'
@@ -39,6 +45,12 @@ function cookieOptions(env: AppEnv, expiresAt?: Date): CookieOptions {
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
     ...(expiresAt ? { expires: expiresAt } : {}),
   }
+}
+
+function safeMatches(value: string, expected: string): boolean {
+  const left = Buffer.from(value)
+  const right = Buffer.from(expected)
+  return left.length === right.length && timingSafeEqual(left, right)
 }
 
 export function createAuthRouter(
@@ -118,6 +130,38 @@ export function createAuthRouter(
       })
     }),
   )
+
+  if (env.TEST_LOGIN_ENABLED) {
+    router.post(
+      '/test-login',
+      googleSignInLimiter,
+      validateBody(testSignInInputSchema),
+      asyncHandler(async (request, response) => {
+        const input = request.body as TestSignInInput
+        if (
+          input.email.toLowerCase() !== env.TEST_LOGIN_EMAIL.toLowerCase() ||
+          !safeMatches(input.password, env.TEST_LOGIN_PASSWORD)
+        ) {
+          throw new AppError(401, 'TEST_LOGIN_INVALID', 'The test sign-in details are not valid.')
+        }
+
+        const result = await auth.signInForTesting(input.email, {
+          ipAddress: request.ip ?? null,
+          userAgent: request.header('user-agent') ?? null,
+        })
+        response.cookie(
+          REFRESH_COOKIE,
+          result.refreshToken,
+          cookieOptions(env, result.refreshExpiresAt),
+        )
+        response.json({
+          success: true,
+          message: 'Test session started.',
+          data: { accessToken: result.accessToken, user: result.user },
+        })
+      }),
+    )
+  }
 
   if (accessRequests) {
     router.post(

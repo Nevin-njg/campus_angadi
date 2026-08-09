@@ -113,6 +113,25 @@ describe('AuthService', () => {
     expect(result.user.role).toBe('MODERATOR')
   })
 
+  it('starts a test session only for an existing active account', async () => {
+    const { auth, users } = createSubject()
+    await users.findOrCreateByEmail('owner@campusbaza.example.edu', 'SUPER_ADMIN')
+
+    const result = await auth.signInForTesting('OWNER@campusbaza.example.edu', {
+      ipAddress: '127.0.0.1',
+      userAgent: 'test-runner',
+    })
+
+    expect(result.user.role).toBe('SUPER_ADMIN')
+    expect(result.accessToken).toBeTruthy()
+    await expect(
+      auth.signInForTesting('missing@campusbaza.example.edu', {
+        ipAddress: null,
+        userAgent: null,
+      }),
+    ).rejects.toMatchObject({ code: 'TEST_LOGIN_INVALID' })
+  })
+
   it('rotates refresh tokens and revokes the session when an old token is reused', async () => {
     const { auth, google, sessions } = createSubject()
     const address = 'student@campusbaza.example.edu'

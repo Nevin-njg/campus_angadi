@@ -45,11 +45,13 @@ export function AdminReportsPage() {
 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-4">
         <input
+          aria-label="Search reports"
           className={`${inputClass} flex-1`}
           placeholder="Search report text"
           onChange={(e) => setQ({ ...q, q: e.target.value || undefined, page: 1 })}
         />
         <select
+          aria-label="Filter reports by status"
           className={`${inputClass} appearance-none min-w-[200px]`}
           onChange={(e) =>
             setQ({
@@ -129,6 +131,7 @@ export function AdminReportsPage() {
 
             <div className="mt-auto">
               <textarea
+                aria-label={`Resolution for ${x.targetLabel}`}
                 className={`${inputClass} w-full min-h-[80px] resize-y mb-4 text-sm`}
                 placeholder="Resolution or internal outcome..."
                 value={resolution[x.id] ?? x.resolution ?? ''}

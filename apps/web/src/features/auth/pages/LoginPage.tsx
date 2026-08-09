@@ -17,6 +17,7 @@ export function LoginPage() {
   const establishSession = useAuthStore((state) => state.establishSession)
   const [serverError, setServerError] = useState<string | null>(null)
   const [signingIn, setSigningIn] = useState(false)
+  const [testCredentials, setTestCredentials] = useState({ email: '', password: '' })
   const [requestCredential, setRequestCredential] = useState<string | null>(null)
   const [requestForm, setRequestForm] = useState({ fullName: '', affiliation: '', reason: '' })
   const [requestSent, setRequestSent] = useState(false)
@@ -63,6 +64,25 @@ export function LoginPage() {
     },
     [establishSession, navigate],
   )
+
+  async function submitTestLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setServerError(null)
+    setSigningIn(true)
+    try {
+      const result = await authApi.testSignIn(testCredentials)
+      establishSession(result.accessToken, result.user)
+      void navigate(takeReturnTo() ?? '/', { replace: true })
+    } catch (error) {
+      setServerError(
+        error instanceof ApiClientError
+          ? error.message
+          : 'The test sign-in could not be completed.',
+      )
+    } finally {
+      setSigningIn(false)
+    }
+  }
 
   async function submitAccessRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -188,6 +208,39 @@ export function LoginPage() {
               </button>
             </form>
           )}
+          {!requestCredential && webEnv.testLoginEnabled ? (
+            <form className="auth-access-request" onSubmit={(event) => void submitTestLogin(event)}>
+              <div className="auth-footnote">Local testing only</div>
+              <label>
+                Test account email
+                <input
+                  autoComplete="username"
+                  required
+                  type="email"
+                  value={testCredentials.email}
+                  onChange={(event) =>
+                    setTestCredentials((value) => ({ ...value, email: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Test password
+                <input
+                  autoComplete="current-password"
+                  minLength={8}
+                  required
+                  type="password"
+                  value={testCredentials.password}
+                  onChange={(event) =>
+                    setTestCredentials((value) => ({ ...value, password: event.target.value }))
+                  }
+                />
+              </label>
+              <button className="button button-outline" disabled={signingIn} type="submit">
+                {signingIn ? 'Signing in…' : 'Sign in for testing'}
+              </button>
+            </form>
+          ) : null}
           {signingIn ? <p className="auth-signing-in">Signing you in securely…</p> : null}
           {serverError ? (
             <div className="form-alert" role="alert">

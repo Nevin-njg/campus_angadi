@@ -189,6 +189,7 @@ export function AdminHomepagePage() {
 
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
+                      aria-label={`Move ${product?.title ?? 'selected product'} up`}
                       className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       disabled={index === 0}
                       onClick={() => move(index, -1)}
@@ -197,6 +198,7 @@ export function AdminHomepagePage() {
                       ↑
                     </button>
                     <button
+                      aria-label={`Move ${product?.title ?? 'selected product'} down`}
                       className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       disabled={index === selected.length - 1}
                       onClick={() => move(index, 1)}
@@ -205,6 +207,7 @@ export function AdminHomepagePage() {
                       ↓
                     </button>
                     <button
+                      aria-label={`Remove ${product?.title ?? 'selected product'} from this section`}
                       className="ml-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors"
                       onClick={() => remove(id)}
                     >
@@ -271,6 +274,7 @@ export function AdminHomepagePage() {
               <SearchIcon />
             </div>
             <input
+              aria-label="Search homepage products"
               className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500"
               placeholder="Search products by title..."
               value={search}

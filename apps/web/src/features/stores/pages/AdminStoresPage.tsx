@@ -349,6 +349,7 @@ export function AdminStoresPage() {
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-gray-600 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"
                   />
                   <select
+                    aria-label="Select shop owner"
                     value={form.sellerId}
                     onChange={(event) => setForm({ ...form, sellerId: event.target.value })}
                     className="w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-white outline-none transition focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"

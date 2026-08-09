@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 import { BrandLogo } from '../../../components/layout/BrandLogo'
+import { useConfirmation } from '../../../components/feedback/confirmation-context'
 import {
   ActivityIcon,
   AlertTriangleIcon,
@@ -232,6 +233,7 @@ function Modal({
 export function SellerDashboardPage() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
+  const confirm = useConfirmation()
   const [section, setSection] = useState<SellerSection>('overview')
   const [overview, setOverview] = useState<SellerOverview | null>(null)
   const [products, setProducts] = useState<StoreProduct[]>([])
@@ -410,7 +412,15 @@ export function SellerDashboardPage() {
   }
 
   const removeProduct = async (product: StoreProduct) => {
-    if (!window.confirm(`Delete “${product.title}” from your store?`)) return
+    if (
+      !(await confirm({
+        title: `Delete “${product.title}”?`,
+        description: 'The product will be removed from your public store and cannot be restored.',
+        confirmLabel: 'Delete product',
+        tone: 'danger',
+      }))
+    )
+      return
     setBusy(true)
     try {
       await storesApi.deleteSellerProduct(product.id)
@@ -440,6 +450,17 @@ export function SellerDashboardPage() {
   }
 
   const toggleCategory = async (category: StoreCategory) => {
+    if (
+      category.isActive &&
+      !(await confirm({
+        title: `Hide ${category.name}?`,
+        description: 'Customers will no longer see this category on your public store.',
+        confirmLabel: 'Hide category',
+      }))
+    ) {
+      return
+    }
+
     setBusy(true)
     try {
       const updated = await storesApi.updateSellerCategory(category.id, {
@@ -456,6 +477,16 @@ export function SellerDashboardPage() {
 
   const updateOrder = async (order: SellerOrder, status: string) => {
     if (!status) return
+    if (
+      !(await confirm({
+        title: `Move ${order.orderNumber} to ${statusLabel(status)}?`,
+        description: 'This updates the order for both the seller and the customer.',
+        confirmLabel: 'Update status',
+      }))
+    ) {
+      return
+    }
+
     setBusy(true)
     try {
       await storesApi.updateSellerOrderStatus(order.id, status)
@@ -470,6 +501,19 @@ export function SellerDashboardPage() {
 
   const applyOffer = async (event: FormEvent) => {
     event.preventDefault()
+    if (
+      !(await confirm({
+        title: offer.discountPercent === 0 ? 'Remove this offer?' : 'Apply this offer?',
+        description:
+          offer.scope === 'CATEGORY'
+            ? 'This price change will apply to every product in the selected category.'
+            : 'This price change will be visible to customers immediately.',
+        confirmLabel: offer.discountPercent === 0 ? 'Remove offer' : 'Apply offer',
+      }))
+    ) {
+      return
+    }
+
     setBusy(true)
     try {
       const result = await storesApi.applySellerOffer(offer)
@@ -987,6 +1031,7 @@ export function SellerDashboardPage() {
                             </span>
                             <button
                               type="button"
+                              aria-label={`${category.isActive ? 'Hide' : 'Activate'} ${category.name}`}
                               disabled={busy}
                               onClick={() => void toggleCategory(category)}
                               className="text-xs font-bold text-amber-400 hover:text-amber-300 disabled:opacity-50"
@@ -1031,6 +1076,7 @@ export function SellerDashboardPage() {
                     </p>
                   </div>
                   <select
+                    aria-label="Filter seller orders by status"
                     className={`${selectClass} max-w-56`}
                     value={orderStatus}
                     onChange={(event) => setOrderStatus(event.target.value)}
@@ -1118,6 +1164,7 @@ export function SellerDashboardPage() {
                               <div className="mt-2 flex gap-2">
                                 <select
                                   id={`status-${order.id}`}
+                                  aria-label={`Update status for ${order.orderNumber}`}
                                   className={selectClass}
                                   defaultValue=""
                                 >
@@ -1132,6 +1179,7 @@ export function SellerDashboardPage() {
                                 </select>
                                 <button
                                   type="button"
+                                  aria-label={`Update ${order.orderNumber}`}
                                   disabled={busy}
                                   onClick={() => {
                                     const input = document.getElementById(

@@ -83,8 +83,11 @@ function ProductActions({
   if (compact) {
     return (
       <div className="marketplace-compare-actions">
-        <Link className="button button-outline" to={`/stores/${product.store.slug}`}>
-          Store
+        <Link
+          className="button button-outline"
+          to={product.store ? `/stores/${product.store.slug}` : `/products/${product.slug}`}
+        >
+          {product.store ? 'Store' : 'Details'}
         </Link>
         <button
           className="button button-primary"
@@ -192,20 +195,32 @@ function SearchProductCard({
         ) : null}
       </Link>
       <div className="marketplace-product-body">
-        <Link className="marketplace-product-store" to={`/stores/${product.store.slug}`}>
-          <span className="marketplace-product-store-logo">
-            {product.store.logoUrl ? (
-              <img src={product.store.logoUrl} alt="" loading="lazy" />
-            ) : (
-              product.store.name.slice(0, 1)
-            )}
-          </span>
-          <span>
-            <small>Sold by</small>
-            <strong>{product.store.name}</strong>
-          </span>
-          <ArrowRightIcon />
-        </Link>
+        {product.store ? (
+          <Link className="marketplace-product-store" to={`/stores/${product.store.slug}`}>
+            <span className="marketplace-product-store-logo">
+              {product.store.logoUrl ? (
+                <img src={product.store.logoUrl} alt="" loading="lazy" />
+              ) : (
+                product.store.name.slice(0, 1)
+              )}
+            </span>
+            <span>
+              <small>Sold by</small>
+              <strong>{product.store.name}</strong>
+            </span>
+            <ArrowRightIcon />
+          </Link>
+        ) : (
+          <div className="marketplace-product-store">
+            <span className="marketplace-product-store-logo">
+              <ShieldIcon />
+            </span>
+            <span>
+              <small>Sold by</small>
+              <strong>Campus Angadi Official</strong>
+            </span>
+          </div>
+        )}
         <span className="catalog-category">{product.storeCategoryName || 'Store product'}</span>
         <Link className="marketplace-product-title" to={`/products/${product.slug}`}>
           {product.title}
@@ -220,12 +235,20 @@ function SearchProductCard({
           <span className={product.stock > 0 ? 'is-available' : 'is-unavailable'}>
             <i /> {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
           </span>
-          <span>
-            <ClockIcon /> {product.store.deliveryTimeMinutes} min
-          </span>
-          <span>
-            <MapPinIcon /> {product.store.campusLocation || 'Campus'}
-          </span>
+          {product.store ? (
+            <>
+              <span>
+                <ClockIcon /> {product.store.deliveryTimeMinutes} min
+              </span>
+              <span>
+                <MapPinIcon /> {product.store.campusLocation || 'Campus'}
+              </span>
+            </>
+          ) : (
+            <span>
+              <ShieldIcon /> Official campus product
+            </span>
+          )}
         </div>
         <ProductActions product={product} returnTo={returnTo} />
       </div>
@@ -262,7 +285,10 @@ export function MarketplaceSearchPage() {
       if (sort === 'price_desc') return right.price - left.price
       if (sort === 'discount') return right.discountPercent - left.discountPercent
       if (sort === 'delivery') {
-        return left.store.deliveryTimeMinutes - right.store.deliveryTimeMinutes
+        return (
+          (left.store?.deliveryTimeMinutes ?? Number.MAX_SAFE_INTEGER) -
+          (right.store?.deliveryTimeMinutes ?? Number.MAX_SAFE_INTEGER)
+        )
       }
       if (left.stock > 0 !== right.stock > 0) return left.stock > 0 ? -1 : 1
       if (right.discountPercent !== left.discountPercent) {

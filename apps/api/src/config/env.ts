@@ -51,6 +51,9 @@ const envSchema = z
     GOOGLE_HOSTED_DOMAINS: csv.default(''),
     ADMIN_EMAILS: csv.default(''),
     SUPER_ADMIN_EMAILS: csv.default(''),
+    TEST_LOGIN_ENABLED: booleanFromString.default(false),
+    TEST_LOGIN_EMAIL: z.string().trim().email().optional().or(z.literal('')).default(''),
+    TEST_LOGIN_PASSWORD: z.string().optional().default(''),
     SMTP_HOST: z.string().trim().optional().default(''),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_SECURE: booleanFromString.default(false),
@@ -105,6 +108,23 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['COOKIE_SECURE'],
         message: 'Production requires secure authentication cookies.',
+      })
+    }
+    if (value.NODE_ENV === 'production' && value.TEST_LOGIN_ENABLED) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['TEST_LOGIN_ENABLED'],
+        message: 'The test login cannot be enabled in production.',
+      })
+    }
+    if (
+      value.TEST_LOGIN_ENABLED &&
+      (!value.TEST_LOGIN_EMAIL || value.TEST_LOGIN_PASSWORD.length < 12)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['TEST_LOGIN_PASSWORD'],
+        message: 'Test login requires an email and a password of at least 12 characters.',
       })
     }
     if (

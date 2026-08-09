@@ -99,18 +99,37 @@ export class OrderService {
         : product.summary.sellerType === 'ADMIN'
           ? 'ADMIN'
           : product.sellerId
-      const group = groups.get(groupKey) ?? {
+      const group: CheckoutPlanGroup = groups.get(groupKey) ?? {
         sellerType: product.summary.sellerType,
         sellerId: product.storeId
           ? product.sellerId
           : product.summary.sellerType === 'ADMIN'
             ? null
             : product.sellerId,
-        storeId: product.storeId,
+        storeId: product.storeId ?? null,
         items: [],
       }
       group.items.push({ product, quantity: selectedItem.quantity })
       groups.set(groupKey, group)
+    }
+
+    for (const group of groups.values()) {
+      if (!group.storeId) continue
+      const minimum = Math.max(
+        ...group.items.map((item) => item.product.storeMinimumOrderAmount ?? 0),
+      )
+      const subtotal = group.items.reduce(
+        (total, item) => total + item.product.summary.price * item.quantity,
+        0,
+      )
+      if (minimum > 0 && subtotal < minimum) {
+        const storeName = group.items[0]?.product.storeName ?? 'This store'
+        throw new AppError(
+          409,
+          'STORE_MINIMUM_NOT_MET',
+          `${storeName} requires a minimum order of ₹${minimum.toLocaleString('en-IN')}. Add ₹${(minimum - subtotal).toLocaleString('en-IN')} more from this store.`,
+        )
+      }
     }
 
     const result = await this.orders.createCheckout(

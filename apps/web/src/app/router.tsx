@@ -5,6 +5,7 @@ import { LoadingSkeleton } from '../components/ui/LoadingSkeleton'
 import { AccountLayout } from '../layouts/AccountLayout'
 import { AdminLayout } from '../layouts/AdminLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
+import { ScrollToTop } from '../components/accessibility/ScrollToTop'
 
 const HomePage = lazy(() =>
   import('../pages/HomePage').then((module) => ({ default: module.HomePage })),
@@ -202,15 +203,18 @@ const AdminDealersPage = lazy(() =>
 
 function page(node: ReactNode) {
   return (
-    <Suspense
-      fallback={
-        <div className="route-loading">
-          <LoadingSkeleton label="Loading page" />
-        </div>
-      }
-    >
-      {node}
-    </Suspense>
+    <>
+      <ScrollToTop />
+      <Suspense
+        fallback={
+          <div className="route-loading">
+            <LoadingSkeleton label="Loading page" />
+          </div>
+        }
+      >
+        {node}
+      </Suspense>
+    </>
   )
 }
 

@@ -4,6 +4,8 @@ const GOOGLE_SCRIPT_ID = 'google-identity-services'
 const GOOGLE_SCRIPT_URL = 'https://accounts.google.com/gsi/client'
 
 let scriptPromise: Promise<void> | null = null
+let initializedClientId: string | null = null
+let activeCredentialHandler: ((response: GoogleCredentialResponse) => void) | null = null
 
 function loadGoogleIdentityScript(): Promise<void> {
   if (window.google?.accounts.id) return Promise.resolve()
@@ -69,19 +71,28 @@ export function GoogleSignInButton({
       .then(() => {
         if (!active || !containerRef.current || !window.google?.accounts.id) return
 
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response) => {
-            if (!response.credential) {
-              onError('Google did not return a sign-in credential. Please try again.')
-              return
-            }
-            onCredential(response.credential)
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: true,
-        })
+        const credentialHandler = (response: GoogleCredentialResponse) => {
+          if (!active) return
+          if (!response.credential) {
+            onError('Google did not return a sign-in credential. Please try again.')
+            return
+          }
+          onCredential(response.credential)
+        }
+        activeCredentialHandler = credentialHandler
+
+        if (initializedClientId !== clientId) {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response) => {
+              activeCredentialHandler?.(response)
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            use_fedcm_for_prompt: true,
+          })
+          initializedClientId = clientId
+        }
 
         containerRef.current.replaceChildren()
         window.google.accounts.id.renderButton(containerRef.current, {
@@ -101,6 +112,7 @@ export function GoogleSignInButton({
 
     return () => {
       active = false
+      activeCredentialHandler = null
     }
   }, [clientId, onCredential, onError])
 

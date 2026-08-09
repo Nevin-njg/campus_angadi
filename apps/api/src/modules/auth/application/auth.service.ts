@@ -96,6 +96,21 @@ export class AuthService {
     return this.createSession(value.user.id, value.user.role, toAuthUser(value), metadata)
   }
 
+  async signInForTesting(email: string, metadata: RequestMetadata): Promise<AuthenticationResult> {
+    const value = await this.users.findByEmail(normalizeEmail(email))
+    if (!value || value.user.status !== 'ACTIVE') {
+      throw new AppError(401, 'TEST_LOGIN_INVALID', 'The test sign-in details are not valid.')
+    }
+
+    const activeUser = await this.users.recordSuccessfulLogin(value.user.id, value.user.role)
+    return this.createSession(
+      activeUser.user.id,
+      activeUser.user.role,
+      toAuthUser(activeUser),
+      metadata,
+    )
+  }
+
   async refresh(refreshToken: string): Promise<AuthenticationResult> {
     const payload = this.tokenService.verifyRefreshToken(refreshToken)
     const session = await this.sessions.findById(payload.sid)
