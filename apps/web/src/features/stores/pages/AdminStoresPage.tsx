@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useMemo, useState } from 'react'
 import { adminPlatformApi } from '../../admin/api/admin-platform.api'
 import { useConfirmation } from '../../../components/feedback/confirmation-context'
-import { storesApi } from '../api/stores.api'
+import { storesApi, type Store } from '../api/stores.api'
 
 interface CreateStoreForm {
   name: string
@@ -85,7 +85,10 @@ export function AdminStoresPage() {
 
   const removeStore = useMutation({
     mutationFn: storesApi.remove,
-    onSuccess: async () => {
+    onSuccess: async ({ id }) => {
+      queryClient.setQueryData<Store[]>(['admin', 'stores'], (current) =>
+        current?.filter((store) => store.id !== id),
+      )
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['admin', 'stores'] }),
         queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
@@ -213,7 +216,7 @@ export function AdminStoresPage() {
                     <button
                       type="button"
                       className="rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50"
-                      disabled={store.status === 'ARCHIVED' || removeStore.isPending}
+                      disabled={removeStore.isPending}
                       onClick={async () => {
                         const approved = await confirm({
                           title: `Delete ${store.name}?`,
@@ -225,7 +228,7 @@ export function AdminStoresPage() {
                         if (approved) removeStore.mutate(store.id)
                       }}
                     >
-                      {store.status === 'ARCHIVED' ? 'Deleted' : 'Delete'}
+                      Delete
                     </button>
                   </td>
                 </tr>
@@ -262,6 +265,17 @@ export function AdminStoresPage() {
           </table>
         </div>
       </div>
+
+      {removeStore.isError ? (
+        <p
+          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          {removeStore.error instanceof Error
+            ? removeStore.error.message
+            : 'The store could not be deleted.'}
+        </p>
+      ) : null}
 
       {isCreateOpen && (
         <div

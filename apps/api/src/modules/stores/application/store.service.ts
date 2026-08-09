@@ -358,12 +358,11 @@ export class StoreService {
       { storeId: store._id, deletedAt: null },
       { $set: { deletedAt: now, deletedBy: actorId, status: 'DELETED', published: false } },
     )
-    store.status = 'ARCHIVED'
-    await store.save()
     await UserModel.updateOne(
       { _id: store.sellerId, role: 'SELLER' },
       { $set: { role: 'USER', canSell: true } },
     )
+    await StoreModel.deleteOne({ _id: store._id })
     return { id: String(store._id) }
   }
 

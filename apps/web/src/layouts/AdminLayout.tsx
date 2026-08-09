@@ -108,6 +108,12 @@ export function AdminLayout() {
       ]
     : navigation
 
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.add('admin-dark')
+    return () => root.classList.remove('admin-dark')
+  }, [])
+
   useEffect(() => setMenuOpen(false), [location.pathname])
 
   useEffect(() => {
