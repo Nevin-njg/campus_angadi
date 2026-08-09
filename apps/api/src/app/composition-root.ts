@@ -7,7 +7,6 @@ import { GoogleIdentityTokenVerifier } from '../infrastructure/google/google-ide
 import { AuthService } from '../modules/auth/application/auth.service.js'
 import { AccessRequestService } from '../modules/auth/application/access-request.service.js'
 import { ConsoleEmailSender } from '../infrastructure/email/console-email.sender.js'
-import { SmtpEmailSender } from '../infrastructure/email/smtp-email.sender.js'
 import { MongooseSessionRepository } from '../modules/auth/infrastructure/mongoose-session.repository.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
 import { MongooseUserRepository } from '../modules/users/infrastructure/mongoose-user.repository.js'
@@ -59,17 +58,7 @@ export function createCompositionRoot() {
 
   const redis = createRedis(env.REDIS_URL, logger)
   const googleIdentity = new GoogleIdentityTokenVerifier(env.GOOGLE_CLIENT_ID)
-  const emailSender = env.SMTP_HOST
-    ? new SmtpEmailSender(
-        env.SMTP_HOST,
-        env.SMTP_PORT,
-        env.SMTP_SECURE,
-        env.SMTP_USER,
-        env.SMTP_PASSWORD,
-        env.SMTP_FROM_NAME,
-        env.SMTP_FROM_EMAIL,
-      )
-    : new ConsoleEmailSender(logger)
+  const emailSender = new ConsoleEmailSender(logger)
 
   const authService = new AuthService(users, sessions, googleIdentity, tokenService, {
     allowedEmailDomains: env.ALLOWED_EMAIL_DOMAINS,
