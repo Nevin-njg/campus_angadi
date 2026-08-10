@@ -10,45 +10,80 @@ export default tseslint.config(
       '**/dist/**',
       '**/coverage/**',
       '**/node_modules/**',
+      '.patch-backups/**',
+      'apps/api/check-*.ts',
       'reference/**',
       'eslint.config.js',
       '**/*.config.*',
       '**/postcss.config.cjs',
     ],
   },
+
   eslint.configs.recommended,
+
   ...tseslint.configs.recommendedTypeChecked,
+
   {
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['scripts/*.mjs'] },
+        projectService: {
+          allowDefaultProject: ['scripts/*.mjs'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
-      globals: { ...globals.node, ...globals.browser },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
     },
+
     rules: {
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+        },
+      ],
+
       '@typescript-eslint/no-misused-promises': [
         'error',
         {
           // React supports async event callbacks. They are intentionally ignored by React,
           // while no-floating-promises continues to protect promises created elsewhere.
-          checksVoidReturn: { arguments: false, attributes: false },
+          checksVoidReturn: {
+            arguments: false,
+            attributes: false,
+          },
         },
       ],
+
       '@typescript-eslint/no-floating-promises': 'error',
     },
   },
+
   {
     files: ['apps/web/**/*.{ts,tsx}'],
-    plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
+
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+
+      'react-refresh/only-export-components': [
+        'warn',
+        {
+          allowConstantExport: true,
+        },
+      ],
     },
   },
+
   {
     files: ['**/*.test.{ts,tsx}', '**/test/**/*.{ts,tsx}'],
+
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
