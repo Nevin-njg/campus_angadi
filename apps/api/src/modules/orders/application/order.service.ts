@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type {
+  AdminOrderDetail,
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
@@ -21,11 +22,11 @@ import type { NotificationRepository } from '../../notifications/domain/notifica
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  WAITING_FOR_DEALER_ASSIGNMENT: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  AWAITING_TEAM_CONFIRMATION: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
+  WAITING_FOR_DEALER_ASSIGNMENT: ['CANCELLED', 'REJECTED'],
+  AWAITING_TEAM_CONFIRMATION: ['CONTACTED', 'CONFIRMED', 'CANCELLED', 'REJECTED'],
   CONTACTED: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
-  CONFIRMED: ['COMPLETED', 'CANCELLED'],
-  PREPARING: ['COMPLETED', 'CANCELLED'],
+  CONFIRMED: ['PREPARING', 'CANCELLED'],
+  PREPARING: ['READY_FOR_PICKUP', 'CANCELLED'],
   READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
   COMPLETED: [],
   CANCELLED: [],
@@ -36,7 +37,6 @@ const USER_CANCELLABLE: readonly OrderStatus[] = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
   'AWAITING_TEAM_CONFIRMATION',
-  'CONTACTED',
 ]
 
 export class OrderService {
@@ -94,42 +94,14 @@ export class OrderService {
           'You cannot purchase your own listing.',
         )
       }
-      const groupKey = product.storeId
-        ? `STORE:${product.storeId}`
-        : product.summary.sellerType === 'ADMIN'
-          ? 'ADMIN'
-          : product.sellerId
-      const group: CheckoutPlanGroup = groups.get(groupKey) ?? {
+      const groupKey = product.summary.sellerType === 'ADMIN' ? 'ADMIN' : product.sellerId
+      const group = groups.get(groupKey) ?? {
         sellerType: product.summary.sellerType,
-        sellerId: product.storeId
-          ? product.sellerId
-          : product.summary.sellerType === 'ADMIN'
-            ? null
-            : product.sellerId,
-        storeId: product.storeId ?? null,
+        sellerId: product.summary.sellerType === 'ADMIN' ? null : product.sellerId,
         items: [],
       }
       group.items.push({ product, quantity: selectedItem.quantity })
       groups.set(groupKey, group)
-    }
-
-    for (const group of groups.values()) {
-      if (!group.storeId) continue
-      const minimum = Math.max(
-        ...group.items.map((item) => item.product.storeMinimumOrderAmount ?? 0),
-      )
-      const subtotal = group.items.reduce(
-        (total, item) => total + item.product.summary.price * item.quantity,
-        0,
-      )
-      if (minimum > 0 && subtotal < minimum) {
-        const storeName = group.items[0]?.product.storeName ?? 'This store'
-        throw new AppError(
-          409,
-          'STORE_MINIMUM_NOT_MET',
-          `${storeName} requires a minimum order of ₹${minimum.toLocaleString('en-IN')}. Add ₹${(minimum - subtotal).toLocaleString('en-IN')} more from this store.`,
-        )
-      }
     }
 
     const result = await this.orders.createCheckout(
@@ -139,21 +111,10 @@ export class OrderService {
       [...groups.values()],
       cartIdToClear,
     )
-    const assignedContacts = result.orders
-      .flatMap((order) => (order.assignedDealer ? [order.assignedDealer] : []))
-      .filter(
-        (contact, index, contacts) =>
-          contacts.findIndex((candidate) => candidate.id === contact.id) === index,
-      )
-    const contactMessage = assignedContacts.length
-      ? ` Your order contact${assignedContacts.length === 1 ? ' is' : 's are'} ${assignedContacts
-          .map((contact) => `${contact.displayName} (${contact.phoneNumber})`)
-          .join(', ')}.`
-      : ' An administrator will assign an order contact shortly.'
     await this.notifications?.sendToUser(buyerId, {
       type: 'ORDER',
       title: 'Order created',
-      message: `${result.orders.length} order${result.orders.length === 1 ? '' : 's'} created successfully.${contactMessage}`,
+      message: `${result.orders.length} order${result.orders.length === 1 ? '' : 's'} created successfully.`,
       referenceType: 'CHECKOUT',
       referenceId: result.checkoutGroupId,
     })
@@ -202,11 +163,14 @@ export class OrderService {
   listAdmin(
     query: AdminOrderListQuery,
     actor?: { id: string; role: UserRole },
-  ): Promise<PaginatedResult<OrderDetail>> {
+  ): Promise<PaginatedResult<AdminOrderDetail>> {
     return this.orders.listAdmin(query, actor?.role === 'MODERATOR' ? actor.id : undefined)
   }
 
-  async getAdmin(orderId: string, actor?: { id: string; role: UserRole }): Promise<OrderDetail> {
+  async getAdmin(
+    orderId: string,
+    actor?: { id: string; role: UserRole },
+  ): Promise<AdminOrderDetail> {
     const order = await this.orders.findAdminById(
       orderId,
       actor?.role === 'MODERATOR' ? actor.id : undefined,
@@ -219,8 +183,8 @@ export class OrderService {
     const order = await this.orders.assignDealer(orderId, actorId, input)
     await this.notifications?.sendToUser(order.buyerId, {
       type: 'ORDER',
-      title: 'Order contact assigned',
-      message: `${order.assignedDealer?.displayName ?? 'A Campus Angadi contact'} is ready to coordinate order ${order.orderNumber}.`,
+      title: 'Sales dealer assigned',
+      message: `${order.assignedDealer?.displayName ?? 'A sales dealer'} is ready to assist with order ${order.orderNumber}.`,
       referenceType: 'ORDER',
       referenceId: order.id,
     })

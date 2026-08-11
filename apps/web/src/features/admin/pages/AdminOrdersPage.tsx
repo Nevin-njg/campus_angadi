@@ -1,6 +1,5 @@
 import type { OrderStatus, SellerType } from '@campusbaza/contracts'
 import { useQuery } from '@tanstack/react-query'
-import { useRef } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { PackageIcon } from '../../../components/ui/icons'
 import { ordersApi } from '../../orders/api/orders.api'
@@ -19,8 +18,6 @@ export function AdminOrdersPage() {
   const moderatorView = useAuthStore((state) => state.user?.role === 'MODERATOR')
   const mediatorPage = useLocation().pathname.includes('/admin/mediator')
   const [params, setParams] = useSearchParams()
-  const latestParams = useRef(params)
-  latestParams.current = params
   const q = params.get('q') ?? ''
   const status = (params.get('status') || undefined) as OrderStatus | undefined
   const sellerType = (params.get('sellerType') || undefined) as SellerType | undefined
@@ -35,12 +32,11 @@ export function AdminOrdersPage() {
   })
 
   const update = (values: Record<string, string>) => {
-    const next = new URLSearchParams(latestParams.current)
+    const next = new URLSearchParams(params)
     Object.entries(values).forEach(([key, value]) =>
       value ? next.set(key, value) : next.delete(key),
     )
     next.delete('page')
-    latestParams.current = next
     setParams(next)
   }
 
@@ -60,8 +56,8 @@ export function AdminOrdersPage() {
           <p className="text-gray-400 text-lg">
             {moderatorView || mediatorPage
               ? moderatorView
-                ? 'Coordinate the orders assigned to your contact profile.'
-                : 'Assign contacts and coordinate every active order.'
+                ? 'Open the buyer and seller conversations assigned to you.'
+                : 'Coordinate buyers and sellers across every active second-hand order.'
               : 'Manage and monitor marketplace transactions.'}
           </p>
         </div>
@@ -69,29 +65,34 @@ export function AdminOrdersPage() {
 
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row gap-4 flex-wrap">
         <input
-          aria-label="Search orders"
           className={`${inputClass} flex-1 min-w-[250px]`}
-          placeholder="Order number, buyer or phone"
+          placeholder="Order number, buyer, seller or phone"
           value={q}
           onChange={(event) => update({ q: event.target.value })}
         />
         <select
-          aria-label="Filter orders by status"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={status ?? ''}
           onChange={(event) => update({ status: event.target.value })}
         >
           <option value="">All statuses</option>
-          {(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED'] as OrderStatus[]).map(
-            (value) => (
-              <option key={value} value={value}>
-                {value.replaceAll('_', ' ')}
-              </option>
-            ),
-          )}
+          {(
+            [
+              'PENDING',
+              'CONFIRMED',
+              'PREPARING',
+              'READY_FOR_PICKUP',
+              'COMPLETED',
+              'CANCELLED',
+              'REJECTED',
+            ] as OrderStatus[]
+          ).map((value) => (
+            <option key={value} value={value}>
+              {value.replaceAll('_', ' ')}
+            </option>
+          ))}
         </select>
         <select
-          aria-label="Filter orders by seller type"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={sellerType ?? ''}
           onChange={(event) => update({ sellerType: event.target.value })}
@@ -101,14 +102,13 @@ export function AdminOrdersPage() {
           <option value="USER">Second-hand</option>
         </select>
         <select
-          aria-label="Filter orders by assignment"
           className={`${inputClass} appearance-none min-w-[180px]`}
           value={assignment ?? ''}
           onChange={(event) => update({ assignment: event.target.value })}
         >
           <option value="">All assignments</option>
-          <option value="ASSIGNED">Contact assigned</option>
-          <option value="UNASSIGNED">Waiting for contact</option>
+          <option value="ASSIGNED">Dealer assigned</option>
+          <option value="UNASSIGNED">Waiting for dealer</option>
         </select>
       </div>
 
@@ -128,6 +128,9 @@ export function AdminOrdersPage() {
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Buyer
+                </th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  Seller
                 </th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Type
@@ -163,6 +166,26 @@ export function AdminOrdersPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <strong className="text-white font-medium block">{order.fullName}</strong>
                     <small className="text-gray-400">{order.phoneNumber}</small>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {order.sellerType === 'USER' ? (
+                      order.sellerContact ? (
+                        <>
+                          <strong className="text-white font-medium block">
+                            {order.sellerContact.displayName}
+                          </strong>
+                          <small className="text-gray-400 block">
+                            {order.sellerContact.phoneNumber ??
+                              order.sellerContact.email ??
+                              'No contact added'}
+                          </small>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Seller unavailable</span>
+                      )
+                    ) : (
+                      <span className="text-gray-500 text-sm">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -202,7 +225,7 @@ export function AdminOrdersPage() {
               ))}
               {orders.data && !orders.data.items.length && !orders.isLoading && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
                       <PackageIcon />
                     </div>

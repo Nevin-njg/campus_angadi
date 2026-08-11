@@ -720,6 +720,19 @@ export const orderDetailSchema = orderSummarySchema.extend({
   completedAt: z.string().nullable(),
 })
 
+export const orderPartyContactSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  phoneNumber: z.string().nullable(),
+  email: z.string().email().nullable(),
+})
+
+// Admin/moderator-only order shape.
+// Seller contact is not exposed through the normal buyer-facing OrderDetail.
+export const adminOrderDetailSchema = orderDetailSchema.extend({
+  sellerContact: orderPartyContactSchema.nullable(),
+})
+
 export const orderListQuerySchema = z
   .object({
     status: orderStatusSchema.optional(),
@@ -1167,6 +1180,8 @@ export type OrderItem = z.infer<typeof orderItemSchema>
 export type OrderStatusHistory = z.infer<typeof orderStatusHistorySchema>
 export type OrderSummary = z.infer<typeof orderSummarySchema>
 export type OrderDetail = z.infer<typeof orderDetailSchema>
+export type OrderPartyContact = z.infer<typeof orderPartyContactSchema>
+export type AdminOrderDetail = z.infer<typeof adminOrderDetailSchema>
 export type OrderListQuery = z.infer<typeof orderListQuerySchema>
 export type AdminOrderListQuery = z.infer<typeof adminOrderListQuerySchema>
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusInputSchema>

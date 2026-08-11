@@ -1,4 +1,5 @@
 import type {
+  AdminOrderDetail,
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
@@ -34,15 +35,17 @@ export const ordersApi = {
   detail: (id: string) => apiRequest<OrderDetail>(`/orders/${id}`),
   cancel: (id: string, input: CancelOrderInput) =>
     apiRequest<OrderDetail>(`/orders/${id}/cancel`, { method: 'POST', body: input }),
-  async adminList(query: AdminOrderListQuery): Promise<PaginatedResult<OrderDetail>> {
-    const envelope = await apiRequestEnvelope<OrderDetail[]>(`/admin/orders${queryString(query)}`)
+  async adminList(query: AdminOrderListQuery): Promise<PaginatedResult<AdminOrderDetail>> {
+    const envelope = await apiRequestEnvelope<AdminOrderDetail[]>(
+      `/admin/orders${queryString(query)}`,
+    )
     return { items: envelope.data, meta: envelope.meta! }
   },
-  adminDetail: (id: string) => apiRequest<OrderDetail>(`/admin/orders/${id}`),
+  adminDetail: (id: string) => apiRequest<AdminOrderDetail>(`/admin/orders/${id}`),
   assignDealer: (id: string, input: AssignOrderDealerInput) =>
-    apiRequest<OrderDetail>(`/admin/orders/${id}/dealer`, { method: 'PATCH', body: input }),
+    apiRequest<AdminOrderDetail>(`/admin/orders/${id}/dealer`, { method: 'PATCH', body: input }),
   assignModerator: (id: string, input: AssignOrderModeratorInput) =>
-    apiRequest<OrderDetail>(`/admin/orders/${id}/moderator`, { method: 'PATCH', body: input }),
+    apiRequest<AdminOrderDetail>(`/admin/orders/${id}/moderator`, { method: 'PATCH', body: input }),
   updateStatus: (id: string, input: UpdateOrderStatusInput) =>
-    apiRequest<OrderDetail>(`/admin/orders/${id}/status`, { method: 'PATCH', body: input }),
+    apiRequest<AdminOrderDetail>(`/admin/orders/${id}/status`, { method: 'PATCH', body: input }),
 }

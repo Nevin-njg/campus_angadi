@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type {
+  AdminOrderDetail,
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
@@ -20,7 +21,6 @@ import { CartModel } from '../../cart/infrastructure/cart.model.js'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { ProductModel } from '../../products/infrastructure/product.models.js'
 import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
-import { StoreModel } from '../../stores/infrastructure/store.model.js'
 import {
   DealerAssignmentHistoryModel,
   DealerModel,
@@ -103,56 +103,30 @@ export class MongooseOrderRepository implements OrderRepository {
         )
         const sellerIds = [...new Set(currentProducts.map((product) => String(product.sellerId)))]
         const categoryIds = [
-          ...new Set(
-            currentProducts
-              .filter((product) => !product.storeId)
-              .map((product) => String(product.categoryId)),
-          ),
+          ...new Set(currentProducts.map((product) => String(product.categoryId))),
         ]
-        const storeIds = [
-          ...new Set(
-            currentProducts
-              .filter((product) => product.storeId)
-              .map((product) => String(product.storeId)),
-          ),
-        ]
-        const [activeSellers, activeCategories, activeStores] = await Promise.all([
+        const [activeSellers, activeCategories] = await Promise.all([
           UserModel.find({ _id: { $in: sellerIds }, status: 'ACTIVE' })
             .session(session)
             .distinct('_id'),
           CategoryModel.find({ _id: { $in: categoryIds }, isActive: true, deletedAt: null })
             .session(session)
             .distinct('_id'),
-          StoreModel.find({ _id: { $in: storeIds }, status: 'ACTIVE' })
-            .session(session)
-            .lean<Record<string, unknown>[]>(),
         ])
         const activeSellerSet = new Set(activeSellers.map(String))
         const activeCategorySet = new Set(activeCategories.map(String))
-        const activeStoreCategorySet = new Set(
-          activeStores.flatMap((store) =>
-            ((store.categories as Array<Record<string, unknown>> | undefined) ?? [])
-              .filter((category) => category.isActive)
-              .map((category) => `${String(store._id)}:${String(category._id)}`),
-          ),
-        )
 
         for (const group of groups) {
           let subtotal = 0
           for (const item of group.items) {
             const current = productById.get(item.product.summary.id)
-            const categoryAvailable = current?.storeId
-              ? activeStoreCategorySet.has(
-                  `${objectIdToString(current.storeId) ?? ''}:${objectIdToString(current.storeCategoryId) ?? ''}`,
-                )
-              : activeCategorySet.has(String(current?.categoryId))
             if (
               !current ||
               current.status !== 'APPROVED' ||
               !current.published ||
               Number(current.price) !== item.product.summary.price ||
               !activeSellerSet.has(String(current.sellerId)) ||
-              !categoryAvailable ||
+              !activeCategorySet.has(String(current.categoryId)) ||
               (current.sellerType === 'USER' && String(current.sellerId) === buyerId)
             ) {
               throw new AppError(
@@ -197,8 +171,7 @@ export class MongooseOrderRepository implements OrderRepository {
                 buyerId,
                 sellerType: group.sellerType,
                 sellerId: group.sellerId,
-                storeId: group.storeId,
-                status: 'PENDING',
+                status: 'WAITING_FOR_DEALER_ASSIGNMENT',
                 subtotal,
                 totalAmount: subtotal,
                 itemCount: group.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -217,7 +190,9 @@ export class MongooseOrderRepository implements OrderRepository {
           if (!order) throw new Error('Unable to create order')
           const orderId = String(order._id)
           const dealer = await this.acquireAutomaticDealer(session)
-          const initialStatus: OrderStatus = 'PENDING'
+          const initialStatus: OrderStatus = dealer
+            ? 'AWAITING_TEAM_CONFIRMATION'
+            : 'WAITING_FOR_DEALER_ASSIGNMENT'
           if (dealer) {
             await OrderModel.updateOne(
               { _id: orderId },
@@ -275,8 +250,8 @@ export class MongooseOrderRepository implements OrderRepository {
                 fromStatus: null,
                 toStatus: initialStatus,
                 note: dealer
-                  ? 'Order created and assigned to a Campus Angadi contact.'
-                  : 'Order created and waiting for an available Campus Angadi contact.',
+                  ? 'Order created and assigned to a sales dealer.'
+                  : 'Order created and waiting for an available sales dealer.',
                 actorId: buyerId,
               },
             ],
@@ -325,7 +300,7 @@ export class MongooseOrderRepository implements OrderRepository {
   async listAdmin(
     query: AdminOrderListQuery,
     moderatorId?: string,
-  ): Promise<PaginatedResult<OrderDetail>> {
+  ): Promise<PaginatedResult<AdminOrderDetail>> {
     const filter: Record<string, unknown> = moderatorId ? { assignedModeratorId: moderatorId } : {}
     if (query.status) filter.status = query.status
     if (query.sellerType) filter.sellerType = query.sellerType
@@ -334,17 +309,60 @@ export class MongooseOrderRepository implements OrderRepository {
     if (query.assignment === 'UNASSIGNED') filter.assignedDealerId = null
     if (query.q) {
       const regex = new RegExp(escapeRegex(query.q), 'i')
-      filter.$or = [{ orderNumber: regex }, { fullName: regex }, { phoneNumber: regex }]
+      const [matchingProfiles, matchingUsers] = await Promise.all([
+        UserProfileModel.find({
+          $or: [{ fullName: regex }, { displayName: regex }, { phoneNumber: regex }],
+        })
+          .select({ userId: 1 })
+          .limit(100)
+          .lean<Record<string, unknown>[]>(),
+        UserModel.find({ email: regex })
+          .select({ _id: 1 })
+          .limit(100)
+          .lean<Record<string, unknown>[]>(),
+      ])
+      const sellerIds = [
+        ...new Set([
+          ...matchingProfiles.map((profile) => String(profile.userId)),
+          ...matchingUsers.map((user) => String(user._id)),
+        ]),
+      ]
+      filter.$or = [
+        { orderNumber: regex },
+        { fullName: regex },
+        { phoneNumber: regex },
+        ...(sellerIds.length ? [{ sellerType: 'USER', sellerId: { $in: sellerIds } }] : []),
+      ]
     }
-    return this.list(filter, query.page, query.limit)
+
+    const skip = (query.page - 1) * query.limit
+    const [documents, total] = await Promise.all([
+      OrderModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(query.limit)
+        .lean<Record<string, unknown>[]>(),
+      OrderModel.countDocuments(filter),
+    ])
+    return {
+      items: await this.hydrateAdminOrders(documents),
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.ceil(total / query.limit),
+      },
+    }
   }
 
-  async findAdminById(orderId: string, moderatorId?: string): Promise<OrderDetail | null> {
+  async findAdminById(orderId: string, moderatorId?: string): Promise<AdminOrderDetail | null> {
     const document = await OrderModel.findOne({
       _id: orderId,
       ...(moderatorId ? { assignedModeratorId: moderatorId } : {}),
     }).lean<Record<string, unknown>>()
-    return document ? this.hydrateOrder(document) : null
+    if (!document) return null
+    const [hydrated] = await this.hydrateAdminOrders([document])
+    return hydrated ?? null
   }
 
   async assignDealer(
@@ -503,7 +521,9 @@ export class MongooseOrderRepository implements OrderRepository {
         'The order is unavailable or its conversation is already closed.',
       )
     }
-    return this.hydrateOrder(updated)
+    const [hydrated] = await this.hydrateAdminOrders([updated])
+    if (!hydrated) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
+    return hydrated
   }
 
   async transition(
@@ -727,6 +747,63 @@ export class MongooseOrderRepository implements OrderRepository {
     const details = await Promise.all(documents.map((document) => this.hydrateOrder(document)))
     const byId = new Map(details.map((order) => [order.id, order]))
     return ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []))
+  }
+
+  private async hydrateAdminOrders(
+    documents: Record<string, unknown>[],
+  ): Promise<AdminOrderDetail[]> {
+    const sellerIds = [
+      ...new Set(
+        documents
+          .filter((document) => document.sellerType === 'USER')
+          .map((document) => objectIdToString(document.sellerId))
+          .filter((sellerId): sellerId is string => Boolean(sellerId)),
+      ),
+    ]
+
+    const [details, users, profiles] = await Promise.all([
+      Promise.all(documents.map((document) => this.hydrateOrder(document))),
+      sellerIds.length
+        ? UserModel.find({ _id: { $in: sellerIds } }).lean<Record<string, unknown>[]>()
+        : Promise.resolve([] as Record<string, unknown>[]),
+      sellerIds.length
+        ? UserProfileModel.find({ userId: { $in: sellerIds } }).lean<Record<string, unknown>[]>()
+        : Promise.resolve([] as Record<string, unknown>[]),
+    ])
+
+    const userById = new Map(users.map((user) => [String(user._id), user]))
+    const profileByUserId = new Map(profiles.map((profile) => [String(profile.userId), profile]))
+
+    return details.map((order) => {
+      if (order.sellerType !== 'USER' || !order.sellerId) {
+        return { ...order, sellerContact: null }
+      }
+
+      const user = userById.get(order.sellerId)
+      const profile = profileByUserId.get(order.sellerId)
+      if (!user) return { ...order, sellerContact: null }
+
+      const email = typeof user.email === 'string' ? user.email : null
+      const displayName =
+        (typeof profile?.displayName === 'string' && profile.displayName.trim()) ||
+        (typeof profile?.fullName === 'string' && profile.fullName.trim()) ||
+        email?.split('@')[0] ||
+        'Second-hand seller'
+      const phoneNumber =
+        typeof profile?.phoneNumber === 'string' && profile.phoneNumber.trim()
+          ? profile.phoneNumber
+          : null
+
+      return {
+        ...order,
+        sellerContact: {
+          id: order.sellerId,
+          displayName,
+          phoneNumber,
+          email,
+        },
+      }
+    })
   }
 
   private async hydrateOrder(document: Record<string, unknown>): Promise<OrderDetail> {

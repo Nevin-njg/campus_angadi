@@ -1,4 +1,5 @@
 import type {
+  AdminOrderDetail,
   AdminOrderListQuery,
   AssignOrderDealerInput,
   AssignOrderModeratorInput,
@@ -19,7 +20,6 @@ export interface CheckoutPlanItem {
 export interface CheckoutPlanGroup {
   sellerType: 'ADMIN' | 'USER'
   sellerId: string | null
-  storeId: string | null
   items: CheckoutPlanItem[]
 }
 
@@ -33,8 +33,11 @@ export interface OrderRepository {
   ): Promise<CheckoutResult>
   listOwned(buyerId: string, query: OrderListQuery): Promise<PaginatedResult<OrderDetail>>
   findOwnedById(orderId: string, buyerId: string): Promise<OrderDetail | null>
-  listAdmin(query: AdminOrderListQuery, moderatorId?: string): Promise<PaginatedResult<OrderDetail>>
-  findAdminById(orderId: string, moderatorId?: string): Promise<OrderDetail | null>
+  listAdmin(
+    query: AdminOrderListQuery,
+    moderatorId?: string,
+  ): Promise<PaginatedResult<AdminOrderDetail>>
+  findAdminById(orderId: string, moderatorId?: string): Promise<AdminOrderDetail | null>
   assignDealer(
     orderId: string,
     actorId: string,
