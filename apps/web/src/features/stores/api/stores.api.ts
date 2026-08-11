@@ -116,6 +116,45 @@ export interface SellerOverview {
   recentOrders: SellerOrder[]
 }
 
+export interface StoreFinanceOverview {
+  orderValue: number
+  confirmedValue: number
+  completedSales: number
+  cancelledValue: number
+  activeOrderValue: number
+  orderCount: number
+  activeOrderCount: number
+  completedOrderCount: number
+  cancelledOrderCount: number
+  averageCompletedOrder: number
+  commissionPercent: number
+  commissionAmount: number
+  storeEarnings: number
+}
+
+export interface StoreMonthlySettlement {
+  month: string
+  grossSales: number
+  completedOrderCount: number
+  averageOrder: number
+  commissionPercent: number
+  commissionAmount: number
+  payableToStore: number
+  status: 'PENDING' | 'SETTLED'
+  settledAt: string | null
+  usesSnapshot: boolean
+}
+
+export interface StoreFinance {
+  storeId: string
+  month: string
+  currentMonth: string
+  periodClosed: boolean
+  canSettle: boolean
+  overview: StoreFinanceOverview
+  monthly: StoreMonthlySettlement
+}
+
 export interface CreateSellerProductInput {
   title: string
   description: string
@@ -150,8 +189,19 @@ export const storesApi = {
       `/stores/search${query ? `?q=${encodeURIComponent(query)}` : ''}`,
     ),
   adminList: () => apiRequest<Store[]>('/admin/stores'),
+  adminFinance: (id: string, month: string) =>
+    apiRequest<StoreFinance>(
+      `/admin/stores/${encodeURIComponent(id)}/finance?month=${encodeURIComponent(month)}`,
+    ),
   create: (body: Record<string, unknown>) =>
     apiRequest<Store>('/admin/stores', { method: 'POST', body }),
+  update: (id: string, body: Record<string, unknown>) =>
+    apiRequest<Store>(`/admin/stores/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+  settleMonth: (id: string, month: string) =>
+    apiRequest<StoreMonthlySettlement>(
+      `/admin/stores/${encodeURIComponent(id)}/settlements/${encodeURIComponent(month)}/settle`,
+      { method: 'POST' },
+    ),
   remove: (id: string) =>
     apiRequest<{ id: string }>(`/admin/stores/${encodeURIComponent(id)}`, {
       method: 'DELETE',

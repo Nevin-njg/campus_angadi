@@ -163,6 +163,7 @@ export class MongooseOrderRepository implements OrderRepository {
             subtotal += item.product.summary.price * item.quantity
           }
 
+          const isSecondHand = group.sellerType === 'USER'
           const [order] = await OrderModel.create(
             [
               {
@@ -171,7 +172,7 @@ export class MongooseOrderRepository implements OrderRepository {
                 buyerId,
                 sellerType: group.sellerType,
                 sellerId: group.sellerId,
-                status: 'WAITING_FOR_DEALER_ASSIGNMENT',
+                status: isSecondHand ? 'WAITING_FOR_DEALER_ASSIGNMENT' : 'PENDING',
                 subtotal,
                 totalAmount: subtotal,
                 itemCount: group.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -189,10 +190,12 @@ export class MongooseOrderRepository implements OrderRepository {
           )
           if (!order) throw new Error('Unable to create order')
           const orderId = String(order._id)
-          const dealer = await this.acquireAutomaticDealer(session)
-          const initialStatus: OrderStatus = dealer
-            ? 'AWAITING_TEAM_CONFIRMATION'
-            : 'WAITING_FOR_DEALER_ASSIGNMENT'
+          const dealer = isSecondHand ? await this.acquireAutomaticDealer(session) : null
+          const initialStatus: OrderStatus = isSecondHand
+            ? dealer
+              ? 'AWAITING_TEAM_CONFIRMATION'
+              : 'WAITING_FOR_DEALER_ASSIGNMENT'
+            : 'PENDING'
           if (dealer) {
             await OrderModel.updateOne(
               { _id: orderId },
@@ -249,9 +252,11 @@ export class MongooseOrderRepository implements OrderRepository {
                 orderId,
                 fromStatus: null,
                 toStatus: initialStatus,
-                note: dealer
-                  ? 'Order created and assigned to a sales dealer.'
-                  : 'Order created and waiting for an available sales dealer.',
+                note: isSecondHand
+                  ? dealer
+                    ? 'Second-hand order created and assigned to a sales dealer.'
+                    : 'Second-hand order created and waiting for an available sales dealer.'
+                  : 'Official-store order created and awaiting store confirmation.',
                 actorId: buyerId,
               },
             ],
@@ -377,6 +382,13 @@ export class MongooseOrderRepository implements OrderRepository {
           .session(session)
           .lean<Record<string, unknown>>()
         if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
+        if (order.sellerType !== 'USER') {
+          throw new AppError(
+            409,
+            'DEALER_ASSIGNMENT_NOT_ALLOWED',
+            'Dealers can only be assigned to second-hand orders.',
+          )
+        }
         if (['COMPLETED', 'CANCELLED', 'REJECTED'].includes(String(order.status))) {
           throw new AppError(
             409,
@@ -504,7 +516,11 @@ export class MongooseOrderRepository implements OrderRepository {
       String(moderator.email).split('@')[0] ??
       'Moderator'
     const updated = await OrderModel.findOneAndUpdate(
-      { _id: orderId, status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] } },
+      {
+        _id: orderId,
+        sellerType: 'USER',
+        status: { $nin: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+      },
       {
         $set: {
           assignedModeratorId: moderator._id,
@@ -518,7 +534,7 @@ export class MongooseOrderRepository implements OrderRepository {
       throw new AppError(
         409,
         'ORDER_NOT_ASSIGNABLE',
-        'The order is unavailable or its conversation is already closed.',
+        'Only active second-hand orders can be assigned to a moderator.',
       )
     }
     const [hydrated] = await this.hydrateAdminOrders([updated])

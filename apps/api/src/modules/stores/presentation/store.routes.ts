@@ -2,6 +2,10 @@ import { Router, type RequestHandler } from 'express'
 import { asyncHandler } from '../../../core/http/async-handler.js'
 import { requireRoles } from '../../../core/middleware/authenticate.js'
 import type { StoreService } from '../application/store.service.js'
+import {
+  getAdminStoreFinance,
+  settleAdminStoreMonth,
+} from '../application/store-finance.service.js'
 
 function requestText(value: unknown, key: string): string {
   if (typeof value !== 'object' || value === null) return ''
@@ -54,6 +58,33 @@ export function createAdminStoreRouter(service: StoreService, authenticate: Requ
         success: true,
         message: 'Stores retrieved.',
         data: await service.adminList(),
+      })
+    }),
+  )
+  router.get(
+    '/:id/finance',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store finance retrieved.',
+        data: await getAdminStoreFinance(
+          String(request.params.id),
+          requestText(request.query, 'month'),
+        ),
+      })
+    }),
+  )
+  router.post(
+    '/:id/settlements/:month/settle',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store month settled.',
+        data: await settleAdminStoreMonth(
+          String(request.params.id),
+          String(request.params.month),
+          request.auth!.user.id,
+        ),
       })
     }),
   )

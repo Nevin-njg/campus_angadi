@@ -325,15 +325,21 @@ export function AdminOrderDetailPage() {
 
           <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white">Order mediator</h2>
-              {data.assignedDealer ? (
+              <h2 className="text-xl font-bold text-white">
+                {data.sellerType === 'USER' ? 'Order mediator' : 'Official order handling'}
+              </h2>
+              {data.sellerType === 'USER' && data.assignedDealer ? (
                 <Link className="button button-primary" to={`/admin/orders/${id}/chat`}>
                   <MessageIcon /> Open chat
                 </Link>
               ) : null}
             </div>
 
-            {data.assignedDealer ? (
+            {data.sellerType === 'ADMIN' ? (
+              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-6 text-blue-300 text-sm font-medium">
+                Official-store orders are handled by the store. No dealer or mediator is assigned.
+              </div>
+            ) : data.assignedDealer ? (
               <div className="flex items-center gap-4 bg-green-500/10 border border-green-500/20 p-4 rounded-xl mb-6">
                 <div className="text-green-400">
                   <MessageIcon />
@@ -351,7 +357,9 @@ export function AdminOrderDetailPage() {
               </div>
             )}
 
-            {!moderatorView && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(data.status) && (
+            {data.sellerType === 'USER' &&
+              !moderatorView &&
+              !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(data.status) && (
               <div className="space-y-4">
                 <label className={labelClass}>
                   Assign a specific dealer

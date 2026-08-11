@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useMemo, useState } from 'react'
 import { adminPlatformApi } from '../../admin/api/admin-platform.api'
 import { useConfirmation } from '../../../components/feedback/confirmation-context'
+import { AdminStoreFinanceModal } from '../components/AdminStoreFinanceModal'
 import { storesApi, type Store } from '../api/stores.api'
 
 interface CreateStoreForm {
@@ -31,6 +32,7 @@ export function AdminStoresPage() {
   const [ownerSearch, setOwnerSearch] = useState('')
   const [form, setForm] = useState<CreateStoreForm>(initialForm)
   const [formError, setFormError] = useState<string | null>(null)
+  const [financeStore, setFinanceStore] = useState<Store | null>(null)
 
   const storesQuery = useQuery({
     queryKey: ['admin', 'stores'],
@@ -156,7 +158,7 @@ export function AdminStoresPage() {
           </span>
           <h1 className="mb-2 text-4xl font-extrabold tracking-tight text-white">Stores</h1>
           <p className="max-w-2xl text-lg text-gray-400">
-            Create stores, assign one shop owner, and manage store-specific commission.
+            Create stores, manage commission, track revenue, and close monthly settlements.
           </p>
         </div>
         <button
@@ -213,6 +215,13 @@ export function AdminStoresPage() {
                     <small className="text-gray-500">{store.sellerId}</small>
                   </td>
                   <td className="px-6 py-5">
+                    <button
+                      type="button"
+                      onClick={() => setFinanceStore(store)}
+                      className="mr-2 rounded-lg border border-amber-500/30 px-3 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/10"
+                    >
+                      Finances
+                    </button>
                     <button
                       type="button"
                       className="rounded-lg border border-red-500/30 px-3 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:opacity-50"
@@ -277,6 +286,9 @@ export function AdminStoresPage() {
         </p>
       ) : null}
 
+      {financeStore ? (
+        <AdminStoreFinanceModal store={financeStore} onClose={() => setFinanceStore(null)} />
+      ) : null}
       {isCreateOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"

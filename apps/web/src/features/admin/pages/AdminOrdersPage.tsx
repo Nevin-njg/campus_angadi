@@ -202,7 +202,9 @@ export function AdminOrdersPage() {
                     <OrderStatusBadge status={order.status} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {order.assignedDealer ? (
+                    {order.sellerType === 'ADMIN' ? (
+                      <span className="text-gray-500 text-sm">—</span>
+                    ) : order.assignedDealer ? (
                       <span className="text-white font-medium">
                         {order.assignedDealer.displayName}
                       </span>
