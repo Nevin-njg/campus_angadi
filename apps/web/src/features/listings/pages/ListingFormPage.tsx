@@ -401,16 +401,28 @@ export function ListingFormPage() {
               <strong>{keepImageIds.length + files.length} / 8</strong>
               <span>images selected</span>
             </div>
-            <label className="file-drop-field">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                onChange={selectFiles}
-              />
-              <strong>Choose product images</strong>
-              <span>Images upload securely when you submit the form.</span>
-            </label>
+            <div className="listing-image-source-actions">
+              <label className="file-drop-field listing-camera-field">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  onChange={selectFiles}
+                />
+                <strong>Take a photo</strong>
+                <span>Open your rear camera and add the photo to this listing.</span>
+              </label>
+              <label className="file-drop-field">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={selectFiles}
+                />
+                <strong>Upload from device</strong>
+                <span>Choose one or more existing photos. You can keep up to 8 images.</span>
+              </label>
+            </div>
           </div>
 
           {message ? <div className="form-alert">{message}</div> : null}

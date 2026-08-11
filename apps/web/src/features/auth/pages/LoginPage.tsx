@@ -101,134 +101,209 @@ export function LoginPage() {
   }
 
   return (
-    <div className="simple-auth-page">
-      <header className="simple-auth-header">
+    <div className="simple-auth-page professional-auth-page">
+      <header className="simple-auth-header professional-auth-header">
         <BrandLogo />
-        <Link className="simple-auth-back" to="/" aria-label="Back to marketplace">
+        <Link className="simple-auth-back professional-auth-back" to="/" aria-label="Back to marketplace">
           <span className="simple-auth-back-full">Back to marketplace</span>
           <span className="simple-auth-back-short" aria-hidden="true">
             Back
           </span>
         </Link>
       </header>
-      <main className="simple-auth-main">
-        <div className="simple-auth-panel">
-          <span className="simple-auth-campus">Campus marketplace</span>
-          <h1>Sign in</h1>
-          <p>Use your approved Google account to continue to Campus Angadi.</p>
-          {!requestCredential ? (
-            <GoogleSignInButton
-              clientId={webEnv.googleClientId}
-              disabled={signingIn}
-              onCredential={(credential) => void handleCredential(credential)}
-              onError={handleError}
-            />
-          ) : requestSent ? (
-            <div className="form-alert" role="status">
-              Request sent. We’ll email you after an administrator reviews it.
+
+      <main className="simple-auth-main professional-auth-main">
+        <section className="professional-auth-shell" aria-label="Campus Angadi sign in">
+          <div className="professional-auth-story">
+            <div className="professional-auth-story-copy">
+              <span className="professional-auth-kicker">NIT CALICUT · CAMPUS MARKETPLACE</span>
+              <h1>
+                Campus commerce,
+                <br />
+                <em>for the NITC community.</em>
+              </h1>
+              <p>
+                Buy from campus stores, discover second-hand listings, and manage your marketplace
+                activity through one verified account.
+              </p>
             </div>
-          ) : (
-            <form
-              className="auth-access-request"
-              onSubmit={(event) => void submitAccessRequest(event)}
-            >
-              <div className="form-alert">
-                This email needs approval. Tell us how you are connected to the campus.
+
+            <div className="professional-auth-points" aria-label="Access rules">
+              <div className="professional-auth-point">
+                <span className="professional-auth-point-number">01</span>
+                <div>
+                  <strong>NITC accounts enter directly</strong>
+                  <span>Sign in with your institutional Google account and continue.</span>
+                </div>
               </div>
-              <label>
-                Full name
-                <input
-                  required
-                  minLength={2}
-                  value={requestForm.fullName}
-                  onChange={(event) =>
-                    setRequestForm((value) => ({ ...value, fullName: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Campus affiliation
-                <input
-                  required
-                  minLength={2}
-                  placeholder="Student, alumnus, staff, vendor…"
-                  value={requestForm.affiliation}
-                  onChange={(event) =>
-                    setRequestForm((value) => ({ ...value, affiliation: event.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Why do you need access?
-                <textarea
-                  required
-                  minLength={10}
-                  rows={3}
-                  value={requestForm.reason}
-                  onChange={(event) =>
-                    setRequestForm((value) => ({ ...value, reason: event.target.value }))
-                  }
-                />
-              </label>
-              <button className="button button-primary" disabled={requesting} type="submit">
-                {requesting ? 'Sending…' : 'Request access'}
-              </button>
-              <button
-                className="button button-outline"
-                type="button"
-                onClick={() => setRequestCredential(null)}
-              >
-                Use another Google account
-              </button>
-            </form>
-          )}
-          {!requestCredential && webEnv.testLoginEnabled ? (
-            <details className="test-login-disclosure">
-              <summary>Developer test login</summary>
-              <form
-                className="auth-access-request"
-                onSubmit={(event) => void submitTestLogin(event)}
-              >
-                <label>
-                  Email
-                  <input
-                    autoComplete="username"
-                    required
-                    type="email"
-                    value={testCredentials.email}
-                    onChange={(event) =>
-                      setTestCredentials((value) => ({ ...value, email: event.target.value }))
-                    }
-                  />
-                </label>
-                <label>
-                  Password
-                  <input
-                    autoComplete="current-password"
-                    minLength={8}
-                    required
-                    type="password"
-                    value={testCredentials.password}
-                    onChange={(event) =>
-                      setTestCredentials((value) => ({ ...value, password: event.target.value }))
-                    }
-                  />
-                </label>
-                <button className="button button-outline" disabled={signingIn} type="submit">
-                  {signingIn ? 'Signing in…' : 'Sign in for testing'}
-                </button>
-              </form>
-            </details>
-          ) : null}
-          {signingIn ? <p className="auth-signing-in">Signing you in securely…</p> : null}
-          {serverError ? (
-            <div className="form-alert" role="alert">
-              {serverError}
+              <div className="professional-auth-point">
+                <span className="professional-auth-point-number">02</span>
+                <div>
+                  <strong>Other Google accounts are reviewed</strong>
+                  <span>External users can request access from a Campus Angadi administrator.</span>
+                </div>
+              </div>
             </div>
-          ) : null}
-          <p className="simple-auth-note">Your Google password is never shared with us.</p>
-        </div>
+
+            <div className="professional-auth-security">
+              <span className="professional-auth-security-dot" />
+              <span>Google verified · Campus controlled · No password stored</span>
+            </div>
+          </div>
+
+          <div className="professional-auth-form-side">
+            <div className="simple-auth-panel professional-auth-panel">
+              <div className="professional-auth-panel-mark" aria-hidden="true">
+                <span>CA</span>
+              </div>
+              <span className="simple-auth-campus professional-auth-panel-kicker">Secure access</span>
+              <h2>{requestCredential ? (requestSent ? 'Request received' : 'Request access') : 'Welcome back'}</h2>
+              <p className="professional-auth-panel-copy">
+                {requestCredential
+                  ? requestSent
+                    ? 'Your request is now waiting for an administrator review.'
+                    : 'Complete the details below so the admin team can review your access.'
+                  : 'Continue with Google to access your Campus Angadi account.'}
+              </p>
+
+              {!requestCredential ? (
+                <GoogleSignInButton
+                  clientId={webEnv.googleClientId}
+                  disabled={signingIn}
+                  onCredential={(credential) => void handleCredential(credential)}
+                  onError={handleError}
+                />
+              ) : requestSent ? (
+                <div className="form-alert professional-auth-success" role="status">
+                  <strong>Request sent successfully.</strong>
+                  <span>We’ll email you after an administrator reviews it.</span>
+                </div>
+              ) : (
+                <form
+                  className="auth-access-request professional-auth-request-form"
+                  onSubmit={(event) => void submitAccessRequest(event)}
+                >
+                  <div className="form-alert">
+                    This Google account needs approval. Tell us how you are connected to the campus.
+                  </div>
+                  <label>
+                    Full name
+                    <input
+                      required
+                      minLength={2}
+                      placeholder="Your full name"
+                      value={requestForm.fullName}
+                      onChange={(event) =>
+                        setRequestForm((value) => ({ ...value, fullName: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Campus affiliation
+                    <input
+                      required
+                      minLength={2}
+                      placeholder="Student, alumnus, staff, vendor…"
+                      value={requestForm.affiliation}
+                      onChange={(event) =>
+                        setRequestForm((value) => ({ ...value, affiliation: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Why do you need access?
+                    <textarea
+                      required
+                      minLength={10}
+                      rows={3}
+                      placeholder="Briefly explain your connection to NITC."
+                      value={requestForm.reason}
+                      onChange={(event) =>
+                        setRequestForm((value) => ({ ...value, reason: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <button className="button button-primary" disabled={requesting} type="submit">
+                    {requesting ? 'Sending…' : 'Request access'}
+                  </button>
+                  <button
+                    className="button button-outline"
+                    type="button"
+                    onClick={() => setRequestCredential(null)}
+                  >
+                    Use another Google account
+                  </button>
+                </form>
+              )}
+
+              {!requestCredential ? (
+                <div className="professional-auth-access-note">
+                  <span className="professional-auth-access-dot" />
+                  <div>
+                    <strong>NITC Google account?</strong>
+                    <span>You are automatically eligible for marketplace access.</span>
+                  </div>
+                </div>
+              ) : null}
+
+              {!requestCredential && webEnv.testLoginEnabled ? (
+                <details className="test-login-disclosure professional-test-login">
+                  <summary>Developer test login</summary>
+                  <form
+                    className="auth-access-request"
+                    onSubmit={(event) => void submitTestLogin(event)}
+                  >
+                    <label>
+                      Email
+                      <input
+                        autoComplete="username"
+                        required
+                        type="email"
+                        value={testCredentials.email}
+                        onChange={(event) =>
+                          setTestCredentials((value) => ({ ...value, email: event.target.value }))
+                        }
+                      />
+                    </label>
+                    <label>
+                      Password
+                      <input
+                        autoComplete="current-password"
+                        minLength={8}
+                        required
+                        type="password"
+                        value={testCredentials.password}
+                        onChange={(event) =>
+                          setTestCredentials((value) => ({ ...value, password: event.target.value }))
+                        }
+                      />
+                    </label>
+                    <button className="button button-outline" disabled={signingIn} type="submit">
+                      {signingIn ? 'Signing in…' : 'Sign in for testing'}
+                    </button>
+                  </form>
+                </details>
+              ) : null}
+
+              {signingIn ? <p className="auth-signing-in">Signing you in securely…</p> : null}
+              {serverError ? (
+                <div className="form-alert professional-auth-error" role="alert">
+                  {serverError}
+                </div>
+              ) : null}
+
+              <p className="simple-auth-note professional-auth-note">
+                Your Google password is never shared with Campus Angadi.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="professional-auth-footer">
+        <span>Campus Angadi · NIT Calicut</span>
+        <span>Verified campus access</span>
+      </footer>
     </div>
   )
 }

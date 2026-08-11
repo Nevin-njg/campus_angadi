@@ -1398,37 +1398,56 @@ export function SellerDashboardPage() {
               </label>
               <div className="grid gap-2 text-sm font-semibold text-zinc-300 sm:col-span-2">
                 Product image
-                <label className="group relative grid min-h-44 cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-black/20 transition hover:border-amber-500/60 hover:bg-amber-500/[0.04]">
-                  <input
-                    className="sr-only"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={selectProductImage}
-                  />
+                <div className="relative grid min-h-44 place-items-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-black/20">
                   {productImagePreview || productModal.imageUrl ? (
-                    <>
-                      <img
-                        className="absolute inset-0 h-full w-full object-cover"
-                        src={productImagePreview ?? productModal.imageUrl}
-                        alt="Product preview"
-                      />
-                      <span className="absolute inset-0 bg-black/45 opacity-0 transition group-hover:opacity-100" />
-                      <span className="relative rounded-xl bg-black/75 px-4 py-2 text-xs font-bold text-white opacity-0 shadow-xl transition group-hover:opacity-100">
-                        Change image
-                      </span>
-                    </>
+                    <img
+                      className="absolute inset-0 h-full w-full object-cover"
+                      src={productImagePreview ?? productModal.imageUrl}
+                      alt="Product preview"
+                    />
                   ) : (
                     <span className="grid place-items-center gap-2 p-6 text-center">
                       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-2xl text-amber-400">
                         +
                       </span>
-                      <strong className="text-sm text-white">Choose product image</strong>
+                      <strong className="text-sm text-white">Add a product photo</strong>
                       <span className="text-xs font-normal text-zinc-500">
                         JPEG, PNG or WebP · maximum 5 MB
                       </span>
                     </span>
                   )}
-                </label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="group flex cursor-pointer items-center justify-center gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] px-4 py-3 text-center transition hover:border-amber-500/60 hover:bg-amber-500/[0.13]">
+                    <input
+                      className="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      capture="environment"
+                      onChange={selectProductImage}
+                    />
+                    <span>
+                      <strong className="block text-sm text-amber-300">Take photo</strong>
+                      <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+                        Open the rear camera
+                      </span>
+                    </span>
+                  </label>
+                  <label className="group flex cursor-pointer items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-center transition hover:border-white/20 hover:bg-white/[0.06]">
+                    <input
+                      className="sr-only"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={selectProductImage}
+                    />
+                    <span>
+                      <strong className="block text-sm text-white">Upload image</strong>
+                      <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
+                        Choose from this device
+                      </span>
+                    </span>
+                  </label>
+                </div>
                 {productImageFile ? (
                   <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3 py-2 text-xs">
                     <span className="truncate text-emerald-300">{productImageFile.name}</span>
