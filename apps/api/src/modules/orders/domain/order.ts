@@ -20,6 +20,7 @@ export interface CheckoutPlanItem {
 export interface CheckoutPlanGroup {
   sellerType: 'ADMIN' | 'USER'
   sellerId: string | null
+  storeId: string | null
   items: CheckoutPlanItem[]
 }
 

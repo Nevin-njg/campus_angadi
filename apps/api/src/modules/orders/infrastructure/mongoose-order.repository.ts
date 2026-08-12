@@ -20,6 +20,7 @@ import { AppError } from '../../../core/errors/app-error.js'
 import { CartModel } from '../../cart/infrastructure/cart.model.js'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { ProductModel } from '../../products/infrastructure/product.models.js'
+import { StoreModel } from '../../stores/infrastructure/store.model.js'
 import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
 import {
   DealerAssignmentHistoryModel,
@@ -102,31 +103,66 @@ export class MongooseOrderRepository implements OrderRepository {
           currentProducts.map((product) => [String(product._id), product]),
         )
         const sellerIds = [...new Set(currentProducts.map((product) => String(product.sellerId)))]
-        const categoryIds = [
-          ...new Set(currentProducts.map((product) => String(product.categoryId))),
+        const storeIds = [
+          ...new Set(
+            currentProducts.flatMap((product) => {
+              const storeId = objectIdToString(product.storeId)
+              return storeId ? [storeId] : []
+            }),
+          ),
         ]
-        const [activeSellers, activeCategories] = await Promise.all([
+        const categoryIds = [
+          ...new Set(
+            currentProducts
+              .filter((product) => !objectIdToString(product.storeId))
+              .map((product) => String(product.categoryId)),
+          ),
+        ]
+        const [activeSellers, activeCategories, activeStores] = await Promise.all([
           UserModel.find({ _id: { $in: sellerIds }, status: 'ACTIVE' })
             .session(session)
             .distinct('_id'),
           CategoryModel.find({ _id: { $in: categoryIds }, isActive: true, deletedAt: null })
             .session(session)
             .distinct('_id'),
+          StoreModel.find({ _id: { $in: storeIds }, status: 'ACTIVE' })
+            .session(session)
+            .lean<Record<string, unknown>[]>(),
         ])
         const activeSellerSet = new Set(activeSellers.map(String))
         const activeCategorySet = new Set(activeCategories.map(String))
+        const activeStoreById = new Map(
+          activeStores.map((store) => [String(store._id), store]),
+        )
 
         for (const group of groups) {
           let subtotal = 0
           for (const item of group.items) {
             const current = productById.get(item.product.summary.id)
+            const currentStoreId = current ? objectIdToString(current.storeId) : null
+            const categoryIsActive = current
+              ? currentStoreId
+                ? (() => {
+                    const store = activeStoreById.get(currentStoreId)
+                    if (!store) return false
+                    const categories =
+                      (store.categories as Array<Record<string, unknown>> | undefined) ?? []
+                    return categories.some(
+                      (category) =>
+                        String(category._id) === String(current.storeCategoryId) &&
+                        Boolean(category.isActive),
+                    )
+                  })()
+                : activeCategorySet.has(String(current.categoryId))
+              : false
             if (
               !current ||
               current.status !== 'APPROVED' ||
               !current.published ||
               Number(current.price) !== item.product.summary.price ||
               !activeSellerSet.has(String(current.sellerId)) ||
-              !activeCategorySet.has(String(current.categoryId)) ||
+              !categoryIsActive ||
+              currentStoreId !== group.storeId ||
               (current.sellerType === 'USER' && String(current.sellerId) === buyerId)
             ) {
               throw new AppError(
@@ -172,6 +208,7 @@ export class MongooseOrderRepository implements OrderRepository {
                 buyerId,
                 sellerType: group.sellerType,
                 sellerId: group.sellerId,
+                storeId: group.storeId,
                 status: isSecondHand ? 'WAITING_FOR_DEALER_ASSIGNMENT' : 'PENDING',
                 subtotal,
                 totalAmount: subtotal,

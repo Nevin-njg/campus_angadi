@@ -94,10 +94,15 @@ export class OrderService {
           'You cannot purchase your own listing.',
         )
       }
-      const groupKey = product.summary.sellerType === 'ADMIN' ? 'ADMIN' : product.sellerId
+      const storeId = product.storeId ?? null
+      const groupKey =
+        product.summary.sellerType === 'ADMIN'
+          ? `ADMIN:${storeId ?? 'PLATFORM'}`
+          : `USER:${product.sellerId}`
       const group = groups.get(groupKey) ?? {
         sellerType: product.summary.sellerType,
         sellerId: product.summary.sellerType === 'ADMIN' ? null : product.sellerId,
+        storeId,
         items: [],
       }
       group.items.push({ product, quantity: selectedItem.quantity })
