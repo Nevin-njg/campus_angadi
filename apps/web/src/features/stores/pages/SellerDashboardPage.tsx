@@ -21,7 +21,6 @@ import {
   PackageIcon,
   RefreshCwIcon,
   SearchIcon,
-  SettingsIcon,
   ShoppingBagIcon,
   TagIcon,
   TrashIcon,
@@ -208,8 +207,8 @@ function Modal({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
-      <div className="my-6 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#202020] shadow-2xl shadow-black/50">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-4 backdrop-blur-sm sm:grid sm:place-items-center">
+      <div className="mx-auto my-4 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#202020] shadow-2xl shadow-black/50 sm:my-6">
         <header className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
           <div>
             <h2 className="text-xl font-extrabold text-white">{title}</h2>
@@ -805,10 +804,7 @@ export function SellerDashboardPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-amber-500/10 to-transparent p-5">
-                    <span className="grid h-11 w-11 place-items-center rounded-xl bg-amber-500 text-zinc-950 [&>svg]:h-5 [&>svg]:w-5">
-                      <SettingsIcon />
-                    </span>
-                    <h3 className="mt-5 text-lg font-bold text-white">Store information</h3>
+                    <h3 className="text-lg font-bold text-white">Store information</h3>
                     <dl className="mt-4 space-y-4 text-sm">
                       <div className="flex justify-between gap-4 border-b border-white/10 pb-3">
                         <dt className="text-zinc-500">Campus location</dt>
