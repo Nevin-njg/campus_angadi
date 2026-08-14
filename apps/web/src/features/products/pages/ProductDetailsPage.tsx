@@ -124,21 +124,13 @@ export function ProductDetailsPage() {
               <dd>{product.stock} in stock</dd>
             </div>
             <div>
-              <dt>Pickup</dt>
-              <dd>{product.pickupLocation ?? 'Campus pickup'}</dd>
-            </div>
-            <div>
               <dt>Views</dt>
               <dd>{product.viewCount}</dd>
             </div>
-            {product.seller ? (
-              <div>
-                <dt>Seller</dt>
-                <dd>
-                  {product.seller.displayName} {product.seller.verified ? '✓' : ''}
-                </dd>
-              </div>
-            ) : null}
+            <div>
+              <dt>Pickup</dt>
+              <dd>{product.pickupLocation ?? 'Campus pickup'}</dd>
+            </div>
           </dl>
           <div className="product-notice">
             <ShieldIcon />

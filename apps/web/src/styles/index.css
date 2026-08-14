@@ -1960,6 +1960,14 @@ select:focus-visible {
   border-right: 1px solid var(--border-soft);
   border-bottom: 1px solid var(--border-soft);
 }
+.product-facts div:nth-child(2) {
+  border-right: 0;
+}
+.product-facts div:last-child {
+  grid-column: 1 / -1;
+  border-right: 0;
+  border-bottom: 0;
+}
 .product-facts dt {
   color: var(--text-tertiary);
   font-size: 11px;
