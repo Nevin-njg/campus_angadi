@@ -36,6 +36,7 @@ export function AdminOrderDetailPage() {
   const confirm = useConfirmation()
   const currentUser = useAuthStore((state) => state.user)
   const moderatorView = currentUser?.role === 'MODERATOR'
+
   const [status, setStatus] = useState<OrderStatus | ''>('')
   const [note, setNote] = useState('')
   const [dealerId, setDealerId] = useState('')
@@ -68,8 +69,11 @@ export function AdminOrderDetailPage() {
   })
 
   const update = useMutation({
-    mutationFn: () =>
-      ordersApi.updateStatus(id, { status: status as OrderStatus, note: note || null }),
+    mutationFn: (nextStatus: OrderStatus) =>
+      ordersApi.updateStatus(id, {
+        status: nextStatus,
+        note: note || null,
+      }),
     onSuccess: (data) => {
       client.setQueryData(['admin-order', id], data)
       void client.invalidateQueries({ queryKey: ['admin-orders'] })
@@ -80,25 +84,34 @@ export function AdminOrderDetailPage() {
 
   const inputClass =
     'w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-500 mt-1'
+
   const labelClass = 'block text-sm font-medium text-gray-300 mb-4'
 
-  if (order.isLoading)
+  if (order.isLoading) {
     return (
       <div className="py-20 flex justify-center">
-        <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
       </div>
     )
+  }
 
-  if (!order.data || order.isError)
+  if (!order.data || order.isError) {
     return (
       <div className="py-20 text-center">
         <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500">
           <PackageIcon />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Order unavailable</h2>
-        <p className="text-gray-400">The requested order could not be located.</p>
+
+        <h2 className="text-2xl font-bold text-white mb-2">
+          Order unavailable
+        </h2>
+
+        <p className="text-gray-400">
+          The requested order could not be located.
+        </p>
       </div>
     )
+  }
 
   const data = order.data
 
@@ -116,7 +129,11 @@ export function AdminOrderDetailPage() {
           <span className="text-amber-400 font-bold tracking-wider text-xs uppercase mb-2 block">
             {data.orderNumber}
           </span>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">Manage order</h1>
+
+          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
+            Manage order
+          </h1>
+
           <p className="text-gray-400 text-lg">
             {new Date(data.createdAt).toLocaleString('en-IN', {
               month: 'long',
@@ -127,6 +144,7 @@ export function AdminOrderDetailPage() {
             })}
           </p>
         </div>
+
         <div className="shrink-0 mt-2">
           <OrderStatusBadge status={data.status} />
         </div>
@@ -138,6 +156,7 @@ export function AdminOrderDetailPage() {
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10">
               Products
             </h2>
+
             <div className="space-y-4">
               {data.items.map((item) => (
                 <div
@@ -155,15 +174,21 @@ export function AdminOrderDetailPage() {
                       <PackageIcon />
                     </div>
                   )}
+
                   <div className="flex-1 min-w-0">
                     <strong className="text-white font-medium text-lg block truncate">
                       {item.productName}
                     </strong>
+
                     <small className="text-gray-400 block mt-1">
-                      Quantity <span className="text-white">{item.quantity}</span> ·{' '}
-                      {price(item.unitPrice)} each
+                      Quantity{' '}
+                      <span className="text-white">
+                        {item.quantity}
+                      </span>{' '}
+                      · {price(item.unitPrice)} each
                     </small>
                   </div>
+
                   <span className="text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-full">
                     {price(item.totalPrice)}
                   </span>
@@ -172,7 +197,10 @@ export function AdminOrderDetailPage() {
             </div>
 
             <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-              <span className="text-gray-300 font-medium text-lg">Total</span>
+              <span className="text-gray-300 font-medium text-lg">
+                Total
+              </span>
+
               <strong className="text-2xl font-extrabold text-white">
                 {price(data.totalAmount)}
               </strong>
@@ -183,6 +211,7 @@ export function AdminOrderDetailPage() {
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10">
               Status history
             </h2>
+
             <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
               {data.statusHistory.map((entry) => (
                 <div
@@ -190,17 +219,20 @@ export function AdminOrderDetailPage() {
                   key={entry.id}
                 >
                   <div className="flex items-center justify-center w-5 h-5 rounded-full border-2 border-amber-500 bg-gray-900 absolute -left-[29px]">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                   </div>
+
                   <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl w-full">
                     <div className="flex items-center justify-between mb-2">
                       <strong className="text-white font-medium">
                         {entry.toStatus.replaceAll('_', ' ')}
                       </strong>
+
                       <small className="text-gray-400 text-xs px-2 py-0.5 bg-black/40 rounded-full">
                         {new Date(entry.createdAt).toLocaleString('en-IN')}
                       </small>
                     </div>
+
                     {entry.note && (
                       <p className="text-sm text-gray-300 bg-black/20 p-2 rounded-lg border border-white/5 inline-block">
                         {entry.note}
@@ -216,6 +248,7 @@ export function AdminOrderDetailPage() {
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10">
               Dealer assignment history
             </h2>
+
             {data.dealerAssignmentHistory.length ? (
               <div className="relative pl-6 space-y-6 before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
                 {data.dealerAssignmentHistory.map((entry) => (
@@ -224,8 +257,9 @@ export function AdminOrderDetailPage() {
                     key={entry.id}
                   >
                     <div className="flex items-center justify-center w-5 h-5 rounded-full border-2 border-green-500 bg-gray-900 absolute -left-[29px]">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     </div>
+
                     <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl w-full">
                       <div className="flex items-center justify-between mb-2">
                         <strong className="text-white font-medium">
@@ -233,18 +267,25 @@ export function AdminOrderDetailPage() {
                             ? `Assigned to ${entry.newDealer.displayName}`
                             : 'Unassigned'}
                         </strong>
+
                         <small className="text-gray-400 text-xs px-2 py-0.5 bg-black/40 rounded-full">
-                          {entry.mode} · {new Date(entry.createdAt).toLocaleString('en-IN')}
+                          {entry.mode} ·{' '}
+                          {new Date(entry.createdAt).toLocaleString('en-IN')}
                         </small>
                       </div>
-                      <p className="text-sm text-gray-300">{entry.reason}</p>
+
+                      <p className="text-sm text-gray-300">
+                        {entry.reason}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-6">
-                <span className="text-gray-400">No assignment history yet.</span>
+                <span className="text-gray-400">
+                  No assignment history yet.
+                </span>
               </div>
             )}
           </section>
@@ -255,31 +296,45 @@ export function AdminOrderDetailPage() {
             <h2 className="text-xl font-bold text-white mb-6 pb-4 border-b border-white/10">
               Buyer, seller and pickup
             </h2>
+
             <dl className="space-y-4">
               <div className="flex flex-col gap-1">
-                <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">Name</dt>
-                <dd className="text-white font-medium">{data.fullName}</dd>
+                <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                  Name
+                </dt>
+
+                <dd className="text-white font-medium">
+                  {data.fullName}
+                </dd>
               </div>
+
               <div className="flex flex-col gap-1">
                 <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                   Phone
                 </dt>
-                <dd className="text-white font-medium">{data.phoneNumber}</dd>
+
+                <dd className="text-white font-medium">
+                  {data.phoneNumber}
+                </dd>
               </div>
+
               {data.sellerType === 'USER' && (
                 <div className="pt-4 mt-2 border-t border-white/10 space-y-4">
                   <div className="flex flex-col gap-1">
                     <dt className="text-xs uppercase tracking-wider text-amber-400 font-medium">
                       Second-hand seller
                     </dt>
+
                     <dd className="text-white font-medium">
                       {data.sellerContact?.displayName ?? 'Seller unavailable'}
                     </dd>
                   </div>
+
                   <div className="flex flex-col gap-1">
                     <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                       Seller contact
                     </dt>
+
                     <dd className="text-white font-medium">
                       {data.sellerContact?.phoneNumber ??
                         data.sellerContact?.email ??
@@ -288,33 +343,47 @@ export function AdminOrderDetailPage() {
                   </div>
                 </div>
               )}
+
               <div className="flex flex-col gap-1">
                 <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                   Pickup location
                 </dt>
-                <dd className="text-white font-medium">{data.pickupLocation}</dd>
+
+                <dd className="text-white font-medium">
+                  {data.pickupLocation}
+                </dd>
               </div>
+
               {data.campusId && (
                 <div className="flex flex-col gap-1">
                   <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                     Campus ID
                   </dt>
-                  <dd className="text-white font-medium">{data.campusId}</dd>
+
+                  <dd className="text-white font-medium">
+                    {data.campusId}
+                  </dd>
                 </div>
               )}
+
               {data.department && (
                 <div className="flex flex-col gap-1">
                   <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                     Department
                   </dt>
-                  <dd className="text-white font-medium">{data.department}</dd>
+
+                  <dd className="text-white font-medium">
+                    {data.department}
+                  </dd>
                 </div>
               )}
+
               {data.notes && (
                 <div className="flex flex-col gap-1">
                   <dt className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                     Buyer note
                   </dt>
+
                   <dd className="text-white bg-black/20 p-3 rounded-lg border border-white/5 mt-1 text-sm">
                     {data.notes}
                   </dd>
@@ -326,10 +395,16 @@ export function AdminOrderDetailPage() {
           <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-white/10">
               <h2 className="text-xl font-bold text-white">
-                {data.sellerType === 'USER' ? 'Order mediator' : 'Official order handling'}
+                {data.sellerType === 'USER'
+                  ? 'Order mediator'
+                  : 'Official order handling'}
               </h2>
+
               {data.sellerType === 'USER' && data.assignedDealer ? (
-                <Link className="button button-primary" to={`/admin/orders/${id}/chat`}>
+                <Link
+                  className="button button-primary"
+                  to={`/admin/orders/${id}/chat`}
+                >
                   <MessageIcon /> Open chat
                 </Link>
               ) : null}
@@ -337,18 +412,23 @@ export function AdminOrderDetailPage() {
 
             {data.sellerType === 'ADMIN' ? (
               <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-6 text-blue-300 text-sm font-medium">
-                Official-store orders are handled by the store. No dealer or mediator is assigned.
+                Official-store orders are handled by the store. No dealer or
+                mediator is assigned.
               </div>
             ) : data.assignedDealer ? (
               <div className="flex items-center gap-4 bg-green-500/10 border border-green-500/20 p-4 rounded-xl mb-6">
                 <div className="text-green-400">
                   <MessageIcon />
                 </div>
+
                 <div>
                   <strong className="text-white block font-medium">
                     {data.assignedDealer.displayName}
                   </strong>
-                  <small className="text-gray-400">Buyer support and order coordination</small>
+
+                  <small className="text-gray-400">
+                    Buyer support and order coordination
+                  </small>
                 </div>
               </div>
             ) : (
@@ -360,81 +440,168 @@ export function AdminOrderDetailPage() {
             {data.sellerType === 'USER' &&
               !moderatorView &&
               !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(data.status) && (
-              <div className="space-y-4">
-                <label className={labelClass}>
-                  Assign a specific dealer
-                  <select
-                    className={`${inputClass} appearance-none`}
-                    value={dealerId}
-                    onChange={(event) => setDealerId(event.target.value)}
-                  >
-                    <option value="">Select dealer</option>
-                    {dealers.data?.items.map((dealer) => (
-                      <option
-                        value={dealer.id}
-                        key={dealer.id}
-                        disabled={dealer.currentOpenOrders >= dealer.maxOpenOrders}
-                      >
-                        {dealer.displayName} ({dealer.currentOpenOrders}/{dealer.maxOpenOrders}{' '}
-                        open)
+                <div className="space-y-4">
+                  <label className={labelClass}>
+                    Assign a specific dealer
+
+                    <select
+                      className={`${inputClass} appearance-none`}
+                      value={dealerId}
+                      onChange={(event) => setDealerId(event.target.value)}
+                    >
+                      <option value="">
+                        Select dealer
                       </option>
-                    ))}
-                  </select>
-                </label>
+
+                      {dealers.data?.items.map((dealer) => (
+                        <option
+                          value={dealer.id}
+                          key={dealer.id}
+                          disabled={dealer.currentOpenOrders >= dealer.maxOpenOrders}
+                        >
+                          {dealer.displayName} ({dealer.currentOpenOrders}/
+                          {dealer.maxOpenOrders} open)
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={labelClass}>
+                    Assignment reason
+
+                    <textarea
+                      className={`${inputClass} resize-y min-h-[60px]`}
+                      rows={2}
+                      value={assignmentReason}
+                      onChange={(event) =>
+                        setAssignmentReason(event.target.value)
+                      }
+                    />
+                  </label>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!dealerId || assign.isPending}
+                      onClick={async () => {
+                        if (
+                          await confirm({
+                            title: 'Assign this dealer?',
+                            description:
+                              'The selected assignment profile will take responsibility for this order.',
+                            confirmLabel: 'Assign dealer',
+                          })
+                        ) {
+                          assign.mutate('MANUAL')
+                        }
+                      }}
+                    >
+                      Assign selected
+                    </button>
+
+                    <button
+                      className="flex-1 px-4 py-2 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={assign.isPending}
+                      onClick={async () => {
+                        if (
+                          await confirm({
+                            title: 'Auto-assign this order?',
+                            description:
+                              'Campus Angadi will select an available dealer using current workload and shift capacity.',
+                            confirmLabel: 'Auto-assign',
+                          })
+                        ) {
+                          assign.mutate('AUTO')
+                        }
+                      }}
+                    >
+                      Auto assign
+                    </button>
+                  </div>
+
+                  {assign.isError && (
+                    <div className="mt-4 text-red-400 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm">
+                      {assign.error.message}
+                    </div>
+                  )}
+                </div>
+              )}
+          </section>
+
+          {moderatorView &&
+            data.sellerType === 'USER' &&
+            !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(data.status) && (
+              <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
+                <h2 className="text-xl font-bold text-white mb-2">
+                  Complete handover
+                </h2>
+
+                <p className="text-sm text-gray-400 mb-6">
+                  Confirm the result after coordinating with the buyer and seller.
+                </p>
+
                 <label className={labelClass}>
-                  Assignment reason
+                  Handover note
+
                   <textarea
-                    className={`${inputClass} resize-y min-h-[60px]`}
-                    rows={2}
-                    value={assignmentReason}
-                    onChange={(event) => setAssignmentReason(event.target.value)}
+                    className={`${inputClass} resize-y min-h-[80px]`}
+                    value={note}
+                    onChange={(event) => setNote(event.target.value)}
+                    rows={3}
+                    placeholder="Optional note about the handover..."
                   />
                 </label>
 
-                <div className="flex gap-2 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-500 rounded-lg transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={!dealerId || assign.isPending}
+                    type="button"
+                    disabled={update.isPending}
+                    className="w-full py-3 px-4 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={async () => {
                       if (
                         await confirm({
-                          title: 'Assign this dealer?',
+                          title: 'Complete this order?',
                           description:
-                            'The selected assignment profile will take responsibility for this order.',
-                          confirmLabel: 'Assign dealer',
+                            'Confirm only after the buyer has received the product successfully. The order will be marked completed.',
+                          confirmLabel: 'Complete order',
                         })
-                      )
-                        assign.mutate('MANUAL')
+                      ) {
+                        update.mutate('COMPLETED')
+                      }
                     }}
                   >
-                    Assign selected
+                    {update.isPending ? 'Updating…' : 'Complete order'}
                   </button>
+
                   <button
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={assign.isPending}
+                    type="button"
+                    disabled={update.isPending}
+                    className="w-full py-3 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={async () => {
                       if (
                         await confirm({
-                          title: 'Auto-assign this order?',
+                          title: 'Cancel this handover?',
                           description:
-                            'Campus Angadi will select an available dealer using current workload and shift capacity.',
-                          confirmLabel: 'Auto-assign',
+                            'Use this when the second-hand transaction did not complete. Reserved stock will be restored so the product can become available again.',
+                          confirmLabel: 'Cancel handover',
+                          tone: 'danger',
                         })
-                      )
-                        assign.mutate('AUTO')
+                      ) {
+                        update.mutate('CANCELLED')
+                      }
                     }}
                   >
-                    Auto assign
+                    {update.isPending ? 'Updating…' : 'Cancel handover'}
                   </button>
                 </div>
-                {assign.isError && (
+
+                {update.isError && (
                   <div className="mt-4 text-red-400 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm">
-                    {assign.error.message}
+                    {update.error.message}
                   </div>
                 )}
-              </div>
+              </section>
             )}
-          </section>
 
           {!moderatorView && nextStatuses[data.status].length > 0 && (
             <section className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
@@ -447,12 +614,18 @@ export function AdminOrderDetailPage() {
               <div className="space-y-4 relative z-10">
                 <label className={labelClass}>
                   Next status
+
                   <select
                     className={`${inputClass} appearance-none`}
                     value={status}
-                    onChange={(event) => setStatus(event.target.value as OrderStatus)}
+                    onChange={(event) =>
+                      setStatus(event.target.value as OrderStatus)
+                    }
                   >
-                    <option value="">Select status</option>
+                    <option value="">
+                      Select status
+                    </option>
+
                     {nextStatuses[data.status].map((value) => (
                       <option value={value} key={value}>
                         {value.replaceAll('_', ' ')}
@@ -460,8 +633,10 @@ export function AdminOrderDetailPage() {
                     ))}
                   </select>
                 </label>
+
                 <label className={labelClass}>
                   Internal status note
+
                   <textarea
                     className={`${inputClass} resize-y min-h-[80px]`}
                     value={note}
@@ -470,6 +645,7 @@ export function AdminOrderDetailPage() {
                     placeholder="Add an internal note about this status change..."
                   />
                 </label>
+
                 <button
                   className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.25)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                   disabled={!status || update.isPending}
@@ -481,14 +657,18 @@ export function AdminOrderDetailPage() {
                           'The buyer will see this status change and it will be recorded in order history.',
                         confirmLabel: 'Update status',
                         tone:
-                          status === 'CANCELLED' || status === 'REJECTED' ? 'danger' : 'default',
+                          status === 'CANCELLED' || status === 'REJECTED'
+                            ? 'danger'
+                            : 'default',
                       })
-                    )
-                      update.mutate()
+                    ) {
+                      update.mutate(status as OrderStatus)
+                    }
                   }}
                 >
                   {update.isPending ? 'Updating…' : 'Save status update'}
                 </button>
+
                 {update.isError && (
                   <div className="mt-4 text-red-400 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm">
                     {update.error.message}

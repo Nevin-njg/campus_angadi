@@ -192,11 +192,13 @@ export function createApp(root: CompositionRoot) {
     requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     createAdminAuditMiddleware(root.auditService),
   )
-  api.use('/admin', createAdminCoreRouter(root.adminService, root.authenticate))
+
   api.use(
     '/admin/access-requests',
     createAdminAccessRequestRouter(root.accessRequestService, root.authenticate),
   )
+
+
   api.use('/admin/categories', createAdminCategoryRouter(root.categoryService, root.authenticate))
   api.use('/admin/products', createAdminProductRouter(root.productService, root.authenticate))
   api.use('/admin/stores', createAdminStoreRouter(root.storeService, root.authenticate))
@@ -234,7 +236,7 @@ export function createApp(root: CompositionRoot) {
     '/admin/moderation/products',
     createAdminModerationRouter(root.listingService, root.authenticate),
   )
-
+  api.use('/admin', createAdminCoreRouter(root.adminService, root.authenticate))
   app.use('/api/v1', api)
   app.use(notFoundHandler)
   app.use(errorHandler)

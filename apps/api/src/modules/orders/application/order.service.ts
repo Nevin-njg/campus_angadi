@@ -33,6 +33,19 @@ const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   REJECTED: [],
 }
 
+const MODERATOR_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  PENDING: [],
+  WAITING_FOR_DEALER_ASSIGNMENT: [],
+  AWAITING_TEAM_CONFIRMATION: ['COMPLETED', 'CANCELLED'],
+  CONTACTED: ['COMPLETED', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  PREPARING: ['COMPLETED', 'CANCELLED'],
+  READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
+  COMPLETED: [],
+  CANCELLED: [],
+  REJECTED: [],
+}
+
 const USER_CANCELLABLE: readonly OrderStatus[] = [
   'PENDING',
   'WAITING_FOR_DEALER_ASSIGNMENT',
@@ -50,13 +63,23 @@ export class OrderService {
 
   async checkout(buyerId: string, input: CheckoutInput): Promise<CheckoutResult> {
     const cart = await this.carts.findOrCreate(buyerId)
-    if (!cart.items.length) throw new AppError(409, 'CART_EMPTY', 'Your cart is empty.')
+
+    if (!cart.items.length) {
+      throw new AppError(409, 'CART_EMPTY', 'Your cart is empty.')
+    }
+
     return this.createCheckout(buyerId, input, cart.items, cart.id)
   }
 
   async buyNow(buyerId: string, input: BuyNowInput): Promise<CheckoutResult> {
     const { productId, quantity, ...checkoutInput } = input
-    return this.createCheckout(buyerId, checkoutInput, [{ productId, quantity }], null)
+
+    return this.createCheckout(
+      buyerId,
+      checkoutInput,
+      [{ productId, quantity }],
+      null,
+    )
   }
 
   private async createCheckout(
@@ -65,15 +88,27 @@ export class OrderService {
     selectedItems: Array<{ productId: string; quantity: number }>,
     cartIdToClear: string | null,
   ): Promise<CheckoutResult> {
-    const products = await this.catalog.findProducts(selectedItems.map((item) => item.productId))
-    const productById = new Map(products.map((product) => [product.summary.id, product]))
+    const products = await this.catalog.findProducts(
+      selectedItems.map((item) => item.productId),
+    )
+
+    const productById = new Map(
+      products.map((product) => [product.summary.id, product]),
+    )
+
     const groups = new Map<string, CheckoutPlanGroup>()
 
     for (const selectedItem of selectedItems) {
       const product = productById.get(selectedItem.productId)
+
       if (!product) {
-        throw new AppError(409, 'PRODUCT_NOT_AVAILABLE', 'The selected product is unavailable.')
+        throw new AppError(
+          409,
+          'PRODUCT_NOT_AVAILABLE',
+          'The selected product is unavailable.',
+        )
       }
+
       if (
         product.summary.status !== 'APPROVED' ||
         !product.summary.published ||
@@ -87,25 +122,40 @@ export class OrderService {
           `${product.summary.title} is unavailable or does not have enough stock.`,
         )
       }
-      if (product.summary.sellerType === 'USER' && product.sellerId === buyerId) {
+
+      if (
+        product.summary.sellerType === 'USER' &&
+        product.sellerId === buyerId
+      ) {
         throw new AppError(
           409,
           'OWN_PRODUCT_NOT_PURCHASABLE',
           'You cannot purchase your own listing.',
         )
       }
+
       const storeId = product.storeId ?? null
+
       const groupKey =
         product.summary.sellerType === 'ADMIN'
           ? `ADMIN:${storeId ?? 'PLATFORM'}`
           : `USER:${product.sellerId}`
+
       const group = groups.get(groupKey) ?? {
         sellerType: product.summary.sellerType,
-        sellerId: product.summary.sellerType === 'ADMIN' ? null : product.sellerId,
+        sellerId:
+          product.summary.sellerType === 'ADMIN'
+            ? null
+            : product.sellerId,
         storeId,
         items: [],
       }
-      group.items.push({ product, quantity: selectedItem.quantity })
+
+      group.items.push({
+        product,
+        quantity: selectedItem.quantity,
+      })
+
       groups.set(groupKey, group)
     }
 
@@ -116,23 +166,41 @@ export class OrderService {
       [...groups.values()],
       cartIdToClear,
     )
+
     await this.notifications?.sendToUser(buyerId, {
       type: 'ORDER',
       title: 'Order created',
-      message: `${result.orders.length} order${result.orders.length === 1 ? '' : 's'} created successfully.`,
+      message: `${result.orders.length} order${
+        result.orders.length === 1 ? '' : 's'
+      } created successfully.`,
       referenceType: 'CHECKOUT',
       referenceId: result.checkoutGroupId,
     })
+
     return result
   }
 
-  listOwned(buyerId: string, query: OrderListQuery): Promise<PaginatedResult<OrderDetail>> {
+  listOwned(
+    buyerId: string,
+    query: OrderListQuery,
+  ): Promise<PaginatedResult<OrderDetail>> {
     return this.orders.listOwned(buyerId, query)
   }
 
-  async getOwned(orderId: string, buyerId: string): Promise<OrderDetail> {
+  async getOwned(
+    orderId: string,
+    buyerId: string,
+  ): Promise<OrderDetail> {
     const order = await this.orders.findOwnedById(orderId, buyerId)
-    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
+
+    if (!order) {
+      throw new AppError(
+        404,
+        'ORDER_NOT_FOUND',
+        'This order could not be found.',
+      )
+    }
+
     return order
   }
 
@@ -142,6 +210,7 @@ export class OrderService {
     input: CancelOrderInput,
   ): Promise<OrderDetail> {
     const order = await this.getOwned(orderId, buyerId)
+
     if (!USER_CANCELLABLE.includes(order.status)) {
       throw new AppError(
         409,
@@ -149,6 +218,7 @@ export class OrderService {
         'This order can no longer be cancelled online.',
       )
     }
+
     const updated = await this.orders.transition(
       orderId,
       order.status,
@@ -156,12 +226,15 @@ export class OrderService {
       buyerId,
       input.reason ?? 'Cancelled by buyer',
     )
-    if (!updated)
+
+    if (!updated) {
       throw new AppError(
         409,
         'ORDER_STATUS_CHANGED',
         'The order status changed. Refresh and try again.',
       )
+    }
+
     return updated
   }
 
@@ -169,7 +242,10 @@ export class OrderService {
     query: AdminOrderListQuery,
     actor?: { id: string; role: UserRole },
   ): Promise<PaginatedResult<AdminOrderDetail>> {
-    return this.orders.listAdmin(query, actor?.role === 'MODERATOR' ? actor.id : undefined)
+    return this.orders.listAdmin(
+      query,
+      actor?.role === 'MODERATOR' ? actor.id : undefined,
+    )
   }
 
   async getAdmin(
@@ -180,24 +256,53 @@ export class OrderService {
       orderId,
       actor?.role === 'MODERATOR' ? actor.id : undefined,
     )
-    if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'This order could not be found.')
+
+    if (!order) {
+      throw new AppError(
+        404,
+        'ORDER_NOT_FOUND',
+        'This order could not be found.',
+      )
+    }
+
     return order
   }
 
-  async assignDealer(orderId: string, actorId: string, input: AssignOrderDealerInput) {
-    const order = await this.orders.assignDealer(orderId, actorId, input)
+  async assignDealer(
+    orderId: string,
+    actorId: string,
+    input: AssignOrderDealerInput,
+  ) {
+    const order = await this.orders.assignDealer(
+      orderId,
+      actorId,
+      input,
+    )
+
     await this.notifications?.sendToUser(order.buyerId, {
       type: 'ORDER',
       title: 'Sales dealer assigned',
-      message: `${order.assignedDealer?.displayName ?? 'A sales dealer'} is ready to assist with order ${order.orderNumber}.`,
+      message: `${
+        order.assignedDealer?.displayName ?? 'A sales dealer'
+      } is ready to assist with order ${order.orderNumber}.`,
       referenceType: 'ORDER',
       referenceId: order.id,
     })
+
     return order
   }
 
-  async assignModerator(orderId: string, actorId: string, input: AssignOrderModeratorInput) {
-    const order = await this.orders.assignModerator(orderId, actorId, input)
+  async assignModerator(
+    orderId: string,
+    actorId: string,
+    input: AssignOrderModeratorInput,
+  ) {
+    const order = await this.orders.assignModerator(
+      orderId,
+      actorId,
+      input,
+    )
+
     await this.notifications?.sendToUser(input.moderatorId, {
       type: 'ORDER',
       title: 'Conversation assigned',
@@ -205,43 +310,73 @@ export class OrderService {
       referenceType: 'ORDER',
       referenceId: order.id,
     })
+
     return order
   }
 
   async updateStatus(
     orderId: string,
-    actorId: string,
+    actor: { id: string; role: UserRole },
     input: UpdateOrderStatusInput,
   ): Promise<OrderDetail> {
-    const order = await this.getAdmin(orderId)
-    if (order.status === input.status) return order
-    if (!ADMIN_TRANSITIONS[order.status].includes(input.status)) {
+    const order = await this.getAdmin(orderId, actor)
+
+    if (order.status === input.status) {
+      return order
+    }
+
+    const allowedTransitions =
+      actor.role === 'MODERATOR'
+        ? MODERATOR_TRANSITIONS[order.status]
+        : ADMIN_TRANSITIONS[order.status]
+
+    if (!allowedTransitions.includes(input.status)) {
       throw new AppError(
         409,
         'INVALID_ORDER_TRANSITION',
         `An order cannot move from ${order.status} to ${input.status}.`,
       )
     }
+
     const updated = await this.orders.transition(
       orderId,
       order.status,
       input.status,
-      actorId,
+      actor.id,
       input.note ?? null,
     )
-    if (!updated)
+
+    if (!updated) {
       throw new AppError(
         409,
         'ORDER_STATUS_CHANGED',
         'The order status changed. Refresh and try again.',
       )
+    }
+
+    const statusLabel = input.status
+      .toLowerCase()
+      .replaceAll('_', ' ')
+
     await this.notifications?.sendToUser(updated.buyerId, {
       type: 'ORDER',
-      title: `Order ${input.status.toLowerCase().replaceAll('_', ' ')}`,
-      message: `Order ${updated.orderNumber} is now ${input.status.toLowerCase().replaceAll('_', ' ')}.`,
+      title: `Order ${statusLabel}`,
+      message: `Order ${updated.orderNumber} is now ${statusLabel}.`,
       referenceType: 'ORDER',
       referenceId: updated.id,
     })
+
+    // Notify the second-hand seller when the order status changes.
+    if (updated.sellerType === 'USER' && updated.sellerId) {
+      await this.notifications?.sendToUser(updated.sellerId, {
+        type: 'ORDER',
+        title: `Second-hand order ${statusLabel}`,
+        message: `Order ${updated.orderNumber} is now ${statusLabel}.`,
+        referenceType: 'ORDER',
+        referenceId: updated.id,
+      })
+    }
+
     return updated
   }
 }

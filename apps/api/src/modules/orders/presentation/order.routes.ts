@@ -41,6 +41,7 @@ export function createOrderRouter(
   storeFactory: RateLimitStoreFactory,
 ) {
   const router = Router()
+
   const checkoutLimiter = rateLimit({
     windowMs: 15 * 60_000,
     limit: 10,
@@ -48,25 +49,45 @@ export function createOrderRouter(
     standardHeaders: 'draft-7',
     legacyHeaders: false,
   })
+
   router.use(authenticate)
+
   router.post(
     '/checkout',
     checkoutLimiter,
     validateBody(checkoutInputSchema),
     asyncHandler(async (request, response) => {
-      const data = await service.checkout(request.auth!.user.id, request.body as CheckoutInput)
-      response.status(201).json({ success: true, message: 'Orders created successfully.', data })
+      const data = await service.checkout(
+        request.auth!.user.id,
+        request.body as CheckoutInput,
+      )
+
+      response.status(201).json({
+        success: true,
+        message: 'Orders created successfully.',
+        data,
+      })
     }),
   )
+
   router.post(
     '/buy-now',
     checkoutLimiter,
     validateBody(buyNowInputSchema),
     asyncHandler(async (request, response) => {
-      const data = await service.buyNow(request.auth!.user.id, request.body as BuyNowInput)
-      response.status(201).json({ success: true, message: 'Order created successfully.', data })
+      const data = await service.buyNow(
+        request.auth!.user.id,
+        request.body as BuyNowInput,
+      )
+
+      response.status(201).json({
+        success: true,
+        message: 'Order created successfully.',
+        data,
+      })
     }),
   )
+
   router.get(
     '/',
     validateQuery(orderListQuerySchema),
@@ -75,6 +96,7 @@ export function createOrderRouter(
         request.auth!.user.id,
         getValidatedQuery<OrderListQuery>(request),
       )
+
       response.json({
         success: true,
         message: 'Orders retrieved successfully.',
@@ -83,14 +105,24 @@ export function createOrderRouter(
       })
     }),
   )
+
   router.get(
     '/:id',
     validateParams(idParams),
     asyncHandler(async (request, response) => {
-      const data = await service.getOwned(String(request.params.id), request.auth!.user.id)
-      response.json({ success: true, message: 'Order retrieved successfully.', data })
+      const data = await service.getOwned(
+        String(request.params.id),
+        request.auth!.user.id,
+      )
+
+      response.json({
+        success: true,
+        message: 'Order retrieved successfully.',
+        data,
+      })
     }),
   )
+
   router.post(
     '/:id/cancel',
     validateParams(idParams),
@@ -101,24 +133,39 @@ export function createOrderRouter(
         request.auth!.user.id,
         request.body as CancelOrderInput,
       )
-      response.json({ success: true, message: 'Order cancelled successfully.', data })
+
+      response.json({
+        success: true,
+        message: 'Order cancelled successfully.',
+        data,
+      })
     }),
   )
+
   return router
 }
 
-export function createAdminOrderRouter(service: OrderService, authenticate: RequestHandler) {
+export function createAdminOrderRouter(
+  service: OrderService,
+  authenticate: RequestHandler,
+) {
   const router = Router()
+
   router.use(authenticate)
+
   router.get(
     '/',
     requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     validateQuery(adminOrderListQuerySchema),
     asyncHandler(async (request, response) => {
-      const result = await service.listAdmin(getValidatedQuery<AdminOrderListQuery>(request), {
-        id: request.auth!.user.id,
-        role: request.auth!.user.role,
-      })
+      const result = await service.listAdmin(
+        getValidatedQuery<AdminOrderListQuery>(request),
+        {
+          id: request.auth!.user.id,
+          role: request.auth!.user.role,
+        },
+      )
+
       response.json({
         success: true,
         message: 'Orders retrieved successfully.',
@@ -127,18 +174,28 @@ export function createAdminOrderRouter(service: OrderService, authenticate: Requ
       })
     }),
   )
+
   router.get(
     '/:id',
     requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     validateParams(idParams),
     asyncHandler(async (request, response) => {
-      const data = await service.getAdmin(String(request.params.id), {
-        id: request.auth!.user.id,
-        role: request.auth!.user.role,
+      const data = await service.getAdmin(
+        String(request.params.id),
+        {
+          id: request.auth!.user.id,
+          role: request.auth!.user.role,
+        },
+      )
+
+      response.json({
+        success: true,
+        message: 'Order retrieved successfully.',
+        data,
       })
-      response.json({ success: true, message: 'Order retrieved successfully.', data })
     }),
   )
+
   router.patch(
     '/:id/dealer',
     requireRoles('ADMIN', 'SUPER_ADMIN'),
@@ -150,9 +207,15 @@ export function createAdminOrderRouter(service: OrderService, authenticate: Requ
         request.auth!.user.id,
         request.body as AssignOrderDealerInput,
       )
-      response.json({ success: true, message: 'Dealer assignment updated.', data })
+
+      response.json({
+        success: true,
+        message: 'Dealer assignment updated.',
+        data,
+      })
     }),
   )
+
   router.patch(
     '/:id/moderator',
     requireRoles('ADMIN', 'SUPER_ADMIN'),
@@ -164,22 +227,37 @@ export function createAdminOrderRouter(service: OrderService, authenticate: Requ
         request.auth!.user.id,
         request.body as AssignOrderModeratorInput,
       )
-      response.json({ success: true, message: 'Moderator assignment updated.', data })
+
+      response.json({
+        success: true,
+        message: 'Moderator assignment updated.',
+        data,
+      })
     }),
   )
+
   router.patch(
     '/:id/status',
-    requireRoles('ADMIN', 'SUPER_ADMIN'),
+    requireRoles('MODERATOR', 'ADMIN', 'SUPER_ADMIN'),
     validateParams(idParams),
     validateBody(updateOrderStatusInputSchema),
     asyncHandler(async (request, response) => {
       const data = await service.updateStatus(
         String(request.params.id),
-        request.auth!.user.id,
+        {
+          id: request.auth!.user.id,
+          role: request.auth!.user.role,
+        },
         request.body as UpdateOrderStatusInput,
       )
-      response.json({ success: true, message: 'Order status updated.', data })
+
+      response.json({
+        success: true,
+        message: 'Order status updated.',
+        data,
+      })
     }),
   )
+
   return router
 }

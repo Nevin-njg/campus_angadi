@@ -278,14 +278,37 @@ export class MongooseProductRepository implements ProductRepository {
       deletedAt: null,
       isActive: true,
     }).distinct('_id')
+
+    const isSecondHand = query.productType === 'SECOND_HAND'
+
     const filter: Record<string, unknown> = {
       deletedAt: null,
-      status: 'APPROVED',
       published: true,
-      stock: { $gt: 0 },
       categoryId: { $in: activeCategoryIds },
       sellerId: { $in: activeSellerIds },
+      ...(isSecondHand
+        ? {
+            $and: [
+              {
+                $or: [
+                  {
+                    status: 'APPROVED',
+                    stock: { $gt: 0 },
+                  },
+                  {
+                    status: 'OUT_OF_STOCK',
+                    stock: 0,
+                  },
+                ],
+              },
+            ],
+          }
+        : {
+            status: 'APPROVED',
+            stock: { $gt: 0 },
+          }),
     }
+
     await this.applySharedFilters(filter, query)
     return filter
   }

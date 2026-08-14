@@ -19,6 +19,7 @@ import mongoose, { Types, type ClientSession } from 'mongoose'
 import { AppError } from '../../../core/errors/app-error.js'
 import { CartModel } from '../../cart/infrastructure/cart.model.js'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
+import { ModerationHistoryModel } from '../../listings/infrastructure/moderation-history.model.js'
 import { ProductModel } from '../../products/infrastructure/product.models.js'
 import { StoreModel } from '../../stores/infrastructure/store.model.js'
 import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
@@ -626,13 +627,47 @@ export class MongooseOrderRepository implements OrderRepository {
           .session(session)
           .lean<Record<string, unknown>[]>()
         if ((status === 'CANCELLED' || status === 'REJECTED') && !order.stockRestored) {
+          const restoredSecondHandProducts =
+            order.sellerType === 'USER'
+              ? await ProductModel.find({
+                  _id: { $in: items.map((item) => item.productId) },
+                  productType: 'SECOND_HAND',
+                  status: 'OUT_OF_STOCK',
+                  deletedAt: null,
+                })
+                  .select('_id')
+                  .session(session)
+                  .lean<Record<string, unknown>[]>()
+              : []
+
           await this.restoreStock(items, session)
+
           await OrderModel.updateOne(
             { _id: orderId },
             { $set: { stockRestored: true } },
             { session },
           )
+
+          if (restoredSecondHandProducts.length) {
+            const cancelledByMediator =
+              objectIdToString(order.assignedModeratorId) === actorId
+
+            await ModerationHistoryModel.create(
+              restoredSecondHandProducts.map((product) => ({
+                productId: product._id,
+                action: 'RESTORED',
+                fromStatus: 'OUT_OF_STOCK',
+                toStatus: 'APPROVED',
+                reason: cancelledByMediator
+                  ? 'Handover cancelled by mediator. Reserved stock restored and listing made available again.'
+                  : 'Order cancelled. Reserved stock restored and listing made available again.',
+                actorId,
+              })),
+              { session },
+            )
+          }
         }
+
         if (status === 'COMPLETED') {
           await Promise.all(
             items.map((item) =>
@@ -643,6 +678,52 @@ export class MongooseOrderRepository implements OrderRepository {
               ),
             ),
           )
+
+          if (order.sellerType === 'USER') {
+            const soldProducts = await ProductModel.find({
+              _id: { $in: items.map((item) => item.productId) },
+              productType: 'SECOND_HAND',
+              status: 'OUT_OF_STOCK',
+              stock: { $lte: 0 },
+              deletedAt: null,
+            })
+              .select('_id')
+              .session(session)
+              .lean<Record<string, unknown>[]>()
+
+            const soldProductIds = soldProducts.map((product) => product._id)
+
+            if (soldProductIds.length) {
+              await ProductModel.updateMany(
+                {
+                  _id: { $in: soldProductIds },
+                  productType: 'SECOND_HAND',
+                  status: 'OUT_OF_STOCK',
+                  stock: { $lte: 0 },
+                  deletedAt: null,
+                },
+                {
+                  $set: {
+                    status: 'SOLD',
+                    published: false,
+                  },
+                },
+                { session },
+              )
+
+              await ModerationHistoryModel.create(
+                soldProducts.map((product) => ({
+                  productId: product._id,
+                  action: 'MARKED_SOLD',
+                  fromStatus: 'OUT_OF_STOCK',
+                  toStatus: 'SOLD',
+                  reason: 'Second-hand handover completed. Listing marked as sold.',
+                  actorId,
+                })),
+                { session },
+              )
+            }
+          }
         }
         await OrderStatusHistoryModel.create(
           [{ orderId, fromStatus: expectedStatus, toStatus: status, note, actorId }],
