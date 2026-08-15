@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 
 function readBrowserEnv(path: string): Record<string, string> {
   if (!existsSync(path)) return {}
@@ -46,7 +47,48 @@ export default defineConfig(() => {
 
   return {
     define: browserDefinitions,
-    plugins: [react()],
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: [
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
+        ],
+        manifest: {
+          name: 'Campus Angadi',
+          short_name: 'Campus Angadi',
+          description: 'Campus marketplace for students',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
+          background_color: '#18181b',
+          theme_color: '#f97316',
+          orientation: 'portrait-primary',
+          icons: [
+            {
+              src: '/pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/pwa-maskable-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         '@campusbaza/config': fileURLToPath(
