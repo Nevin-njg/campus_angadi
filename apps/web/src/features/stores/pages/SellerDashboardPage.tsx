@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -43,7 +44,7 @@ const emptyProduct: ProductForm = {
   title: '',
   description: '',
   price: 0,
-  stock: 0,
+  stock: Number.NaN,
   storeCategoryId: '',
   imageUrl: '',
   published: true,
@@ -207,8 +208,8 @@ function Modal({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-4 backdrop-blur-sm sm:grid sm:place-items-center">
-      <div className="mx-auto my-4 w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#202020] shadow-2xl shadow-black/50 sm:my-6">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/75 p-4 backdrop-blur-sm">
+      <div className="mx-auto my-4 w-full max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-[#202020] shadow-2xl shadow-black/50 sm:my-6">
         <header className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
           <div>
             <h2 className="text-xl font-extrabold text-white">{title}</h2>
@@ -244,8 +245,8 @@ export function SellerDashboardPage() {
   const [query, setQuery] = useState('')
   const [orderStatus, setOrderStatus] = useState('')
   const [productModal, setProductModal] = useState<ProductForm | null>(null)
-  const [productImageFile, setProductImageFile] = useState<File | null>(null)
-  const [productImagePreview, setProductImagePreview] = useState<string | null>(null)
+  const [productImages, setProductImages] = useState<Array<{ file: File; preview: string }>>([])
+  const productImagesRef = useRef<Array<{ file: File; preview: string }>>([])
   const [categoryModal, setCategoryModal] = useState(false)
   const [newCategory, setNewCategory] = useState({ name: '', description: '' })
   const [offer, setOffer] = useState({
@@ -257,10 +258,14 @@ export function SellerDashboardPage() {
   const categories = useMemo(() => overview?.store.categories ?? [], [overview?.store.categories])
 
   useEffect(() => {
+    productImagesRef.current = productImages
+  }, [productImages])
+
+  useEffect(() => {
     return () => {
-      if (productImagePreview) URL.revokeObjectURL(productImagePreview)
+      productImagesRef.current.forEach(({ preview }) => URL.revokeObjectURL(preview))
     }
-  }, [productImagePreview])
+  }, [])
 
   const notify = (message: string, kind: 'success' | 'error' = 'success') => {
     if (kind === 'success') {
@@ -326,18 +331,28 @@ export function SellerDashboardPage() {
     [categories],
   )
 
-  const clearSelectedProductImage = () => {
-    setProductImageFile(null)
-    setProductImagePreview(null)
+  const clearSelectedProductImages = () => {
+    setProductImages((current) => {
+      current.forEach(({ preview }) => URL.revokeObjectURL(preview))
+      return []
+    })
+  }
+
+  const removeSelectedProductImage = (index: number) => {
+    setProductImages((current) => {
+      const target = current[index]
+      if (target) URL.revokeObjectURL(target.preview)
+      return current.filter((_, imageIndex) => imageIndex !== index)
+    })
   }
 
   const openNewProduct = () => {
-    clearSelectedProductImage()
+    clearSelectedProductImages()
     setProductModal({ ...emptyProduct, storeCategoryId: categories[0]?.id ?? '' })
   }
 
   const editProduct = (product: StoreProduct) => {
-    clearSelectedProductImage()
+    clearSelectedProductImages()
     setProductModal({
       id: product.id,
       title: product.title,
@@ -351,45 +366,93 @@ export function SellerDashboardPage() {
     })
   }
 
-  const selectProductImage = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const selectProductImages = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? [])
     event.target.value = ''
-    if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      notify('Choose a JPEG, PNG or WebP image.', 'error')
-      return
+    if (!selectedFiles.length) return
+
+    const validFiles: File[] = []
+
+    for (const file of selectedFiles) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        notify('Choose only JPEG, PNG or WebP images.', 'error')
+        return
+      }
+      if (file.size > 5_000_000) {
+        notify(`“${file.name}” is larger than 5 MB.`, 'error')
+        return
+      }
+      validFiles.push(file)
     }
-    if (file.size > 5_000_000) {
-      notify('The product image must be smaller than 5 MB.', 'error')
-      return
-    }
-    setProductImageFile(file)
-    setProductImagePreview(URL.createObjectURL(file))
+
+    setProductImages((current) => {
+      const remainingSlots = 8 - current.length
+      if (remainingSlots <= 0) {
+        notify('You can upload a maximum of 8 product photos.', 'error')
+        return current
+      }
+
+      const uniqueFiles = validFiles.filter(
+        (file) =>
+          !current.some(
+            ({ file: existing }) =>
+              existing.name === file.name &&
+              existing.size === file.size &&
+              existing.lastModified === file.lastModified,
+          ),
+      )
+
+      const acceptedFiles = uniqueFiles.slice(0, remainingSlots)
+
+      if (uniqueFiles.length > remainingSlots) {
+        notify('Only the first 8 product photos were selected.', 'error')
+      }
+
+      return [
+        ...current,
+        ...acceptedFiles.map((file) => ({
+          file,
+          preview: URL.createObjectURL(file),
+        })),
+      ]
+    })
   }
 
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault()
     if (!productModal) return
     setBusy(true)
-    let uploadedImage: Awaited<ReturnType<typeof storesApi.uploadSellerProductImage>> | null = null
+
+    let uploadedImages: Awaited<ReturnType<typeof storesApi.uploadSellerProductImages>> = []
+
     try {
-      if (productImageFile) {
-        uploadedImage = await storesApi.uploadSellerProductImage(productImageFile)
+      if (productImages.length) {
+        uploadedImages = await storesApi.uploadSellerProductImages(
+          productImages.map(({ file }) => file),
+        )
       }
+
+      const primaryUploadedImage = uploadedImages[0]
+
       const body: CreateSellerProductInput = {
         title: productModal.title.trim(),
         description: productModal.description.trim(),
         price: Number(productModal.price),
         stock: Number(productModal.stock),
         storeCategoryId: productModal.storeCategoryId,
-        ...(uploadedImage
-          ? { imageUrl: uploadedImage.url, imageUploadId: uploadedImage.id }
+        ...(primaryUploadedImage
+          ? {
+              imageUploadIds: uploadedImages.map((image) => image.id),
+              imageUploadId: primaryUploadedImage.id,
+              imageUrl: primaryUploadedImage.url,
+            }
           : productModal.imageUrl?.trim()
             ? { imageUrl: productModal.imageUrl.trim() }
             : {}),
         ...(productModal.published !== undefined ? { published: productModal.published } : {}),
         ...(productModal.tags ? { tags: productModal.tags } : {}),
       }
+
       if (productModal.id) {
         await storesApi.updateSellerProduct(productModal.id, body)
         notify('Product updated successfully.')
@@ -397,13 +460,14 @@ export function SellerDashboardPage() {
         await storesApi.createSellerProduct(body)
         notify('Product added to your store.')
       }
+
       setProductModal(null)
-      clearSelectedProductImage()
+      clearSelectedProductImages()
       await Promise.all([loadProducts(query), loadOverview()])
     } catch (caught) {
-      if (uploadedImage) {
-        await storesApi.removeSellerProductUpload(uploadedImage.id).catch(() => undefined)
-      }
+      await Promise.allSettled(
+        uploadedImages.map((image) => storesApi.removeSellerProductUpload(image.id)),
+      )
       notify(caught instanceof Error ? caught.message : 'Could not save the product.', 'error')
     } finally {
       setBusy(false)
@@ -1335,7 +1399,7 @@ export function SellerDashboardPage() {
           subtitle="Products are published directly inside your assigned store."
           onClose={() => {
             setProductModal(null)
-            clearSelectedProductImage()
+            clearSelectedProductImages()
           }}
         >
           <form onSubmit={(event) => void saveProduct(event)} className="grid gap-5 p-6">
@@ -1372,7 +1436,7 @@ export function SellerDashboardPage() {
                   }
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-zinc-300">
+              <label className="grid gap-2 text-sm font-semibold text-zinc-300 sm:col-span-2">
                 Category
                 <select
                   required
@@ -1392,67 +1456,131 @@ export function SellerDashboardPage() {
                     ))}
                 </select>
               </label>
-              <div className="grid gap-2 text-sm font-semibold text-zinc-300 sm:col-span-2">
-                Product image
-                <div className="relative grid min-h-44 place-items-center overflow-hidden rounded-2xl border border-dashed border-white/15 bg-black/20">
-                  {productImagePreview || productModal.imageUrl ? (
-                    <img
-                      className="absolute inset-0 h-full w-full object-cover"
-                      src={productImagePreview ?? productModal.imageUrl}
-                      alt="Product preview"
-                    />
-                  ) : (
+              <div className="grid gap-3 text-sm font-semibold text-zinc-300 sm:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Product images</span>
+                  <span className="text-[11px] font-normal text-zinc-500">
+                    {productImages.length}/8 selected
+                  </span>
+                </div>
+
+                {productImages.length ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {productImages.map(({ file, preview }, index) => (
+                      <div
+                        key={`${file.name}-${file.lastModified}-${index}`}
+                        className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/20"
+                      >
+                        <img
+                          className="h-full w-full object-cover"
+                          src={preview}
+                          alt={`Product preview ${index + 1}`}
+                        />
+                        {index === 0 ? (
+                          <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-2 py-1 text-[9px] font-black text-zinc-950">
+                            PRIMARY
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/75 text-sm text-white transition hover:bg-red-500"
+                          onClick={() => removeSelectedProductImage(index)}
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : productModal.imageUrl ? (
+                  <div className="grid gap-2">
+                    <div className="relative aspect-[4/3] max-h-56 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                      <img
+                        className="h-full w-full object-contain"
+                        src={productModal.imageUrl}
+                        alt="Current primary product image"
+                      />
+                      <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-black text-zinc-900">
+                        CURRENT IMAGE
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-normal text-zinc-500">
+                      Upload new photos only if you want to replace the current product gallery.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid min-h-44 place-items-center rounded-2xl border border-dashed border-white/15 bg-black/20">
                     <span className="grid place-items-center gap-2 p-6 text-center">
                       <span className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-2xl text-amber-400">
                         +
                       </span>
-                      <strong className="text-sm text-white">Add a product photo</strong>
+                      <strong className="text-sm text-white">Add product photos</strong>
                       <span className="text-xs font-normal text-zinc-500">
-                        JPEG, PNG or WebP · maximum 5 MB
+                        Up to 8 JPEG, PNG or WebP images · maximum 5 MB each
                       </span>
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
+
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="group flex cursor-pointer items-center justify-center gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] px-4 py-3 text-center transition hover:border-amber-500/60 hover:bg-amber-500/[0.13]">
+                  <label
+                    className={`group flex items-center justify-center gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] px-4 py-3 text-center transition ${
+                      productImages.length >= 8
+                        ? 'cursor-not-allowed opacity-50'
+                        : 'cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/[0.13]'
+                    }`}
+                  >
                     <input
                       className="sr-only"
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       capture="environment"
-                      onChange={selectProductImage}
+                      disabled={productImages.length >= 8}
+                      onChange={selectProductImages}
                     />
                     <span>
                       <strong className="block text-sm text-amber-300">Take photo</strong>
                       <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
-                        Open the rear camera
+                        Add one photo from the rear camera
                       </span>
                     </span>
                   </label>
-                  <label className="group flex cursor-pointer items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-center transition hover:border-white/20 hover:bg-white/[0.06]">
+
+                  <label
+                    className={`group flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-center transition ${
+                      productImages.length >= 8
+                        ? 'cursor-not-allowed opacity-50'
+                        : 'cursor-pointer hover:border-white/20 hover:bg-white/[0.06]'
+                    }`}
+                  >
                     <input
                       className="sr-only"
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
-                      onChange={selectProductImage}
+                      multiple
+                      disabled={productImages.length >= 8}
+                      onChange={selectProductImages}
                     />
                     <span>
-                      <strong className="block text-sm text-white">Upload image</strong>
+                      <strong className="block text-sm text-white">Upload photos</strong>
                       <span className="mt-0.5 block text-[11px] font-normal text-zinc-500">
-                        Choose from this device
+                        Choose up to {Math.max(0, 8 - productImages.length)} more
                       </span>
                     </span>
                   </label>
                 </div>
-                {productImageFile ? (
+
+                {productImages.length ? (
                   <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3 py-2 text-xs">
-                    <span className="truncate text-emerald-300">{productImageFile.name}</span>
+                    <span className="text-emerald-300">
+                      The first photo will be used as the primary image.
+                    </span>
                     <button
                       type="button"
-                      className="font-bold text-zinc-400 hover:text-white"
-                      onClick={clearSelectedProductImage}
+                      className="shrink-0 font-bold text-zinc-400 hover:text-white"
+                      onClick={clearSelectedProductImages}
                     >
-                      Remove
+                      Remove all
                     </button>
                   </div>
                 ) : null}
@@ -1478,10 +1606,17 @@ export function SellerDashboardPage() {
                   min={0}
                   step={1}
                   type="number"
-                  className={fieldClass}
-                  value={productModal.stock}
+                  inputMode="numeric"
+                  className={`${fieldClass} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                  value={Number.isFinite(productModal.stock) ? productModal.stock : ''}
                   onChange={(event) =>
-                    setProductModal({ ...productModal, stock: Number(event.target.value) })
+                    setProductModal({
+                      ...productModal,
+                      stock:
+                        event.target.value === ''
+                          ? Number.NaN
+                          : Number(event.target.value),
+                    })
                   }
                 />
               </label>
@@ -1502,7 +1637,7 @@ export function SellerDashboardPage() {
                 className="button button-outline"
                 onClick={() => {
                   setProductModal(null)
-                  clearSelectedProductImage()
+                  clearSelectedProductImages()
                 }}
               >
                 Cancel

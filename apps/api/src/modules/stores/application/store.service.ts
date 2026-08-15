@@ -508,11 +508,36 @@ export class StoreService {
     if (!Number.isInteger(stock) || stock < 0)
       throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
 
-    const imageUploadId = String(input.imageUploadId ?? '').trim()
-    const uploadedImage = imageUploadId
-      ? (await this.uploads.assertOwnedTemporary(sellerId, [imageUploadId]))[0]
-      : null
-    const imageUrl = uploadedImage?.url ?? String(input.imageUrl ?? '').trim()
+    const rawImageUploadIds: string[] = Array.isArray(input.imageUploadIds)
+      ? (input.imageUploadIds as unknown[])
+          .map((id) => String(id).trim())
+          .filter((id) => id.length > 0)
+      : []
+
+    const imageUploadIds: string[] = [...new Set(rawImageUploadIds)]
+
+    if (!imageUploadIds.length) {
+      const legacyImageUploadId = String(input.imageUploadId ?? '').trim()
+      if (legacyImageUploadId) imageUploadIds.push(legacyImageUploadId)
+    }
+
+    if (imageUploadIds.length > 8) {
+      throw new AppError(
+        400,
+        'PRODUCT_IMAGE_LIMIT_EXCEEDED',
+        'A product can have a maximum of 8 images.',
+      )
+    }
+
+    const uploadedImages = imageUploadIds.length
+      ? await this.uploads.assertOwnedTemporary(sellerId, imageUploadIds)
+      : []
+
+    const fallbackImageUrl =
+      uploadedImages.length === 0 ? String(input.imageUrl ?? '').trim() : ''
+
+    const primaryImageUrl = uploadedImages[0]?.url ?? fallbackImageUrl
+
     let product: any = null
 
     try {
@@ -540,19 +565,33 @@ export class StoreService {
         approvedBy: sellerId,
       })
 
-      if (imageUrl) {
+      if (uploadedImages.length) {
+        await ProductImageModel.insertMany(
+          uploadedImages.map((image, index) => ({
+            productId: product._id,
+            url: image.url,
+            altText: title,
+            displayOrder: index,
+            isPrimary: index === 0,
+          })),
+        )
+
+        await this.uploads.attachToProduct(
+          sellerId,
+          uploadedImages.map((image) => image.id),
+          String(product._id),
+        )
+      } else if (fallbackImageUrl) {
         await ProductImageModel.create({
           productId: product._id,
-          url: imageUrl,
+          url: fallbackImageUrl,
           altText: title,
           displayOrder: 0,
           isPrimary: true,
         })
       }
-      if (uploadedImage) {
-        await this.uploads.attachToProduct(sellerId, [uploadedImage.id], String(product._id))
-      }
-      return productView(product.toObject(), imageUrl || null)
+
+      return productView(product.toObject(), primaryImageUrl || null)
     } catch (error) {
       if (product?._id) {
         await Promise.allSettled([
@@ -566,64 +605,133 @@ export class StoreService {
 
   async updateProduct(sellerId: string, productId: string, input: any) {
     const store = await this.sellerDocument(sellerId)
-    const imageUploadId = String(input.imageUploadId ?? '').trim()
-    const uploadedImage = imageUploadId
-      ? (await this.uploads.assertOwnedTemporary(sellerId, [imageUploadId]))[0]
-      : null
+
+    const rawImageUploadIds: string[] = Array.isArray(input.imageUploadIds)
+      ? (input.imageUploadIds as unknown[])
+          .map((id) => String(id).trim())
+          .filter((id) => id.length > 0)
+      : []
+
+    const imageUploadIds: string[] = [...new Set(rawImageUploadIds)]
+
+    if (!imageUploadIds.length) {
+      const legacyImageUploadId = String(input.imageUploadId ?? '').trim()
+      if (legacyImageUploadId) imageUploadIds.push(legacyImageUploadId)
+    }
+
+    if (imageUploadIds.length > 8) {
+      throw new AppError(
+        400,
+        'PRODUCT_IMAGE_LIMIT_EXCEEDED',
+        'A product can have a maximum of 8 images.',
+      )
+    }
+
+    const uploadedImages = imageUploadIds.length
+      ? await this.uploads.assertOwnedTemporary(sellerId, imageUploadIds)
+      : []
+
     const product: any = await ProductModel.findOne({
       _id: productId,
       storeId: store._id,
       deletedAt: null,
     })
+
     if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.')
 
-    if (typeof input.title === 'string' && input.title.trim()) product.title = input.title.trim()
+    if (typeof input.title === 'string' && input.title.trim()) {
+      product.title = input.title.trim()
+    }
+
     if (typeof input.description === 'string' && input.description.trim()) {
       product.description = input.description.trim()
     }
+
     if (input.price !== undefined) {
       const price = money(input.price)
       if (price <= 0)
         throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
       product.price = price
     }
+
     if (input.stock !== undefined) {
       const stock = Number(input.stock)
       if (!Number.isInteger(stock) || stock < 0)
         throw new AppError(400, 'PRODUCT_STOCK_INVALID', 'Stock must be zero or more.')
+
       product.stock = stock
       product.status = stock > 0 ? 'APPROVED' : 'OUT_OF_STOCK'
     }
-    if (typeof input.published === 'boolean') product.published = input.published
+
+    if (typeof input.published === 'boolean') {
+      product.published = input.published
+    }
+
     if (typeof input.storeCategoryId === 'string') {
       const category: any = store.categories.id(input.storeCategoryId)
-      if (!category) throw new AppError(400, 'STORE_CATEGORY_REQUIRED', 'Select a valid category.')
+
+      if (!category) {
+        throw new AppError(400, 'STORE_CATEGORY_REQUIRED', 'Select a valid category.')
+      }
+
       product.storeCategoryId = category._id
       product.categoryId = category._id
     }
+
     await product.save()
 
-    let imageUrl: string | null = null
-    if (uploadedImage || typeof input.imageUrl === 'string') {
-      imageUrl = uploadedImage?.url ?? (input.imageUrl.trim() || null)
-      if (uploadedImage) {
-        await this.uploads.attachToProduct(sellerId, [uploadedImage.id], String(product._id))
-      }
-      await ProductImageModel.deleteMany({ productId: product._id, isPrimary: true })
-      if (imageUrl) {
-        await ProductImageModel.create({
+    const currentPrimaryImage = await ProductImageModel.findOne({
+      productId: product._id,
+      isPrimary: true,
+    }).lean()
+
+    let imageUrl: string | null = currentPrimaryImage?.url ?? null
+
+    if (uploadedImages.length) {
+      await this.uploads.attachToProduct(
+        sellerId,
+        uploadedImages.map((image) => image.id),
+        String(product._id),
+      )
+
+      await ProductImageModel.deleteMany({
+        productId: product._id,
+      })
+
+      await ProductImageModel.insertMany(
+        uploadedImages.map((image, index) => ({
           productId: product._id,
-          url: imageUrl,
+          url: image.url,
           altText: product.title,
-          displayOrder: 0,
-          isPrimary: true,
+          displayOrder: index,
+          isPrimary: index === 0,
+        })),
+      )
+
+      imageUrl = uploadedImages[0]?.url ?? null
+    } else if (typeof input.imageUrl === 'string') {
+      const requestedImageUrl = input.imageUrl.trim()
+      const currentImageUrl = currentPrimaryImage?.url ?? ''
+
+      if (requestedImageUrl !== currentImageUrl) {
+        await ProductImageModel.deleteMany({
+          productId: product._id,
         })
+
+        if (requestedImageUrl) {
+          await ProductImageModel.create({
+            productId: product._id,
+            url: requestedImageUrl,
+            altText: product.title,
+            displayOrder: 0,
+            isPrimary: true,
+          })
+        }
+
+        imageUrl = requestedImageUrl || null
       }
-    } else {
-      imageUrl =
-        (await ProductImageModel.findOne({ productId: product._id, isPrimary: true }).lean())
-          ?.url ?? null
     }
+
     return productView(product.toObject(), imageUrl)
   }
 

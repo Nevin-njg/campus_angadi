@@ -163,6 +163,7 @@ export interface CreateSellerProductInput {
   storeCategoryId: string
   imageUrl?: string
   imageUploadId?: string
+  imageUploadIds?: string[]
   published?: boolean
   tags?: string[]
 }
@@ -223,6 +224,26 @@ export const storesApi = {
     apiRequest<{ id: string }>(`/seller/store/products/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     }),
+
+  uploadSellerProductImages: async (files: File[]) => {
+    const body = new FormData()
+
+    for (const file of files) {
+      body.append('images', file)
+    }
+
+    const images = await apiRequest<SellerUploadedImage[]>('/uploads/product-images', {
+      method: 'POST',
+      body,
+    })
+
+    if (!images.length) {
+      throw new Error('The image upload did not return any usable images.')
+    }
+
+    return images
+  },
+
   uploadSellerProductImage: async (file: File) => {
     const body = new FormData()
     body.append('images', file)
