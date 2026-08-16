@@ -13,4 +13,28 @@ export const notificationsApi = {
   unread: () => apiRequest<{ count: number }>('/notifications/unread-count'),
   read: (id: string) => apiRequest<Notification>(`/notifications/${id}/read`, { method: 'PATCH' }),
   readAll: () => apiRequest<null>('/notifications/read-all', { method: 'PATCH' }),
+
+  pushConfig: () =>
+    apiRequest<{ enabled: boolean; publicKey: string | null }>(
+      '/notifications/push/public-key',
+    ),
+
+  subscribePush: (subscription: {
+    endpoint: string
+    expirationTime: number | null
+    keys: {
+      p256dh: string
+      auth: string
+    }
+  }) =>
+    apiRequest<{ subscribed: boolean }>('/notifications/push/subscribe', {
+      method: 'POST',
+      body: subscription,
+    }),
+
+  unsubscribePush: (endpoint: string) =>
+    apiRequest<{ subscribed: boolean }>('/notifications/push/unsubscribe', {
+      method: 'DELETE',
+      body: { endpoint },
+    }),
 }

@@ -19,6 +19,7 @@ import { AppError } from '../../../core/errors/app-error.js'
 import type { CartRepository, CheckoutCatalogRepository } from '../../cart/domain/cart.js'
 import type { CheckoutPlanGroup, OrderRepository } from '../domain/order.js'
 import type { NotificationRepository } from '../../notifications/domain/notification.js'
+import type { PushService } from '../../push/application/push.service.js'
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
@@ -59,6 +60,7 @@ export class OrderService {
     private readonly catalog: CheckoutCatalogRepository,
     private readonly appName = 'Campus Angadi',
     private readonly notifications: NotificationRepository | null = null,
+    private readonly push: PushService | null = null,
   ) {}
 
   async checkout(buyerId: string, input: CheckoutInput): Promise<CheckoutResult> {
@@ -159,11 +161,13 @@ export class OrderService {
       groups.set(groupKey, group)
     }
 
+    const checkoutGroups = [...groups.values()]
+
     const result = await this.orders.createCheckout(
       buyerId,
       input,
       randomUUID(),
-      [...groups.values()],
+      checkoutGroups,
       cartIdToClear,
     )
 
@@ -176,6 +180,39 @@ export class OrderService {
       referenceType: 'CHECKOUT',
       referenceId: result.checkoutGroupId,
     })
+
+    const sellerNotifications = result.orders.map(async (order, index) => {
+      const checkoutGroup = checkoutGroups[index]
+
+      // Official-store orders only.
+      // Second-hand USER orders must not trigger seller notifications.
+      if (!checkoutGroup || checkoutGroup.sellerType !== 'ADMIN') return
+
+      const sellerId = checkoutGroup.items[0]?.product.sellerId
+      if (!sellerId) return
+
+      const message = `${order.orderNumber} · ₹${order.totalAmount.toFixed(2)} · ${
+        order.itemCount
+      } item${order.itemCount === 1 ? '' : 's'}`
+
+      await this.notifications?.sendToUser(sellerId, {
+        type: 'ORDER',
+        title: 'New order received',
+        message,
+        referenceType: 'ORDER',
+        referenceId: order.id,
+      })
+
+      await this.push?.sendToUser(sellerId, {
+        title: 'New order received',
+        body: message,
+        url: `/seller?section=orders&order=${encodeURIComponent(order.id)}`,
+        tag: `order-${order.id}`,
+        orderId: order.id,
+      })
+    })
+
+    await Promise.allSettled(sellerNotifications)
 
     return result
   }

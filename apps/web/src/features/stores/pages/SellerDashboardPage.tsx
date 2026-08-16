@@ -28,6 +28,10 @@ import {
 } from '../../../components/ui/icons'
 import { useAuthStore } from '../../auth/store/use-auth-store'
 import {
+  enablePushNotifications,
+  pushNotificationsEnabled,
+} from '../../notifications/lib/push-notifications'
+import {
   storesApi,
   type CreateSellerProductInput,
   type SellerOrder,
@@ -242,6 +246,9 @@ export function SellerDashboardPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushChecking, setPushChecking] = useState(true)
+  const [pushBusy, setPushBusy] = useState(false)
   const [query, setQuery] = useState('')
   const [orderStatus, setOrderStatus] = useState('')
   const [productModal, setProductModal] = useState<ProductForm | null>(null)
@@ -262,6 +269,25 @@ export function SellerDashboardPage() {
   }, [productImages])
 
   useEffect(() => {
+    let active = true
+
+    void pushNotificationsEnabled()
+      .then((enabled) => {
+        if (active) setPushEnabled(enabled)
+      })
+      .catch(() => {
+        if (active) setPushEnabled(false)
+      })
+      .finally(() => {
+        if (active) setPushChecking(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       productImagesRef.current.forEach(({ preview }) => URL.revokeObjectURL(preview))
     }
@@ -279,6 +305,25 @@ export function SellerDashboardPage() {
       setSuccess(null)
       setError(null)
     }, 4000)
+  }
+
+  const enableOrderNotifications = async () => {
+    setPushBusy(true)
+
+    try {
+      await enablePushNotifications()
+      setPushEnabled(true)
+      notify('Order notifications enabled successfully.')
+    } catch (caught) {
+      notify(
+        caught instanceof Error
+          ? caught.message
+          : 'Could not enable order notifications.',
+        'error',
+      )
+    } finally {
+      setPushBusy(false)
+    }
   }
 
   const loadOverview = useCallback(async () => {
@@ -792,6 +837,53 @@ export function SellerDashboardPage() {
                   <button type="button" onClick={openNewProduct} className="button button-primary">
                     + Add new product
                   </button>
+                </div>
+
+                <div className="mt-7 flex flex-col gap-4 rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-amber-500/[0.04] to-transparent p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                      <ShoppingBagIcon className="h-5 w-5" />
+                    </span>
+
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-bold text-white">Order notifications</h3>
+
+                        {pushEnabled ? (
+                          <span className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+                            Enabled
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+                        Get notified immediately when a new official-store order arrives,
+                        including when Campus Angadi is running in the background.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    {pushChecking ? (
+                      <span className="text-xs font-semibold text-zinc-500">
+                        Checking notifications…
+                      </span>
+                    ) : pushEnabled ? (
+                      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+                        <CheckCircleIcon className="h-4 w-4" />
+                        Notifications enabled
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void enableOrderNotifications()}
+                        disabled={pushBusy}
+                        className="button button-primary disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {pushBusy ? 'Enabling…' : 'Enable notifications'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

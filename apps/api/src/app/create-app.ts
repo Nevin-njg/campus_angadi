@@ -49,6 +49,7 @@ import {
   createNotificationRouter,
   createAdminNotificationRouter,
 } from '../modules/notifications/presentation/notification.routes.js'
+import { createPushRouter } from '../modules/push/presentation/push.routes.js'
 import {
   createReportRouter,
   createAdminReportRouter,
@@ -182,6 +183,10 @@ export function createApp(root: CompositionRoot) {
     root.authenticate,
     createMarketplaceGate(root.settingsService, 'ORDERS'),
     createOrderRouter(root.orderService, root.authenticate, root.rateLimitStoreFactory),
+  )
+  api.use(
+    '/notifications/push',
+    createPushRouter(root.pushService, root.authenticate),
   )
   api.use('/notifications', createNotificationRouter(root.notificationService, root.authenticate))
   api.use('/reports', createReportRouter(root.reportService, root.authenticate))

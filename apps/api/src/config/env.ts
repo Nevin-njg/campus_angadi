@@ -78,6 +78,12 @@ const envSchema = z
       .max(15_000_000)
       .default(5_000_000),
     PRODUCT_IMAGE_MAX_COUNT: z.coerce.number().int().min(1).max(8).default(8),
+
+    // Web Push / seller order notifications.
+    // Empty values keep push disabled without preventing the API from starting.
+    VAPID_PUBLIC_KEY: z.string().trim().default(''),
+    VAPID_PRIVATE_KEY: z.string().trim().default(''),
+    VAPID_SUBJECT: z.string().trim().default('https://campusangadi.app'),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production' && value.METRICS_ENABLED && !value.METRICS_TOKEN) {

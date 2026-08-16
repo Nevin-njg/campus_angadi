@@ -15,3 +15,6 @@ backups/
 .patch-backups/
 apps/api/check-store-products.ts
 apps/api/check-seller-create.ts
+
+# Vite PWA development output
+apps/web/dev-dist/

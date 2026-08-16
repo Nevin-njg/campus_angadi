@@ -44,6 +44,7 @@ import { CleanupService } from '../modules/operations/application/cleanup.servic
 import { CleanupScheduler } from '../modules/operations/application/cleanup.scheduler.js'
 import { IndexInspectionService } from '../modules/operations/application/index-inspection.service.js'
 import { StoreService } from '../modules/stores/application/store.service.js'
+import { PushService } from '../modules/push/application/push.service.js'
 
 export function createCompositionRoot() {
   const metrics = new MetricsRegistry()
@@ -98,6 +99,11 @@ export function createCompositionRoot() {
   })
   const storeService = new StoreService(uploadService)
   const notifications = new MongooseNotificationRepository()
+  const pushService = new PushService(
+    env.VAPID_PUBLIC_KEY,
+    env.VAPID_PRIVATE_KEY,
+    env.VAPID_SUBJECT,
+  )
   const listings = new MongooseListingRepository()
   const listingService = new ListingService(
     listings,
@@ -111,7 +117,14 @@ export function createCompositionRoot() {
   const cartMapper = new DefaultCartMapper()
   const cartService = new CartService(carts, checkoutCatalog, cartMapper)
   const orders = new MongooseOrderRepository()
-  const orderService = new OrderService(orders, carts, checkoutCatalog, env.APP_NAME, notifications)
+  const orderService = new OrderService(
+    orders,
+    carts,
+    checkoutCatalog,
+    env.APP_NAME,
+    notifications,
+    pushService,
+  )
   const dealers = new MongooseDealerRepository()
   const dealerService = new DealerService(dealers)
   const notificationService = new NotificationService(notifications)
@@ -161,6 +174,7 @@ export function createCompositionRoot() {
     orderService,
     dealerService,
     notificationService,
+    pushService,
     reportService,
     auditService,
     settingsService,
