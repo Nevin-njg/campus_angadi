@@ -26,6 +26,15 @@ export function NotificationsPage() {
       await c.invalidateQueries({ queryKey: queryKeys.notifications.unread(user?.id ?? '') })
     },
   })
+
+  const clear = useMutation({
+    mutationFn: notificationsApi.deleteAll,
+    onSuccess: async () => {
+      await c.invalidateQueries({ queryKey: queryKeys.notifications.all(user?.id ?? '') })
+      await c.invalidateQueries({ queryKey: queryKeys.notifications.unread(user?.id ?? '') })
+    },
+  })
+
   const unread = q.data?.items.filter((item) => !item.read).length ?? 0
   async function openNotification(item: NonNullable<typeof q.data>['items'][number]) {
     if (!item.read) {
@@ -35,23 +44,46 @@ export function NotificationsPage() {
         return
       }
     }
+
     if (!user) return
+
     const path = notificationPath(item, user.role)
     if (path) void navigate(path)
   }
+
+  function clearAllNotifications() {
+    const confirmed = window.confirm(
+      'Clear all notifications? This will permanently remove all of your notifications.',
+    )
+
+    if (!confirmed) return
+
+    clear.mutate()
+  }
+
   return (
     <section className="container notifications-page">
       <div className="page-title-row">
         <div>
           <h1>Notifications</h1>
         </div>
-        <button
-          className="button button-outline"
-          disabled={!unread || all.isPending}
-          onClick={() => all.mutate()}
-        >
-          {all.isPending ? 'Updating…' : `Mark all read${unread ? ` (${unread})` : ''}`}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="button button-outline"
+            disabled={!unread || all.isPending}
+            onClick={() => all.mutate()}
+          >
+            {all.isPending ? 'Updating…' : `Mark all read${unread ? ` (${unread})` : ''}`}
+          </button>
+
+          <button
+            className="button button-outline"
+            disabled={!q.data?.items.length || clear.isPending}
+            onClick={clearAllNotifications}
+          >
+            {clear.isPending ? 'Clearing…' : 'Clear all'}
+          </button>
+        </div>
       </div>
       <div className="notification-list">
         {q.isLoading ? (
@@ -70,20 +102,28 @@ export function NotificationsPage() {
             {read.error.message}
           </div>
         ) : null}
+
+        {clear.isError ? (
+          <div className="form-error" role="alert">
+            {clear.error.message}
+          </div>
+        ) : null}
+
         {q.data?.items.map((x) => (
-          <button
-            type="button"
-            className={`notification-card ${x.read ? '' : 'unread'}`}
-            key={x.id}
-            onClick={() => void openNotification(x)}
-          >
-            <div>
-              <span>{x.type}</span>
-              <strong>{x.title}</strong>
-              <p>{x.message}</p>
-            </div>
-            <small>{new Date(x.createdAt).toLocaleString()}</small>
-          </button>
+          <div key={x.id} className="flex items-stretch gap-2">
+            <button
+              type="button"
+              className={`notification-card min-w-0 flex-1 ${x.read ? '' : 'unread'}`}
+              onClick={() => void openNotification(x)}
+            >
+              <div>
+                <span>{x.type}</span>
+                <strong>{x.title}</strong>
+                <p>{x.message}</p>
+              </div>
+              <small>{new Date(x.createdAt).toLocaleString()}</small>
+            </button>
+          </div>
         ))}
         {!q.isLoading && !q.isError && !q.data?.items.length ? (
           <div className="catalog-empty">

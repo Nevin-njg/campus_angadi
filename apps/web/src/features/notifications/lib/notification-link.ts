@@ -9,7 +9,13 @@ export function notificationPath(
   const id = encodeURIComponent(notification.referenceId)
   const isStaff = role === 'MODERATOR' || role === 'ADMIN' || role === 'SUPER_ADMIN'
 
-  if (type === 'ORDER') return isStaff ? `/admin/orders/${id}` : `/account/orders/${id}`
+  if (type === 'ORDER') {
+    if (role === 'SELLER') {
+      return `/seller?section=orders&order=${id}`
+    }
+
+    return isStaff ? `/admin/orders/${id}` : `/account/orders/${id}`
+  }
   if (type === 'CHECKOUT') return `/account/orders?created=${id}`
   if (type === 'PRODUCT') return `/account/listings/${id}`
   if (type === 'REPORT') return '/account/reports'

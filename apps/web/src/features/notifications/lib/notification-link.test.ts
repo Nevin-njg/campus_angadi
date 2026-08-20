@@ -5,6 +5,9 @@ describe('notificationPath', () => {
   it('routes buyers and staff to their respective order screens', () => {
     const notification = { referenceType: 'Order', referenceId: 'order-1' }
     expect(notificationPath(notification, 'USER')).toBe('/account/orders/order-1')
+    expect(notificationPath(notification, 'SELLER')).toBe(
+      '/seller?section=orders&order=order-1',
+    )
     expect(notificationPath(notification, 'MODERATOR')).toBe('/admin/orders/order-1')
   })
 

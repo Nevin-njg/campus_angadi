@@ -238,7 +238,21 @@ export function SellerDashboardPage() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const confirm = useConfirmation()
-  const [section, setSection] = useState<SellerSection>('overview')
+  const [section, setSection] = useState<SellerSection>(() => {
+    const requestedSection = new URLSearchParams(window.location.search).get('section')
+
+    if (
+      requestedSection === 'overview' ||
+      requestedSection === 'products' ||
+      requestedSection === 'categories' ||
+      requestedSection === 'orders' ||
+      requestedSection === 'offers'
+    ) {
+      return requestedSection
+    }
+
+    return 'overview'
+  })
   const [overview, setOverview] = useState<SellerOverview | null>(null)
   const [products, setProducts] = useState<StoreProduct[]>([])
   const [orders, setOrders] = useState<SellerOrder[]>([])
