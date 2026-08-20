@@ -63,6 +63,11 @@ export class MongooseNotificationRepository implements NotificationRepository {
     await NotificationModel.updateMany({ userId, readAt: null }, { $set: { readAt: new Date() } })
   }
 
+  async deleteAll(userId: string): Promise<number> {
+    const result = await NotificationModel.deleteMany({ userId })
+    return result.deletedCount
+  }
+
   async recipientIdsForAudience(role: UserRole | 'ALL'): Promise<string[]> {
     const filter: Record<string, unknown> = { status: 'ACTIVE' }
     if (role === 'USER') filter.role = 'USER'

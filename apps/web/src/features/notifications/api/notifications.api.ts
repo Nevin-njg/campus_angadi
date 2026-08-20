@@ -14,6 +14,11 @@ export const notificationsApi = {
   read: (id: string) => apiRequest<Notification>(`/notifications/${id}/read`, { method: 'PATCH' }),
   readAll: () => apiRequest<null>('/notifications/read-all', { method: 'PATCH' }),
 
+  deleteAll: () =>
+    apiRequest<{ deletedCount: number }>('/notifications', {
+      method: 'DELETE',
+    }),
+
   pushConfig: () =>
     apiRequest<{ enabled: boolean; publicKey: string | null }>(
       '/notifications/push/public-key',

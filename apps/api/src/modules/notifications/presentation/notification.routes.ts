@@ -67,6 +67,20 @@ export function createNotificationRouter(
       })
     }),
   )
+
+  router.delete(
+    '/',
+    asyncHandler(async (req, res) => {
+      const deletedCount = await service.deleteAll(req.auth!.user.id)
+
+      res.json({
+        success: true,
+        message: 'All notifications deleted.',
+        data: { deletedCount },
+      })
+    }),
+  )
+
   return router
 }
 

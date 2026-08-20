@@ -18,6 +18,11 @@ export class NotificationService {
   markAllRead(userId: string) {
     return this.notifications.markAllRead(userId)
   }
+
+  deleteAll(userId: string) {
+    return this.notifications.deleteAll(userId)
+  }
+
   send(input: SendNotificationInput) {
     return this.notifications.send(input)
   }

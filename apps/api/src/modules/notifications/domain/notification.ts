@@ -11,6 +11,7 @@ export interface NotificationRepository {
   unreadCount(userId: string): Promise<number>
   markRead(userId: string, id: string): Promise<Notification | null>
   markAllRead(userId: string): Promise<void>
+  deleteAll(userId: string): Promise<number>
   send(input: SendNotificationInput): Promise<number>
   sendToUser(
     userId: string,
