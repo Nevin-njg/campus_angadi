@@ -1,19 +1,24 @@
 import { timingSafeEqual } from 'node:crypto'
 import { Router, type CookieOptions, type RequestHandler } from 'express'
+import { z } from 'zod'
 import { rateLimit } from 'express-rate-limit'
 import * as contracts from '@campusbaza/contracts'
 import type {
   AccessRequestInput,
   GoogleSignInInput,
+  RequestOtpInput,
   ReviewAccessRequestInput,
   TestSignInInput,
+  VerifyOtpInput,
 } from '@campusbaza/contracts'
 
 const {
   accessRequestInputSchema,
   googleSignInInputSchema,
+  requestOtpInputSchema,
   reviewAccessRequestInputSchema,
   testSignInInputSchema,
+  verifyOtpInputSchema,
 } = contracts
 import type { AppEnv } from '../../../config/env.js'
 import { AppError } from '../../../core/errors/app-error.js'
@@ -29,6 +34,12 @@ import type { AccessRequestService } from '../application/access-request.service
 import { requireRoles } from '../../../core/middleware/authenticate.js'
 
 const REFRESH_COOKIE = 'campusbaza_refresh'
+
+const mobileRefreshInputSchema = z
+  .object({
+    refreshToken: z.string().trim().min(100).max(12_000),
+  })
+  .strict()
 
 function queryText(value: unknown, key: string): string {
   if (typeof value !== 'object' || value === null) return ''
@@ -68,6 +79,14 @@ export function createAuthRouter(
       return
     }
 
+    // The native seller app does not use browser refresh cookies.
+    // Its refresh token is stored securely on the device instead,
+    // so browser Origin/CSRF checks do not apply to these endpoints.
+    if (request.path.startsWith('/seller-mobile/')) {
+      next()
+      return
+    }
+
     const origin = request.header('origin')
 
     // Keep local command-line testing convenient, while requiring an Origin
@@ -93,6 +112,44 @@ export function createAuthRouter(
 
   router.use(requireTrustedOrigin)
 
+  const sellerOtpRequestLimiter = rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 10,
+    ...rateLimitStoreOption(
+      storeFactory,
+      'auth-seller-otp-request',
+    ),
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: 'SELLER_OTP_RATE_LIMIT',
+        message:
+          'Too many login-code requests. Try again later.',
+      },
+    },
+  })
+
+  const sellerOtpVerifyLimiter = rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 30,
+    ...rateLimitStoreOption(
+      storeFactory,
+      'auth-seller-otp-verify',
+    ),
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: {
+        code: 'SELLER_OTP_VERIFY_RATE_LIMIT',
+        message:
+          'Too many verification attempts. Try again later.',
+      },
+    },
+  })
+
   const googleSignInLimiter = rateLimit({
     windowMs: 15 * 60_000,
     limit: 30,
@@ -107,6 +164,106 @@ export function createAuthRouter(
       },
     },
   })
+
+  router.post(
+    '/seller-mobile/request-otp',
+    sellerOtpRequestLimiter,
+    validateBody(requestOtpInputSchema),
+    asyncHandler(async (request, response) => {
+      const input = request.body as RequestOtpInput
+      const data = await auth.requestSellerOtp(input.email)
+
+      response.json({
+        success: true,
+        message:
+          'If this is an active seller account, a login code has been sent.',
+        data,
+      })
+    }),
+  )
+
+  router.post(
+    '/seller-mobile/verify-otp',
+    sellerOtpVerifyLimiter,
+    validateBody(verifyOtpInputSchema),
+    asyncHandler(async (request, response) => {
+      const input = request.body as VerifyOtpInput
+
+      const result = await auth.verifySellerOtp(
+        input.email,
+        input.code,
+        {
+          ipAddress: request.ip ?? null,
+          userAgent:
+            request.header('user-agent') ?? null,
+        },
+      )
+
+      response.json({
+        success: true,
+        message: 'Seller signed in successfully.',
+        data: {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+        },
+      })
+    }),
+  )
+
+  router.post(
+    '/seller-mobile/refresh',
+    validateBody(mobileRefreshInputSchema),
+    asyncHandler(async (request, response) => {
+      const result = await auth.refreshSellerMobile(
+        (
+          request.body as {
+            refreshToken: string
+          }
+        ).refreshToken,
+      )
+
+      if (result.user.role !== 'SELLER') {
+        await auth.logout(result.refreshToken)
+
+        throw new AppError(
+          403,
+          'SELLER_APP_ACCESS_DENIED',
+          'This account cannot use the seller app.',
+        )
+      }
+
+      response.json({
+        success: true,
+        message: 'Seller session refreshed.',
+        data: {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          user: result.user,
+        },
+      })
+    }),
+  )
+
+  router.post(
+    '/seller-mobile/logout',
+    validateBody(mobileRefreshInputSchema),
+    asyncHandler(async (request, response) => {
+      await auth.logout(
+        (
+          request.body as {
+            refreshToken: string
+          }
+        ).refreshToken,
+      )
+
+      response.json({
+        success: true,
+        message: 'Seller signed out successfully.',
+        data: null,
+      })
+    }),
+  )
 
   router.post(
     '/google',
