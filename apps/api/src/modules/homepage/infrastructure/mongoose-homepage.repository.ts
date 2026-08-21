@@ -1,7 +1,20 @@
-import type { HomepageSectionKey } from '@campusbaza/contracts'
+import type {
+  DynamicHomepageSectionType,
+  HomepageSectionKey,
+} from '@campusbaza/contracts'
 import { Types } from 'mongoose'
-import type { HomepageRepository, HomepageSelectionRecord } from '../domain/homepage.js'
-import { HomepageSelectionModel } from './homepage.model.js'
+import type {
+  CreateDynamicHomepageSectionRecord,
+  DynamicHomepageRepository,
+  DynamicHomepageSectionRecord,
+  HomepageRepository,
+  HomepageSelectionRecord,
+  UpdateDynamicHomepageSectionRecord,
+} from '../domain/homepage.js'
+import {
+  HomepageSectionModel,
+  HomepageSelectionModel,
+} from './homepage.model.js'
 
 function map(document: Record<string, unknown>): HomepageSelectionRecord {
   return {
@@ -48,5 +61,84 @@ export class MongooseHomepageRepository implements HomepageRepository {
       { $set: { productIds: [], updatedBy: adminId } },
       { upsert: true, setDefaultsOnInsert: true },
     )
+  }
+}
+
+
+function mapDynamicSection(
+  document: Record<string, unknown>,
+): DynamicHomepageSectionRecord {
+  const objectId = (value: unknown): string | null => {
+    if (typeof value === 'string') return value
+    if (value instanceof Types.ObjectId) return value.toHexString()
+    return value ? String(value) : null
+  }
+
+  return {
+    id: String(document._id),
+    type: document.type as DynamicHomepageSectionType,
+    title: String(document.title),
+    enabled: Boolean(document.enabled),
+    displayOrder: Number(document.displayOrder),
+    limit: Number(document.limit),
+    departmentId: objectId(document.departmentId),
+    productIds: ((document.productIds as unknown[]) ?? []).map(String),
+    storeIds: ((document.storeIds as unknown[]) ?? []).map(String),
+    createdAt: document.createdAt as Date,
+    updatedAt: document.updatedAt as Date,
+    updatedBy: objectId(document.updatedBy),
+  }
+}
+
+export class MongooseDynamicHomepageRepository
+  implements DynamicHomepageRepository
+{
+  async list(): Promise<DynamicHomepageSectionRecord[]> {
+    const documents = await HomepageSectionModel.find()
+      .sort({ displayOrder: 1, createdAt: 1 })
+      .lean<Record<string, unknown>[]>()
+
+    return documents.map(mapDynamicSection)
+  }
+
+  async findById(
+    id: string,
+  ): Promise<DynamicHomepageSectionRecord | null> {
+    const document = await HomepageSectionModel.findById(id)
+      .lean<Record<string, unknown>>()
+
+    return document ? mapDynamicSection(document) : null
+  }
+
+  async create(
+    input: CreateDynamicHomepageSectionRecord,
+  ): Promise<DynamicHomepageSectionRecord> {
+    const document = await HomepageSectionModel.create(input)
+
+    return mapDynamicSection(
+      document.toObject() as unknown as Record<string, unknown>,
+    )
+  }
+
+  async update(
+    id: string,
+    input: UpdateDynamicHomepageSectionRecord,
+  ): Promise<DynamicHomepageSectionRecord | null> {
+    const document = await HomepageSectionModel.findByIdAndUpdate(
+      id,
+      { $set: input },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).lean<Record<string, unknown>>()
+
+    return document ? mapDynamicSection(document) : null
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const result = await HomepageSectionModel.deleteOne({ _id: id })
+
+    return result.deletedCount > 0
   }
 }

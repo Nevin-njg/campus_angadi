@@ -19,6 +19,11 @@ const storeSchema = new Schema(
     logoUrl: { type: String, default: null },
     bannerUrl: { type: String, default: null },
     sellerId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    departmentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'StoreDepartment',
+      default: null,
+    },
     commissionPercent: { type: Number, required: true, min: 0, max: 100 },
     status: { type: String, enum: ['ACTIVE', 'SUSPENDED', 'ARCHIVED'], default: 'ACTIVE' },
     campusLocation: { type: String, default: null, trim: true },
@@ -29,6 +34,7 @@ const storeSchema = new Schema(
   { timestamps: true },
 )
 storeSchema.index({ name: 'text', slug: 1 })
+storeSchema.index({ departmentId: 1, status: 1 })
 
 export type StoreDocument = InferSchemaType<typeof storeSchema>
 export const StoreModel = model('Store', storeSchema) as Model<StoreDocument>

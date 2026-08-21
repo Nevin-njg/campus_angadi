@@ -31,10 +31,24 @@ export function createStoreRouter(service: StoreService) {
       response.json({
         success: true,
         message: 'Marketplace search completed.',
-        data: await service.searchMarketplace(requestText(request.query, 'q')),
+        data: await service.searchMarketplace(
+          requestText(request.query, 'q'),
+          requestText(request.query, 'department'),
+        ),
       })
     }),
   )
+  router.get(
+    '/departments',
+    asyncHandler(async (_request, response) => {
+      response.json({
+        success: true,
+        message: 'Store departments retrieved.',
+        data: await service.listDepartments(),
+      })
+    }),
+  )
+
   router.get(
     '/:slug',
     asyncHandler(async (request, response) => {
@@ -51,6 +65,53 @@ export function createStoreRouter(service: StoreService) {
 export function createAdminStoreRouter(service: StoreService, authenticate: RequestHandler) {
   const router = Router()
   router.use(authenticate, requireRoles('ADMIN', 'SUPER_ADMIN'))
+  router.get(
+    '/departments',
+    asyncHandler(async (_request, response) => {
+      response.json({
+        success: true,
+        message: 'Store departments retrieved.',
+        data: await service.adminListDepartments(),
+      })
+    }),
+  )
+
+  router.post(
+    '/departments',
+    asyncHandler(async (request, response) => {
+      response.status(201).json({
+        success: true,
+        message: 'Store department created.',
+        data: await service.createDepartment(request.body),
+      })
+    }),
+  )
+
+  router.patch(
+    '/departments/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store department updated.',
+        data: await service.updateDepartment(
+          String(request.params.id),
+          request.body,
+        ),
+      })
+    }),
+  )
+
+  router.delete(
+    '/departments/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store department deleted.',
+        data: await service.removeDepartment(String(request.params.id)),
+      })
+    }),
+  )
+
   router.get(
     '/',
     asyncHandler(async (_request, response) => {

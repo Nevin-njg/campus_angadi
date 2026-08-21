@@ -5902,12 +5902,12 @@ body {
 .storefront-hero-inner {
   position: relative;
   z-index: 1;
-  min-height: 360px;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(340px, 0.72fr);
   align-items: center;
-  gap: clamp(36px, 7vw, 96px);
-  padding-block: clamp(64px, 8vw, 96px);
+  gap: clamp(28px, 5vw, 64px);
+  padding-block: clamp(36px, 4vw, 52px);
 }
 .storefront-label,
 .storefront-filter-title {
@@ -11010,3 +11010,938 @@ html.admin-dark .professional-auth-shell {
   }
 }
 
+
+/* =========================================================
+   Homepage store departments
+   ========================================================= */
+
+.home-departments-section {
+  overflow: hidden;
+}
+
+.home-department-heading-copy {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.62;
+}
+
+.home-department-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-department-card {
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+  border: 1px solid rgba(20, 20, 20, 0.08);
+  border-radius: 22px;
+  text-decoration: none;
+  color: #191919;
+  isolation: isolate;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.home-department-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(20, 20, 20, 0.14);
+  box-shadow: 0 18px 45px rgba(20, 20, 20, 0.12);
+}
+
+.home-department-card-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 210px;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px;
+}
+
+.home-department-eyebrow {
+  margin-bottom: auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  padding: 6px 10px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(7px);
+}
+
+.home-department-card h3 {
+  margin: 38px 0 5px;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.home-department-card p {
+  display: -webkit-box;
+  min-height: 38px;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0.68;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-department-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.home-department-link svg {
+  width: 15px;
+  transition: transform 180ms ease;
+}
+
+.home-department-card:hover .home-department-link svg {
+  transform: translateX(4px);
+}
+
+.home-department-stickers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.home-department-sticker {
+  position: absolute;
+  display: block;
+  opacity: 0.16;
+  filter: saturate(0.9);
+  transform: rotate(-12deg);
+  user-select: none;
+}
+
+.home-department-sticker.sticker-1 {
+  right: 18px;
+  top: 14px;
+  font-size: 4.5rem;
+  transform: rotate(11deg);
+}
+
+.home-department-sticker.sticker-2 {
+  right: 88px;
+  top: 62px;
+  font-size: 2.8rem;
+  transform: rotate(-14deg);
+}
+
+.home-department-sticker.sticker-3 {
+  right: 15px;
+  bottom: 31px;
+  font-size: 2.4rem;
+  transform: rotate(17deg);
+}
+
+.home-department-sticker.sticker-4 {
+  left: 45%;
+  top: 12px;
+  font-size: 1.8rem;
+  transform: rotate(8deg);
+}
+
+.home-department-sticker.sticker-5 {
+  right: 46%;
+  top: 76px;
+  font-size: 1.55rem;
+  transform: rotate(-18deg);
+}
+
+.home-department-food {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 145, 77, 0.38), transparent 45%),
+    linear-gradient(135deg, #fff1e7 0%, #ffe1ca 100%);
+}
+
+.home-department-sports {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(67, 140, 255, 0.27), transparent 46%),
+    linear-gradient(135deg, #e9f4ff 0%, #d9eaff 100%);
+}
+
+.home-department-stationery {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 188, 61, 0.3), transparent 48%),
+    linear-gradient(135deg, #fff8df 0%, #ffedbd 100%);
+}
+
+.home-department-electronics {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(128, 82, 255, 0.3), transparent 46%),
+    linear-gradient(135deg, #f0ebff 0%, #e1d8ff 100%);
+}
+
+.home-department-grocery {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(102, 180, 59, 0.3), transparent 48%),
+    linear-gradient(135deg, #edf8dc 0%, #dff0bf 100%);
+}
+
+.home-department-fashion {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 90, 117, 0.25), transparent 48%),
+    linear-gradient(135deg, #fff0f2 0%, #ffdce1 100%);
+}
+
+.home-department-general {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(255, 155, 34, 0.26), transparent 48%),
+    linear-gradient(135deg, #fff5e9 0%, #ffe8c8 100%);
+}
+
+.home-department-skeleton {
+  min-height: 210px;
+  animation: homepage-department-pulse 1.4s ease-in-out infinite;
+  background: rgba(127, 127, 127, 0.1);
+}
+
+@keyframes homepage-department-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (max-width: 1100px) {
+  .home-department-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .home-department-grid {
+    display: flex;
+    width: 100%;
+    gap: 13px;
+    overflow-x: auto;
+    padding: 2px 1px 12px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .home-department-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-department-card {
+    flex: 0 0 min(78vw, 290px);
+    scroll-snap-align: start;
+  }
+}
+
+
+.home-department-show-more {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .home-department-mobile-hidden {
+    display: none;
+  }
+
+  .home-department-show-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 14px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .home-department-show-more svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.home-department-custom {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(167, 105, 255, 0.3), transparent 48%),
+    linear-gradient(135deg, #f5edff 0%, #e9dcff 100%);
+}
+
+
+/* FINAL mobile department grid override */
+@media (max-width: 760px) {
+  .home-department-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    overflow: visible;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  .home-department-card {
+    flex: initial;
+    width: auto;
+    min-width: 0;
+    min-height: 138px;
+    border-radius: 14px;
+    scroll-snap-align: none;
+  }
+
+  .home-department-card-content {
+    min-height: 138px;
+    padding: 11px 9px;
+  }
+
+  .home-department-eyebrow {
+    padding: 3px 5px;
+    font-size: 0.43rem;
+    letter-spacing: 0.03em;
+  }
+
+  .home-department-card h3 {
+    margin: 23px 0 3px;
+    font-size: 0.88rem;
+    line-height: 1.05;
+    word-break: break-word;
+  }
+
+  .home-department-card p {
+    min-height: 27px;
+    margin: 0;
+    font-size: 0.59rem;
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+  }
+
+  .home-department-link {
+    gap: 3px;
+    margin-top: 8px;
+    font-size: 0.58rem;
+  }
+
+  .home-department-link svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .home-department-sticker.sticker-1 {
+    top: 8px;
+    right: 4px;
+    font-size: 2.2rem;
+  }
+
+  .home-department-sticker.sticker-2 {
+    top: 35px;
+    right: 31px;
+    font-size: 1.25rem;
+  }
+
+  .home-department-sticker.sticker-3 {
+    right: 4px;
+    bottom: 24px;
+    font-size: 1.1rem;
+  }
+
+  .home-department-sticker.sticker-4,
+  .home-department-sticker.sticker-5 {
+    display: none;
+  }
+}
+
+/* Slightly tighter vertical spacing for department cards on phones */
+@media (max-width: 760px) {
+  .home-department-card-content {
+    padding: 8px 9px 10px;
+  }
+
+  .home-department-eyebrow {
+    margin-bottom: 0;
+  }
+
+  .home-department-card h3 {
+    margin-top: 18px;
+  }
+}
+
+/* Slightly shorter department cards on phones */
+@media (max-width: 760px) {
+  .home-department-card {
+    min-height: 130px;
+  }
+
+  .home-department-card-content {
+    min-height: 130px;
+  }
+}
+
+.home-department-heading-actions {
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 760px) {
+  .home-department-heading-actions {
+    margin-bottom: 10px;
+  }
+}
+
+.home-department-view-all {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.home-department-view-all a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.home-department-view-all svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 760px) {
+  .home-department-view-all {
+    margin-top: 10px;
+  }
+
+  .home-department-view-all a {
+    font-size: 0.7rem;
+  }
+}
+
+/* View-all placement: desktop stays in heading, phone goes below cards */
+.home-department-mobile-view-all {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .home-department-desktop-heading {
+    display: none;
+  }
+
+  .home-department-mobile-view-all {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .home-department-mobile-view-all a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .home-department-mobile-view-all svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Final department heading behaviour */
+.home-department-phone-view-all {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* Hide heading + desktop View all only on phones */
+  .home-department-desktop-heading {
+    display: none !important;
+  }
+
+  /* Show View all stores below cards only on phones */
+  .home-department-phone-view-all {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  .home-department-phone-view-all a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .home-department-phone-view-all svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Campus store single-row carousel */
+.marketplace-store-carousel {
+  position: relative;
+}
+
+.marketplace-store-carousel-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 48px) / 4);
+  gap: 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 3px;
+}
+
+.marketplace-store-carousel-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.marketplace-store-carousel-rail .marketplace-store-card {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.marketplace-store-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.12);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.marketplace-store-carousel-arrow-left {
+  left: -21px;
+}
+
+.marketplace-store-carousel-arrow-right {
+  right: -21px;
+}
+
+/* Tablet */
+@media (max-width: 1000px) {
+  .marketplace-store-carousel-rail {
+    grid-auto-columns: calc((100% - 16px) / 2);
+  }
+}
+
+/* Phone */
+@media (max-width: 640px) {
+  .marketplace-store-carousel-rail {
+    grid-auto-columns: 86%;
+    gap: 10px;
+  }
+
+  .marketplace-store-carousel-arrow {
+    width: 34px;
+    height: 34px;
+    font-size: 1.6rem;
+  }
+
+  .marketplace-store-carousel-arrow-left {
+    left: -8px;
+  }
+
+  .marketplace-store-carousel-arrow-right {
+    right: -8px;
+  }
+}
+
+/* Phone: swipe store carousel, no arrow buttons */
+@media (max-width: 640px) {
+  .marketplace-store-carousel-arrow {
+    display: none;
+  }
+
+  .marketplace-store-carousel-rail {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+}
+
+/* Phone: show 2 store cards at a time */
+@media (max-width: 640px) {
+  .marketplace-store-carousel-rail {
+    grid-auto-columns: calc((100% - 10px) / 2);
+    gap: 10px;
+  }
+
+  .marketplace-store-card {
+    min-width: 0;
+  }
+}
+
+/* Phone: show 3 store cards at a time */
+@media (max-width: 640px) {
+  .marketplace-store-carousel-rail {
+    grid-auto-columns: calc((100% - 16px) / 3);
+    gap: 8px;
+  }
+
+  .marketplace-store-card {
+    min-width: 0;
+  }
+}
+
+/* Store carousel swipe hint */
+.marketplace-store-swipe-hint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .marketplace-store-swipe-hint {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.67rem;
+    font-weight: 700;
+    opacity: 0.6;
+    white-space: nowrap;
+  }
+}
+
+/* Phone: keep Campus stores and Swipe hint on same row */
+@media (max-width: 640px) {
+  .marketplace-store-carousel-section .marketplace-section-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .marketplace-store-carousel-section .marketplace-section-heading h2 {
+    margin: 0;
+  }
+
+  .marketplace-store-swipe-hint {
+    margin: 0;
+    flex-shrink: 0;
+  }
+}
+
+/* Mobile bottom-nav Second-Hand custom icon */
+.mobile-bottom-secondhand-icon {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Mobile Second-Hand tag icon */
+.mobile-bottom-secondhand-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  flex-shrink: 0;
+  color: #171717;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .mobile-bottom-secondhand-icon {
+    width: 27px;
+    height: 27px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobile-bottom-secondhand-icon {
+    width: 25px;
+    height: 25px;
+    display: block;
+    color: currentColor;
+    overflow: visible;
+  }
+}
+
+/* Clear Second-Hand deal icon on mobile bottom nav */
+@media (max-width: 640px) {
+  .mobile-bottom-secondhand-icon {
+    width: 28px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    line-height: 1;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobile-bottom-secondhand-icon {
+    width: 25px;
+    height: 25px;
+    color: currentColor;
+    fill: none;
+  }
+}
+
+/* Final Second-Hand badge icon */
+@media (max-width: 640px) {
+  .mobile-bottom-secondhand-icon {
+    width: 27px;
+    height: 27px;
+    display: block;
+    flex-shrink: 0;
+    color: currentColor;
+    overflow: visible;
+  }
+}
+
+/* Second-Hand badge in global search results */
+.marketplace-product-media {
+  position: relative;
+}
+
+.marketplace-product-secondhand-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  padding: 5px 9px;
+  border: 1px solid rgba(239, 92, 30, 0.18);
+  border-radius: 4px;
+
+  background: rgba(255, 239, 231, 0.96);
+  color: #d94f16;
+
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 640px) {
+  .marketplace-product-secondhand-badge {
+    top: 7px;
+    left: 7px;
+    padding: 4px 7px;
+    font-size: 0.58rem;
+  }
+}
+
+/* =========================================================
+   Professional desktop primary navigation
+   ========================================================= */
+
+@media (min-width: 769px) {
+  .nav-commerce-bar {
+    background: #1d1f21;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.32);
+  }
+
+  .nav-commerce-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+  }
+
+  .desktop-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    padding: 4px;
+
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .desktop-nav a {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 76px;
+    height: 34px;
+    padding: 0 15px;
+
+    border-radius: 7px;
+
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .desktop-nav a:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .desktop-nav a[aria-current='page'] {
+    color: #ffffff;
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 111, 15, 0.18),
+        rgba(255, 111, 15, 0.08)
+      );
+
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 111, 15, 0.25),
+      0 3px 10px rgba(0, 0, 0, 0.16);
+  }
+
+  .desktop-nav a[aria-current='page']::after {
+    content: '';
+
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -5px;
+
+    height: 2px;
+    border-radius: 999px;
+
+    background: #ff6f0f;
+  }
+
+  .desktop-nav a:active {
+    transform: translateY(1px);
+  }
+}
+
+/* =========================================================
+   FINAL desktop primary navigation
+   Clean marketplace navigation
+   ========================================================= */
+
+@media (min-width: 769px) {
+  .nav-commerce-bar {
+    background: #1d1f21;
+    border-top: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+  }
+
+  .nav-commerce-inner {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desktop-nav {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 30px;
+
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .desktop-nav a {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    height: 42px;
+    padding: 0 3px;
+
+    border-radius: 0;
+    background: transparent;
+
+    color: rgba(255, 255, 255, 0.68);
+    text-decoration: none;
+
+    font-size: 0.79rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+
+    box-shadow: none;
+
+    transition:
+      color 160ms ease,
+      opacity 160ms ease;
+  }
+
+  .desktop-nav a:hover {
+    color: #ffffff;
+    background: transparent;
+  }
+
+  .desktop-nav a[aria-current='page'] {
+    color: #ffffff;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .desktop-nav a[aria-current='page']::after {
+    content: '';
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 3px;
+
+    border-radius: 3px 3px 0 0;
+    background: #ff6b0b;
+  }
+
+  .desktop-nav a:active {
+    transform: none;
+  }
+}

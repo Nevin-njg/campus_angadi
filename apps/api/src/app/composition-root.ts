@@ -15,7 +15,11 @@ import { MongooseCategoryRepository } from '../modules/categories/infrastructure
 import { ProductService } from '../modules/products/application/product.service.js'
 import { MongooseProductRepository } from '../modules/products/infrastructure/mongoose-product.repository.js'
 import { HomepageService } from '../modules/homepage/application/homepage.service.js'
-import { MongooseHomepageRepository } from '../modules/homepage/infrastructure/mongoose-homepage.repository.js'
+import { DynamicHomepageService } from '../modules/homepage/application/dynamic-homepage.service.js'
+import {
+  MongooseDynamicHomepageRepository,
+  MongooseHomepageRepository,
+} from '../modules/homepage/infrastructure/mongoose-homepage.repository.js'
 import { CloudinaryImageStorage } from '../modules/uploads/infrastructure/cloudinary-image-storage.js'
 import { MongooseUploadAssetRepository } from '../modules/uploads/infrastructure/mongoose-upload-asset.repository.js'
 import { ImageUploadService } from '../modules/uploads/application/image-upload.service.js'
@@ -78,6 +82,7 @@ export function createCompositionRoot() {
   const categories = new MongooseCategoryRepository()
   const products = new MongooseProductRepository()
   const homepage = new MongooseHomepageRepository()
+  const dynamicHomepage = new MongooseDynamicHomepageRepository()
   const categoryService = new CategoryService(categories)
   const productService = new ProductService(products, categories)
   const homepageService = new HomepageService(homepage, products, categories, {
@@ -86,6 +91,11 @@ export function createCompositionRoot() {
     SECOND_HAND: env.HOMEPAGE_SECOND_HAND_LIMIT,
     RECENT: env.HOMEPAGE_RECENT_LIMIT,
   })
+  const dynamicHomepageService = new DynamicHomepageService(
+    dynamicHomepage,
+    products,
+    categories,
+  )
   const imageStorage = new CloudinaryImageStorage(
     env.CLOUDINARY_CLOUD_NAME,
     env.CLOUDINARY_API_KEY,
@@ -168,6 +178,7 @@ export function createCompositionRoot() {
     productService,
     storeService,
     homepageService,
+    dynamicHomepageService,
     uploadService,
     listingService,
     cartService,

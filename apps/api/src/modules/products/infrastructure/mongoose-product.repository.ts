@@ -14,7 +14,10 @@ import { Types } from 'mongoose'
 import { CategoryModel } from '../../categories/infrastructure/category.model.js'
 import { UserModel, UserProfileModel } from '../../users/infrastructure/user.models.js'
 import { StoreModel } from '../../stores/infrastructure/store.model.js'
-import type { ProductRepository } from '../domain/product.js'
+import type {
+  DynamicHomepageCandidateMode,
+  ProductRepository,
+} from '../domain/product.js'
 import { ProductImageModel, ProductModel } from './product.models.js'
 
 function escapeRegex(value: string) {
@@ -205,6 +208,83 @@ export class MongooseProductRepository implements ProductRepository {
       .limit(limit)
       .lean<Record<string, unknown>[]>()
     return this.hydrateSummaries(documents)
+  }
+
+  async listDynamicHomepageCandidates(
+    mode: DynamicHomepageCandidateMode,
+    limit: number,
+  ): Promise<ProductSummary[]> {
+    const safeLimit = Math.max(1, Math.min(48, Math.floor(limit)))
+    const fetchLimit = Math.min(144, safeLimit * 3)
+
+    const [activeSellerIds, activeCategoryIds, activeStoreIds] =
+      await Promise.all([
+        UserModel.find({ status: 'ACTIVE' }).distinct('_id'),
+
+        CategoryModel.find({
+          deletedAt: null,
+          isActive: true,
+        }).distinct('_id'),
+
+        StoreModel.find({
+          status: 'ACTIVE',
+        }).distinct('_id'),
+      ])
+
+    const isSecondHand = mode === 'NEWEST_SECOND_HAND'
+
+    const filter: Record<string, unknown> = {
+      deletedAt: null,
+      status: 'APPROVED',
+      published: true,
+      stock: { $gt: 0 },
+      sellerId: { $in: activeSellerIds },
+      productType: isSecondHand ? 'SECOND_HAND' : 'NEW',
+    }
+
+    if (isSecondHand) {
+      filter.sellerType = 'USER'
+      filter.categoryId = { $in: activeCategoryIds }
+    } else {
+      /*
+       * NEW products can come from:
+       *
+       * 1. A real Store, whose product category may be an embedded
+       *    Store category.
+       *
+       * 2. The legacy/admin official catalogue, which has no storeId
+       *    and uses the global Category collection.
+       */
+      filter.$or = [
+        {
+          storeId: { $in: activeStoreIds },
+        },
+        {
+          storeId: null,
+          categoryId: { $in: activeCategoryIds },
+        },
+      ]
+    }
+
+    const sort =
+      mode === 'POPULAR_NEW'
+        ? {
+            completedOrderCount: -1 as const,
+            viewCount: -1 as const,
+            createdAt: -1 as const,
+          }
+        : {
+            createdAt: -1 as const,
+          }
+
+    const documents = await ProductModel.find(filter)
+      .sort(sort)
+      .limit(fetchLimit)
+      .lean<Record<string, unknown>[]>()
+
+    const hydrated = await this.hydrateSummaries(documents)
+
+    return hydrated.slice(0, safeLimit)
   }
 
   async createOfficial(

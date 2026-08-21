@@ -9,6 +9,11 @@ import type {
   UpdateOfficialProductInput,
 } from '@campusbaza/contracts'
 
+export type DynamicHomepageCandidateMode =
+  | 'NEWEST_NEW'
+  | 'POPULAR_NEW'
+  | 'NEWEST_SECOND_HAND'
+
 export interface ProductRepository {
   listPublic(query: ProductListQuery): Promise<PaginatedResult<ProductSummary>>
   listAdmin(query: AdminProductListQuery): Promise<PaginatedResult<ProductSummary>>
@@ -19,6 +24,10 @@ export interface ProductRepository {
     section: HomepageSectionKey,
     limit: number,
     excludeIds: string[],
+  ): Promise<ProductSummary[]>
+  listDynamicHomepageCandidates(
+    mode: DynamicHomepageCandidateMode,
+    limit: number,
   ): Promise<ProductSummary[]>
   createOfficial(
     input: CreateOfficialProductInput,

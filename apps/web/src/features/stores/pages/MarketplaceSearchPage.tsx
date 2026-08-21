@@ -175,9 +175,11 @@ function StoreResultCard({ store }: { store: MarketplaceSearchStore }) {
 function SearchProductCard({
   product,
   returnTo,
+  showSecondHandBadge = false,
 }: {
   product: MarketplaceSearchProduct
   returnTo: string
+  showSecondHandBadge?: boolean
 }) {
   return (
     <article className="marketplace-product-card">
@@ -190,6 +192,15 @@ function SearchProductCard({
             <span>No image</span>
           </div>
         )}
+
+        {showSecondHandBadge &&
+        product.productType === 'SECOND_HAND' ? (
+          <span className="marketplace-product-secondhand-badge">
+            <span aria-hidden="true">•</span>
+            Second-Hand
+          </span>
+        ) : null}
+
         {product.discountPercent > 0 ? (
           <span className="discount-badge">-{product.discountPercent}%</span>
         ) : null}
@@ -210,6 +221,16 @@ function SearchProductCard({
             </span>
             <ArrowRightIcon />
           </Link>
+        ) : product.productType === 'SECOND_HAND' ? (
+          <div className="marketplace-product-store">
+            <span className="marketplace-product-store-logo">
+              <ShoppingBagIcon />
+            </span>
+            <span>
+              <small>Second-Hand</small>
+              <strong>Student seller</strong>
+            </span>
+          </div>
         ) : (
           <div className="marketplace-product-store">
             <span className="marketplace-product-store-logo">
@@ -221,7 +242,12 @@ function SearchProductCard({
             </span>
           </div>
         )}
-        <span className="catalog-category">{product.storeCategoryName || 'Store product'}</span>
+
+        <span className="catalog-category">
+          {product.productType === 'SECOND_HAND'
+            ? `Second-Hand · ${product.storeCategoryName || 'Student listing'}`
+            : product.storeCategoryName || 'Store product'}
+        </span>
         <Link className="marketplace-product-title" to={`/products/${product.slug}`}>
           {product.title}
         </Link>
@@ -244,6 +270,10 @@ function SearchProductCard({
                 <MapPinIcon /> {product.store.campusLocation || 'Campus'}
               </span>
             </>
+          ) : product.productType === 'SECOND_HAND' ? (
+            <span>
+              <ShoppingBagIcon /> Student marketplace
+            </span>
           ) : (
             <span>
               <ShieldIcon /> Official campus product
@@ -260,9 +290,25 @@ type SortOption = 'recommended' | 'price_asc' | 'price_desc' | 'discount' | 'del
 type ResultView = 'stores' | 'products'
 
 export function MarketplaceSearchPage() {
+  const storeRailRef = useRef<HTMLDivElement>(null)
   const [params, setParams] = useSearchParams()
   const query = (params.get('q') ?? '').trim()
-  const resultView: ResultView = params.get('type') === 'products' ? 'products' : 'stores'
+  const departmentId = (params.get('department') ?? '').trim()
+  const requestedView = params.get('type')
+
+  const isGlobalSearch =
+    params.get('scope') === 'all' &&
+    Boolean(query) &&
+    !departmentId
+
+  const resultView: ResultView =
+    requestedView === 'products'
+      ? 'products'
+      : requestedView === 'stores'
+        ? 'stores'
+        : query
+          ? 'products'
+          : 'stores'
   const [searchInput, setSearchInput] = useState(query)
   const [sort, setSort] = useState<SortOption>('recommended')
   const [inStockOnly, setInStockOnly] = useState(false)
@@ -272,14 +318,26 @@ export function MarketplaceSearchPage() {
   }, [query])
 
   const marketplace = useQuery({
-    queryKey: ['marketplace-search', query],
-    queryFn: () => storesApi.searchMarketplace(query),
+    queryKey: ['marketplace-search', query, departmentId],
+    queryFn: () => storesApi.searchMarketplace(query, departmentId),
     staleTime: 30_000,
   })
 
   const products = useMemo(() => {
-    const next = [...(marketplace.data?.products ?? [])]
-    const filtered = inStockOnly ? next.filter((product) => product.stock > 0) : next
+    const allProducts = marketplace.data?.products ?? []
+
+    const next = isGlobalSearch
+      ? [...allProducts]
+      : allProducts.filter(
+          (product) =>
+            product.productType === 'NEW' &&
+            product.store !== null,
+        )
+
+    const filtered = inStockOnly
+      ? next.filter((product) => product.stock > 0)
+      : next
+
     return filtered.sort((left, right) => {
       if (sort === 'price_asc') return left.price - right.price
       if (sort === 'price_desc') return right.price - left.price
@@ -296,10 +354,23 @@ export function MarketplaceSearchPage() {
       }
       return left.price - right.price
     })
-  }, [inStockOnly, marketplace.data?.products, sort])
+  }, [
+    inStockOnly,
+    isGlobalSearch,
+    marketplace.data?.products,
+    sort,
+  ])
 
   const featuredProducts = useMemo(
-    () => (marketplace.data?.products ?? []).filter((product) => product.stock > 0).slice(0, 8),
+    () =>
+      (marketplace.data?.products ?? [])
+        .filter(
+          (product) =>
+            product.productType === 'NEW' &&
+            product.store !== null &&
+            product.stock > 0,
+        )
+        .slice(0, 8),
     [marketplace.data?.products],
   )
 
@@ -310,16 +381,38 @@ export function MarketplaceSearchPage() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextQuery = searchInput.trim()
-    setParams(nextQuery ? { q: nextQuery, type: resultView } : { type: resultView })
+    const nextParams: Record<string, string> = {
+      type: resultView,
+    }
+
+    if (nextQuery) nextParams.q = nextQuery
+    if (departmentId) nextParams.department = departmentId
+
+    setParams(nextParams)
   }
 
   function searchFor(value: string) {
     setSearchInput(value)
-    setParams({ q: value, type: 'stores' })
+
+    const nextParams: Record<string, string> = {
+      q: value,
+      type: 'products',
+    }
+
+    if (departmentId) nextParams.department = departmentId
+
+    setParams(nextParams)
   }
 
   function selectView(view: ResultView) {
-    setParams(query ? { q: query, type: view } : { type: view })
+    const nextParams: Record<string, string> = {
+      type: view,
+    }
+
+    if (query) nextParams.q = query
+    if (departmentId) nextParams.department = departmentId
+
+    setParams(nextParams)
   }
 
   function browseCampus() {
@@ -358,17 +451,6 @@ export function MarketplaceSearchPage() {
               Search
             </button>
           </form>
-          <div className="marketplace-quick-searches" aria-label="Popular searches">
-            <span>Try:</span>
-            {['Shoes', 'Mouse', 'Snacks', 'Stationery'].map((item) => (
-              <button type="button" onClick={() => searchFor(item)} key={item}>
-                {item}
-              </button>
-            ))}
-            <button type="button" className="marketplace-browse-campus" onClick={browseCampus}>
-              View everything <ArrowRightIcon />
-            </button>
-          </div>
         </div>
       </section>
 
@@ -391,16 +473,17 @@ export function MarketplaceSearchPage() {
             </div>
           ) : (
             <>
-              <div className="marketplace-result-summary">
-                <div>
-                  <h2>{query ? `Results for “${query}”` : 'Browse campus stores'}</h2>
-                  <p>
-                    {marketplace.data?.meta.storeCount ?? 0} stores ·{' '}
-                    {marketplace.data?.meta.productCount ?? 0} products ·{' '}
-                    {marketplace.data?.meta.inStockCount ?? 0} available now
-                  </p>
-                </div>
-                {query ? (
+              {query ? (
+                <div className="marketplace-result-summary">
+                  <div>
+                    <h2>{`Results for “${query}”`}</h2>
+                    <p>
+                      {marketplace.data?.meta.storeCount ?? 0} stores ·{' '}
+                      {marketplace.data?.meta.productCount ?? 0} products ·{' '}
+                      {marketplace.data?.meta.inStockCount ?? 0} available now
+                    </p>
+                  </div>
+
                   <button
                     type="button"
                     className="button button-outline"
@@ -411,8 +494,86 @@ export function MarketplaceSearchPage() {
                   >
                     Clear search
                   </button>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
+
+                <section
+                  className="marketplace-result-section marketplace-store-carousel-section"
+                  aria-labelledby="matching-stores"
+                >
+                  <div className="marketplace-section-heading">
+                    <div>
+                      <h2 id="matching-stores">
+                        {query ? `Stores for “${query}”` : 'Campus stores'}
+                      </h2>
+                    </div>
+
+                    <span className="marketplace-store-swipe-hint">
+                      Swipe →
+                    </span>
+                  </div>
+
+                  {(marketplace.data?.stores.length ?? 0) > 0 ? (
+                    <div className="marketplace-store-carousel">
+                      <button
+                        type="button"
+                        className="marketplace-store-carousel-arrow marketplace-store-carousel-arrow-left"
+                        aria-label="Previous stores"
+                        onClick={() => {
+                          const rail = storeRailRef.current
+                          if (!rail) return
+
+                          rail.scrollBy({
+                            left: -rail.clientWidth,
+                            behavior: 'smooth',
+                          })
+                        }}
+                      >
+                        ‹
+                      </button>
+
+                      <div
+                        ref={storeRailRef}
+                        className="marketplace-store-carousel-rail"
+                      >
+                        {marketplace.data?.stores.map((store) => (
+                          <StoreResultCard store={store} key={store.id} />
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="marketplace-store-carousel-arrow marketplace-store-carousel-arrow-right"
+                        aria-label="Next stores"
+                        onClick={() => {
+                          const rail = storeRailRef.current
+                          if (!rail) return
+
+                          rail.scrollBy({
+                            left: rail.clientWidth,
+                            behavior: 'smooth',
+                          })
+                        }}
+                      >
+                        ›
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="marketplace-no-products">
+                      <ShoppingBagIcon />
+                      <h3>No stores matched this search</h3>
+                      <p>Try the Products filter or use a broader search.</p>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={() => selectView('products')}
+                      >
+                        Search products instead
+                      </button>
+                    </div>
+                  )}
+                </section>
+
 
               {!query && featuredProducts.length ? (
                 <section
@@ -433,7 +594,12 @@ export function MarketplaceSearchPage() {
                   </div>
                   <div className="marketplace-featured-rail">
                     {featuredProducts.map((product) => (
-                      <SearchProductCard product={product} returnTo={returnTo} key={product.id} />
+                      <SearchProductCard
+                          product={product}
+                          returnTo={returnTo}
+                          showSecondHandBadge={isGlobalSearch}
+                          key={product.id}
+                        />
                     ))}
                   </div>
                 </section>
@@ -466,37 +632,7 @@ export function MarketplaceSearchPage() {
                 </button>
               </div>
 
-              {resultView === 'stores' ? (
-                <section className="marketplace-result-section" aria-labelledby="matching-stores">
-                  <div className="marketplace-section-heading">
-                    <div>
-                      <h2 id="matching-stores">
-                        {query ? `Stores for “${query}”` : 'Campus stores'}
-                      </h2>
-                    </div>
-                  </div>
-                  {(marketplace.data?.stores.length ?? 0) > 0 ? (
-                    <div className="marketplace-store-grid">
-                      {marketplace.data?.stores.map((store) => (
-                        <StoreResultCard store={store} key={store.id} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="marketplace-no-products">
-                      <ShoppingBagIcon />
-                      <h3>No stores matched this search</h3>
-                      <p>Try the Products filter or use a broader search.</p>
-                      <button
-                        type="button"
-                        className="button button-primary"
-                        onClick={() => selectView('products')}
-                      >
-                        Search products instead
-                      </button>
-                    </div>
-                  )}
-                </section>
-              ) : (
+              {resultView === 'products' ? (
                 <section
                   className="marketplace-result-section"
                   aria-labelledby="all-product-results"
@@ -534,7 +670,12 @@ export function MarketplaceSearchPage() {
                   {products.length ? (
                     <div className="marketplace-product-grid">
                       {products.map((product) => (
-                        <SearchProductCard product={product} returnTo={returnTo} key={product.id} />
+                        <SearchProductCard
+                          product={product}
+                          returnTo={returnTo}
+                          showSecondHandBadge={isGlobalSearch}
+                          key={product.id}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -545,7 +686,7 @@ export function MarketplaceSearchPage() {
                     </div>
                   )}
                 </section>
-              )}
+              ) : null}
             </>
           )}
         </div>

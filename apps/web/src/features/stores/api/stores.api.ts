@@ -9,6 +9,31 @@ export interface StoreCategory {
   isActive: boolean
 }
 
+export type StoreDepartmentCardTheme =
+  | 'FOOD'
+  | 'SPORTS'
+  | 'STATIONERY'
+  | 'ELECTRONICS'
+  | 'GROCERY'
+  | 'FASHION'
+  | 'CUSTOM'
+  | 'GENERAL'
+
+export interface StoreDepartment {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  cardTheme: StoreDepartmentCardTheme
+  customBackgroundStart: string | null
+  customBackgroundEnd: string | null
+  customStickers: string[]
+  isActive: boolean
+  displayOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Store {
   id: string
   name: string
@@ -17,6 +42,7 @@ export interface Store {
   logoUrl: string | null
   bannerUrl: string | null
   sellerId: string
+  departmentId?: string | null
   commissionPercent: number
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED'
   campusLocation: string | null
@@ -49,6 +75,8 @@ export interface MarketplaceSearchStore extends Store {
 }
 
 export interface MarketplaceSearchProduct extends StoreProduct {
+  productType: 'NEW' | 'SECOND_HAND'
+  sellerType: 'ADMIN' | 'USER'
   discountPercent: number
   savings: number
   storeCategoryName: string | null
@@ -185,11 +213,67 @@ export const storesApi = {
     apiRequest<{ store: Store; products: StoreProduct[] }>(
       `/stores/${encodeURIComponent(slug)}${query ? `?q=${encodeURIComponent(query)}` : ''}`,
     ),
-  searchMarketplace: (query = '') =>
-    apiRequest<MarketplaceSearchResult>(
-      `/stores/search${query ? `?q=${encodeURIComponent(query)}` : ''}`,
-    ),
+  searchMarketplace: (query = '', departmentId = '') => {
+    const params = new URLSearchParams()
+
+    if (query) params.set('q', query)
+    if (departmentId) params.set('department', departmentId)
+
+    const suffix = params.toString()
+
+    return apiRequest<MarketplaceSearchResult>(
+      `/stores/search${suffix ? `?${suffix}` : ''}`,
+    )
+  },
+  departments: () =>
+    apiRequest<StoreDepartment[]>('/stores/departments'),
+
   adminList: () => apiRequest<Store[]>('/admin/stores'),
+
+  adminDepartments: () =>
+    apiRequest<StoreDepartment[]>('/admin/stores/departments'),
+
+  createDepartment: (body: {
+    name: string
+    description?: string | null
+    cardTheme?: StoreDepartmentCardTheme
+    customBackgroundStart?: string | null
+    customBackgroundEnd?: string | null
+    customStickers?: string[]
+    isActive?: boolean
+    displayOrder?: number
+  }) =>
+    apiRequest<StoreDepartment>('/admin/stores/departments', {
+      method: 'POST',
+      body,
+    }),
+
+  updateDepartment: (
+    id: string,
+    body: Partial<{
+      name: string
+      description: string | null
+      cardTheme: StoreDepartmentCardTheme
+      isActive: boolean
+      displayOrder: number
+    }>,
+  ) =>
+    apiRequest<StoreDepartment>(
+      `/admin/stores/departments/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body,
+      },
+    ),
+
+  removeDepartment: (id: string) =>
+    apiRequest<{ id: string }>(
+      `/admin/stores/departments/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+      },
+    ),
+
   adminFinance: (id: string, month: string) =>
     apiRequest<StoreFinance>(
       `/admin/stores/${encodeURIComponent(id)}/finance?month=${encodeURIComponent(month)}`,

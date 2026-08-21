@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
+import { isValidObjectId } from 'mongoose'
 import { AppError } from '../../../core/errors/app-error.js'
 import { StoreModel } from '../infrastructure/store.model.js'
+import { StoreDepartmentModel } from '../infrastructure/store-department.model.js'
 import { ProductImageModel, ProductModel } from '../../products/infrastructure/product.models.js'
 import {
   OrderItemModel,
@@ -33,6 +35,7 @@ const storeView = (store: any) => ({
   logoUrl: store.logoUrl ?? null,
   bannerUrl: store.bannerUrl ?? null,
   sellerId: String(store.sellerId),
+  departmentId: store.departmentId ? String(store.departmentId) : null,
   commissionPercent: store.commissionPercent,
   status: store.status,
   campusLocation: store.campusLocation ?? null,
@@ -48,6 +51,114 @@ const storeView = (store: any) => ({
   })),
 })
 
+const STORE_DEPARTMENT_CARD_THEMES = new Set([
+  'FOOD',
+  'SPORTS',
+  'STATIONERY',
+  'ELECTRONICS',
+  'GROCERY',
+  'FASHION',
+  'CUSTOM',
+  'GENERAL',
+])
+
+function departmentCardTheme(
+  value: unknown,
+): 'FOOD' | 'SPORTS' | 'STATIONERY' | 'ELECTRONICS' | 'GROCERY' | 'FASHION' | 'CUSTOM' | 'GENERAL' {
+  if (value === undefined || value === null || value === '') {
+    return 'GENERAL'
+  }
+
+  const theme = String(value).trim().toUpperCase()
+
+  if (!STORE_DEPARTMENT_CARD_THEMES.has(theme)) {
+    throw new AppError(
+      400,
+      'STORE_DEPARTMENT_THEME_INVALID',
+      'Select a valid store department card theme.',
+    )
+  }
+
+  return theme as
+    | 'FOOD'
+    | 'SPORTS'
+    | 'STATIONERY'
+    | 'ELECTRONICS'
+    | 'GROCERY'
+    | 'FASHION'
+    | 'CUSTOM'
+    | 'GENERAL'
+}
+
+function departmentCardColor(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return null
+  }
+
+  const color = String(value).trim()
+
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+    throw new AppError(
+      400,
+      'STORE_DEPARTMENT_CARD_COLOR_INVALID',
+      'Custom card colors must use a valid hex color such as #F5EDFF.',
+    )
+  }
+
+  return color.toUpperCase()
+}
+
+function departmentCardStickers(value: unknown) {
+  if (value === undefined || value === null) {
+    return []
+  }
+
+  if (!Array.isArray(value)) {
+    throw new AppError(
+      400,
+      'STORE_DEPARTMENT_STICKERS_INVALID',
+      'Custom card stickers must be a list.',
+    )
+  }
+
+  const stickers = value
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+
+  if (stickers.length > 5) {
+    throw new AppError(
+      400,
+      'STORE_DEPARTMENT_STICKERS_LIMIT',
+      'Choose at most 5 custom card stickers.',
+    )
+  }
+
+  if (stickers.some((sticker) => sticker.length > 16)) {
+    throw new AppError(
+      400,
+      'STORE_DEPARTMENT_STICKER_INVALID',
+      'Each custom sticker must be short.',
+    )
+  }
+
+  return stickers
+}
+
+const departmentView = (department: any) => ({
+  id: String(department._id),
+  name: department.name,
+  slug: department.slug,
+  description: department.description ?? null,
+  cardTheme: department.cardTheme ?? 'GENERAL',
+  customBackgroundStart: department.customBackgroundStart ?? null,
+  customBackgroundEnd: department.customBackgroundEnd ?? null,
+  customStickers: department.customStickers ?? [],
+  isActive: department.isActive,
+  displayOrder: department.displayOrder,
+  createdAt: department.createdAt,
+  updatedAt: department.updatedAt,
+})
+
 const productView = (product: any, imageUrl: string | null = null) => ({
   id: String(product._id),
   slug: product.slug,
@@ -58,6 +169,8 @@ const productView = (product: any, imageUrl: string | null = null) => ({
   stock: product.stock,
   status: product.status,
   published: product.published,
+  productType: product.productType,
+  sellerType: product.sellerType,
   storeCategoryId: product.storeCategoryId ? String(product.storeCategoryId) : null,
   primaryImage: imageUrl,
   createdAt: product.createdAt,
@@ -146,6 +259,38 @@ const sellerStatusTransitions: Record<string, string[]> = {
 export class StoreService {
   constructor(private readonly uploads: ImageUploadService) {}
 
+  private async resolveDepartmentId(value: unknown) {
+    if (value === undefined) return undefined
+
+    if (value === null || String(value).trim() === '') {
+      return null
+    }
+
+    const departmentId = String(value).trim()
+
+    if (!isValidObjectId(departmentId)) {
+      throw new AppError(
+        400,
+        'STORE_DEPARTMENT_INVALID',
+        'Select a valid store department.',
+      )
+    }
+
+    const department = await StoreDepartmentModel.findById(departmentId)
+      .select('_id')
+      .lean()
+
+    if (!department) {
+      throw new AppError(
+        404,
+        'STORE_DEPARTMENT_NOT_FOUND',
+        'Selected store department was not found.',
+      )
+    }
+
+    return department._id
+  }
+
   private async sellerDocument(sellerId: string) {
     const store = await StoreModel.findOne({ sellerId })
     if (!store) {
@@ -165,16 +310,31 @@ export class StoreService {
     return (await StoreModel.find(filter).sort({ name: 1 }).lean()).map(storeView)
   }
 
-  async searchMarketplace(query = '') {
+  async searchMarketplace(query = '', departmentId = '') {
     const normalizedQuery = String(query).trim().slice(0, 80)
+    const normalizedDepartmentId = String(departmentId).trim()
     const searchPattern = normalizedQuery ? new RegExp(escapeRegExp(normalizedQuery), 'i') : null
+
+    if (normalizedDepartmentId && !isValidObjectId(normalizedDepartmentId)) {
+      throw new AppError(
+        400,
+        'STORE_DEPARTMENT_INVALID',
+        'The selected store department is invalid.',
+      )
+    }
 
     const activeSellerIds = await UserModel.find({ status: 'ACTIVE' }).distinct('_id')
 
-    const activeStores: any[] = await StoreModel.find({
+    const storeFilter: Record<string, unknown> = {
       status: 'ACTIVE',
       sellerId: { $in: activeSellerIds },
-    })
+    }
+
+    if (normalizedDepartmentId) {
+      storeFilter.departmentId = normalizedDepartmentId
+    }
+
+    const activeStores: any[] = await StoreModel.find(storeFilter)
       .sort({ name: 1 })
       .lean()
     const activeStoreIds = activeStores.map((store) => store._id)
@@ -188,17 +348,34 @@ export class StoreService {
       : activeStores
     const directlyMatchingStoreIds = directlyMatchingStores.map((store) => store._id)
 
+    const productScope: Record<string, unknown> = normalizedDepartmentId
+      ? {
+          productType: 'NEW',
+          storeId: { $in: activeStoreIds },
+        }
+      : {
+          $or: [
+            {
+              productType: 'NEW',
+              $or: [
+                { storeId: { $in: activeStoreIds } },
+                { sellerType: 'ADMIN', storeId: null },
+              ],
+            },
+            {
+              productType: 'SECOND_HAND',
+              sellerType: 'USER',
+              storeId: null,
+            },
+          ],
+        }
+
     const productFilter: Record<string, unknown> = {
-      productType: 'NEW',
       status: 'APPROVED',
       published: true,
       deletedAt: null,
       sellerId: { $in: activeSellerIds },
-      $and: [
-        {
-          $or: [{ storeId: { $in: activeStoreIds } }, { sellerType: 'ADMIN', storeId: null }],
-        },
-      ],
+      $and: [productScope],
     }
     if (searchPattern) {
       ;(productFilter.$and as Record<string, unknown>[]).push({
@@ -206,9 +383,6 @@ export class StoreService {
           { title: searchPattern },
           { description: searchPattern },
           { tags: { $in: [searchPattern] } },
-          ...(directlyMatchingStoreIds.length
-            ? [{ storeId: { $in: directlyMatchingStoreIds } }]
-            : []),
         ],
       })
     }
@@ -222,23 +396,32 @@ export class StoreService {
     const visibleProducts = products.filter(
       (product) =>
         storeById.has(String(product.storeId)) ||
-        (product.sellerType === 'ADMIN' && !product.storeId),
+        (!product.storeId &&
+          product.productType === 'NEW' &&
+          product.sellerType === 'ADMIN') ||
+        (!product.storeId &&
+          product.productType === 'SECOND_HAND' &&
+          product.sellerType === 'USER'),
     )
-    const officialCategoryIds = visibleProducts
-      .filter((product) => product.sellerType === 'ADMIN' && !product.storeId)
+    const nonStoreCategoryIds = visibleProducts
+      .filter((product) => !product.storeId)
       .map((product) => product.categoryId)
-    const [images, officialCategories] = await Promise.all([
+    const [images, nonStoreCategories] = await Promise.all([
       ProductImageModel.find({
         productId: { $in: visibleProducts.map((product) => product._id) },
         isPrimary: true,
       }).lean(),
-      CategoryModel.find({ _id: { $in: officialCategoryIds }, deletedAt: null })
+      CategoryModel.find({
+        _id: { $in: nonStoreCategoryIds },
+        deletedAt: null,
+        isActive: true,
+      })
         .select('_id name')
         .lean(),
     ])
     const imageByProduct = new Map(images.map((image) => [String(image.productId), image.url]))
     const categoryNameById = new Map(
-      officialCategories.map((category) => [String(category._id), category.name]),
+      nonStoreCategories.map((category) => [String(category._id), category.name]),
     )
 
     const productsByStore = new Map<string, any[]>()
@@ -339,6 +522,217 @@ export class StoreService {
     }
   }
 
+  async listDepartments() {
+    const departments = await StoreDepartmentModel.find({
+      isActive: true,
+    })
+      .sort({ displayOrder: 1, name: 1 })
+      .lean()
+
+    return departments.map(departmentView)
+  }
+
+  async adminListDepartments() {
+    const departments = await StoreDepartmentModel.find()
+      .sort({ displayOrder: 1, name: 1 })
+      .lean()
+
+    return departments.map(departmentView)
+  }
+
+  async createDepartment(input: any) {
+    const name = String(input.name ?? '').trim()
+
+    if (name.length < 2) {
+      throw new AppError(
+        400,
+        'STORE_DEPARTMENT_NAME_INVALID',
+        'Enter a valid department name.',
+      )
+    }
+
+    const slug = slugify(String(input.slug ?? '').trim() || name)
+
+    if (!slug) {
+      throw new AppError(
+        400,
+        'STORE_DEPARTMENT_SLUG_INVALID',
+        'Enter a valid department name.',
+      )
+    }
+
+    const duplicate = await StoreDepartmentModel.exists({
+      $or: [
+        { name: { $regex: `^${escapeRegExp(name)}$`, $options: 'i' } },
+        { slug },
+      ],
+    })
+
+    if (duplicate) {
+      throw new AppError(
+        409,
+        'STORE_DEPARTMENT_EXISTS',
+        'A store department with this name already exists.',
+      )
+    }
+
+    const department = await StoreDepartmentModel.create({
+      name,
+      slug,
+      description: String(input.description ?? '').trim() || null,
+      cardTheme: departmentCardTheme(input.cardTheme),
+      customBackgroundStart: departmentCardColor(input.customBackgroundStart),
+      customBackgroundEnd: departmentCardColor(input.customBackgroundEnd),
+      customStickers: departmentCardStickers(input.customStickers),
+      isActive: typeof input.isActive === 'boolean' ? input.isActive : true,
+      displayOrder: Math.max(0, Number(input.displayOrder ?? 0) || 0),
+    })
+
+    return departmentView(department.toObject())
+  }
+
+  async updateDepartment(id: string, input: any) {
+    const department = await StoreDepartmentModel.findById(id)
+
+    if (!department) {
+      throw new AppError(
+        404,
+        'STORE_DEPARTMENT_NOT_FOUND',
+        'Store department not found.',
+      )
+    }
+
+    if (typeof input.name === 'string') {
+      const name = input.name.trim()
+
+      if (name.length < 2) {
+        throw new AppError(
+          400,
+          'STORE_DEPARTMENT_NAME_INVALID',
+          'Enter a valid department name.',
+        )
+      }
+
+      const slug =
+        typeof input.slug === 'string' && input.slug.trim()
+          ? slugify(input.slug)
+          : slugify(name)
+
+      const duplicate = await StoreDepartmentModel.exists({
+        _id: { $ne: department._id },
+        $or: [
+          { name: { $regex: `^${escapeRegExp(name)}$`, $options: 'i' } },
+          { slug },
+        ],
+      })
+
+      if (duplicate) {
+        throw new AppError(
+          409,
+          'STORE_DEPARTMENT_EXISTS',
+          'A store department with this name already exists.',
+        )
+      }
+
+      department.name = name
+      department.slug = slug
+    } else if (typeof input.slug === 'string' && input.slug.trim()) {
+      const slug = slugify(input.slug)
+
+      const duplicate = await StoreDepartmentModel.exists({
+        _id: { $ne: department._id },
+        slug,
+      })
+
+      if (duplicate) {
+        throw new AppError(
+          409,
+          'STORE_DEPARTMENT_EXISTS',
+          'A store department with this slug already exists.',
+        )
+      }
+
+      department.slug = slug
+    }
+
+    if (typeof input.description === 'string') {
+      department.description = input.description.trim() || null
+    }
+
+    if (input.cardTheme !== undefined) {
+      department.cardTheme = departmentCardTheme(input.cardTheme)
+    }
+
+    if (input.customBackgroundStart !== undefined) {
+      department.customBackgroundStart = departmentCardColor(
+        input.customBackgroundStart,
+      )
+    }
+
+    if (input.customBackgroundEnd !== undefined) {
+      department.customBackgroundEnd = departmentCardColor(
+        input.customBackgroundEnd,
+      )
+    }
+
+    if (input.customStickers !== undefined) {
+      department.customStickers = departmentCardStickers(
+        input.customStickers,
+      )
+    }
+
+    if (typeof input.isActive === 'boolean') {
+      department.isActive = input.isActive
+    }
+
+    if (input.displayOrder !== undefined) {
+      const displayOrder = Number(input.displayOrder)
+
+      if (!Number.isFinite(displayOrder) || displayOrder < 0) {
+        throw new AppError(
+          400,
+          'STORE_DEPARTMENT_ORDER_INVALID',
+          'Display order must be zero or greater.',
+        )
+      }
+
+      department.displayOrder = Math.floor(displayOrder)
+    }
+
+    await department.save()
+    return departmentView(department.toObject())
+  }
+
+  async removeDepartment(id: string) {
+    const department = await StoreDepartmentModel.findById(id)
+
+    if (!department) {
+      throw new AppError(
+        404,
+        'STORE_DEPARTMENT_NOT_FOUND',
+        'Store department not found.',
+      )
+    }
+
+    const assignedStores = await StoreModel.countDocuments({
+      departmentId: department._id,
+    })
+
+    if (assignedStores > 0) {
+      throw new AppError(
+        409,
+        'STORE_DEPARTMENT_IN_USE',
+        'Remove or change this department from its assigned stores before deleting it.',
+      )
+    }
+
+    await StoreDepartmentModel.deleteOne({ _id: department._id })
+
+    return {
+      id: String(department._id),
+    }
+  }
+
   async adminList() {
     return (await StoreModel.find().sort({ createdAt: -1 }).lean()).map(storeView)
   }
@@ -346,23 +740,39 @@ export class StoreService {
   async create(input: any) {
     const seller = await UserModel.findById(input.sellerId)
     if (!seller) throw new AppError(404, 'SELLER_NOT_FOUND', 'Selected user was not found.')
+
     const exists = await StoreModel.exists({ sellerId: seller._id })
     if (exists) throw new AppError(409, 'SELLER_HAS_STORE', 'A seller can manage only one store.')
+
+    const departmentId = await this.resolveDepartmentId(input.departmentId)
 
     seller.role = 'SELLER'
     seller.canSell = true
     await seller.save()
 
-    const store = await StoreModel.create({ ...input, slug: slugify(input.slug || input.name) })
+    const store = await StoreModel.create({
+      ...input,
+      departmentId: departmentId ?? null,
+      slug: slugify(input.slug || input.name),
+    })
+
     return storeView(store.toObject())
   }
 
   async update(id: string, input: any) {
-    const store: any = await StoreModel.findByIdAndUpdate(id, input, {
+    const changes = { ...input }
+
+    if (Object.prototype.hasOwnProperty.call(input, 'departmentId')) {
+      changes.departmentId = await this.resolveDepartmentId(input.departmentId)
+    }
+
+    const store: any = await StoreModel.findByIdAndUpdate(id, changes, {
       new: true,
       runValidators: true,
     }).lean()
+
     if (!store) throw new AppError(404, 'STORE_NOT_FOUND', 'Store not found.')
+
     return storeView(store)
   }
 

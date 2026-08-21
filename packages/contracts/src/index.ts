@@ -315,6 +315,99 @@ export const homepagePayloadSchema = z.object({
   }),
 })
 
+
+// Dynamic homepage architecture.
+// The legacy homepage contracts above remain temporarily while the application
+// is migrated safely to database-driven ordered sections.
+
+export const dynamicHomepageSectionTypeSchema = z.enum([
+  'FEATURED_PRODUCTS',
+  'POPULAR_PRODUCTS',
+  'STORE_CATEGORY',
+  'SECOND_HAND_PRODUCTS',
+])
+
+export const homepageDepartmentSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+})
+
+export const homepageStoreSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  logoUrl: z.string().url().nullable(),
+  bannerUrl: z.string().url().nullable(),
+  campusLocation: z.string().nullable(),
+  deliveryTimeMinutes: z.number().int().positive(),
+  minimumOrderAmount: z.number().nonnegative(),
+  productCount: z.number().int().nonnegative(),
+})
+
+export const dynamicHomepageSectionSchema = z.object({
+  id: z.string(),
+  type: dynamicHomepageSectionTypeSchema,
+  title: z.string(),
+  displayOrder: z.number().int().nonnegative(),
+  limit: z.number().int().positive().max(48),
+
+  department: homepageDepartmentSummarySchema.nullable(),
+
+  products: z.array(productSummarySchema),
+  stores: z.array(homepageStoreSummarySchema),
+})
+
+export const dynamicHomepagePayloadSchema = z.object({
+  categories: z.array(categorySchema),
+  sections: z.array(dynamicHomepageSectionSchema),
+})
+
+export const homepageSectionConfigurationSchema = z.object({
+  id: z.string(),
+  type: dynamicHomepageSectionTypeSchema,
+  title: z.string(),
+  enabled: z.boolean(),
+  displayOrder: z.number().int().nonnegative(),
+  limit: z.number().int().positive().max(48),
+
+  departmentId: z.string().nullable(),
+
+  manualProductIds: z.array(z.string()),
+  manualStoreIds: z.array(z.string()),
+})
+
+export const createHomepageSectionInputSchema = z
+  .object({
+    type: dynamicHomepageSectionTypeSchema,
+    title: z.string().trim().min(2).max(100),
+    enabled: z.boolean().optional().default(true),
+    displayOrder: z.number().int().min(0).max(999),
+    limit: z.number().int().min(1).max(48).optional().default(8),
+    departmentId: z.string().min(1).nullable().optional(),
+    productIds: z.array(z.string().min(1)).max(48).optional().default([]),
+    storeIds: z.array(z.string().min(1)).max(48).optional().default([]),
+  })
+  .strict()
+
+export const updateHomepageSectionInputSchema = z
+  .object({
+    title: z.string().trim().min(2).max(100).optional(),
+    enabled: z.boolean().optional(),
+    displayOrder: z.number().int().min(0).max(999).optional(),
+    limit: z.number().int().min(1).max(48).optional(),
+    departmentId: z.string().min(1).nullable().optional(),
+    productIds: z.array(z.string().min(1)).max(48).optional(),
+    storeIds: z.array(z.string().min(1)).max(48).optional(),
+  })
+  .strict()
+
+export const adminDynamicHomepagePayloadSchema = dynamicHomepagePayloadSchema.extend({
+  configuration: z.array(homepageSectionConfigurationSchema),
+})
+
 export const uploadedImageAssetSchema = z.object({
   id: z.string(),
   url: z.string().url(),
@@ -1153,6 +1246,16 @@ export type AdminProductListQuery = z.infer<typeof adminProductListQuerySchema>
 export type HomepageSelectionInput = z.infer<typeof homepageSelectionInputSchema>
 export type HomepageSection = z.infer<typeof homepageSectionSchema>
 export type HomepagePayload = z.infer<typeof homepagePayloadSchema>
+
+export type DynamicHomepageSectionType = z.infer<typeof dynamicHomepageSectionTypeSchema>
+export type HomepageDepartmentSummary = z.infer<typeof homepageDepartmentSummarySchema>
+export type HomepageStoreSummary = z.infer<typeof homepageStoreSummarySchema>
+export type DynamicHomepageSection = z.infer<typeof dynamicHomepageSectionSchema>
+export type DynamicHomepagePayload = z.infer<typeof dynamicHomepagePayloadSchema>
+export type HomepageSectionConfiguration = z.infer<typeof homepageSectionConfigurationSchema>
+export type CreateHomepageSectionInput = z.infer<typeof createHomepageSectionInputSchema>
+export type UpdateHomepageSectionInput = z.infer<typeof updateHomepageSectionInputSchema>
+export type AdminDynamicHomepagePayload = z.infer<typeof adminDynamicHomepagePayloadSchema>
 
 export type UploadedImageAsset = z.infer<typeof uploadedImageAssetSchema>
 export type SecondHandCondition = z.infer<typeof secondHandConditionSchema>

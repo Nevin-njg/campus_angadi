@@ -15,7 +15,8 @@
     "seed:all": "tsx src/scripts/seed-all-collections.ts",
     "db:indexes:check": "tsx src/scripts/check-indexes.ts",
     "db:indexes:ensure": "tsx src/scripts/ensure-indexes.ts",
-    "db:cleanup:official-dealers": "tsx src/scripts/cleanup-official-order-dealers.ts"
+    "db:cleanup:official-dealers": "tsx src/scripts/cleanup-official-order-dealers.ts",
+    "db:migrate:dynamic-homepage": "tsx src/scripts/migrate-dynamic-homepage.ts"
   },
   "dependencies": {
     "@campusbaza/contracts": "file:../../packages/contracts",

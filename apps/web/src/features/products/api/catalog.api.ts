@@ -1,5 +1,6 @@
 import type {
   Category,
+  DynamicHomepagePayload,
   HomepagePayload,
   PaginationMeta,
   ProductDetail,
@@ -19,6 +20,9 @@ function queryString(input: Partial<ProductListQuery>) {
 
 export const catalogApi = {
   homepage: () => apiRequest<HomepagePayload>('/homepage'),
+
+  dynamicHomepage: () =>
+    apiRequest<DynamicHomepagePayload>('/homepage/dynamic'),
   categories: () => apiRequest<Category[]>('/categories'),
   async products(query: Partial<ProductListQuery>) {
     const result = await apiRequestEnvelope<ProductSummary[]>(`/products${queryString(query)}`)

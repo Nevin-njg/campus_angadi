@@ -1,6 +1,10 @@
 import type {
+  AdminDynamicHomepagePayload,
   AdminProductListQuery,
   Category,
+  CreateHomepageSectionInput,
+  HomepageSectionConfiguration,
+  UpdateHomepageSectionInput,
   CreateCategoryInput,
   CreateOfficialProductInput,
   HomepagePayload,
@@ -57,4 +61,41 @@ export const adminCatalogApi = {
     }),
   resetHomepage: (key: HomepageSectionKey) =>
     apiRequest<HomepageSection>(`/admin/homepage/${key}`, { method: 'DELETE' }),
+
+
+  dynamicHomepage: () =>
+    apiRequest<AdminDynamicHomepagePayload>(
+      '/admin/homepage/dynamic',
+    ),
+
+  createDynamicHomepageSection: (
+    input: CreateHomepageSectionInput,
+  ) =>
+    apiRequest<HomepageSectionConfiguration>(
+      '/admin/homepage/dynamic/sections',
+      {
+        method: 'POST',
+        body: input,
+      },
+    ),
+
+  updateDynamicHomepageSection: (
+    id: string,
+    input: UpdateHomepageSectionInput,
+  ) =>
+    apiRequest<HomepageSectionConfiguration>(
+      `/admin/homepage/dynamic/sections/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: input,
+      },
+    ),
+
+  removeDynamicHomepageSection: (id: string) =>
+    apiRequest<{ id: string }>(
+      `/admin/homepage/dynamic/sections/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+      },
+    ),
 }

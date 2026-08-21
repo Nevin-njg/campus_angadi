@@ -29,6 +29,10 @@ import {
   createHomepageRouter,
   createAdminHomepageRouter,
 } from '../modules/homepage/presentation/homepage.routes.js'
+import {
+  createAdminDynamicHomepageRouter,
+  createDynamicHomepageRouter,
+} from '../modules/homepage/presentation/dynamic-homepage.routes.js'
 import { createUploadRouter } from '../modules/uploads/presentation/upload.routes.js'
 import {
   createAdminModerationRouter,
@@ -155,7 +159,14 @@ export function createApp(root: CompositionRoot) {
   api.use('/products', createProductRouter(root.productService))
   api.use('/stores', createStoreRouter(root.storeService))
   api.use('/seller/store', createSellerStoreRouter(root.storeService, root.authenticate))
+
+  // Dynamic homepage is mounted separately during migration.
+  api.use(
+    '/homepage/dynamic',
+    createDynamicHomepageRouter(root.dynamicHomepageService),
+  )
   api.use('/homepage', createHomepageRouter(root.homepageService))
+
   api.use(
     '/uploads',
     createUploadRouter(
@@ -207,7 +218,23 @@ export function createApp(root: CompositionRoot) {
   api.use('/admin/categories', createAdminCategoryRouter(root.categoryService, root.authenticate))
   api.use('/admin/products', createAdminProductRouter(root.productService, root.authenticate))
   api.use('/admin/stores', createAdminStoreRouter(root.storeService, root.authenticate))
-  api.use('/admin/homepage', createAdminHomepageRouter(root.homepageService, root.authenticate))
+
+  // Keep this more specific route before the legacy /admin/homepage router.
+  api.use(
+    '/admin/homepage/dynamic',
+    createAdminDynamicHomepageRouter(
+      root.dynamicHomepageService,
+      root.authenticate,
+    ),
+  )
+  api.use(
+    '/admin/homepage',
+    createAdminHomepageRouter(
+      root.homepageService,
+      root.authenticate,
+    ),
+  )
+
   api.use('/admin/orders', createAdminOrderRouter(root.orderService, root.authenticate))
   api.use('/admin/dealers', createAdminDealerRouter(root.dealerService, root.authenticate))
   api.use('/admin/reports', createAdminReportRouter(root.reportService, root.authenticate))

@@ -36,6 +36,8 @@ describe('MarketplaceSearchPage Buy now', () => {
           stock: 10,
           status: 'APPROVED',
           published: true,
+          productType: 'NEW',
+          sellerType: 'ADMIN',
           storeCategoryId: 'category-1',
           primaryImage: null,
           createdAt: new Date().toISOString(),

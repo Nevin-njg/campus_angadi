@@ -3,12 +3,14 @@ import { type FormEvent, useMemo, useState } from 'react'
 import { adminPlatformApi } from '../../admin/api/admin-platform.api'
 import { useConfirmation } from '../../../components/feedback/confirmation-context'
 import { AdminStoreFinanceModal } from '../components/AdminStoreFinanceModal'
+import { AdminStoreDepartmentsPanel } from '../components/AdminStoreDepartmentsPanel'
 import { storesApi, type Store } from '../api/stores.api'
 
 interface CreateStoreForm {
   name: string
   description: string
   sellerId: string
+  departmentId: string
   commissionPercent: string
   campusLocation: string
   deliveryTimeMinutes: string
@@ -19,6 +21,7 @@ const initialForm: CreateStoreForm = {
   name: '',
   description: '',
   sellerId: '',
+  departmentId: '',
   commissionPercent: '',
   campusLocation: '',
   deliveryTimeMinutes: '30',
@@ -28,6 +31,7 @@ const initialForm: CreateStoreForm = {
 export function AdminStoresPage() {
   const queryClient = useQueryClient()
   const confirm = useConfirmation()
+  const [adminView, setAdminView] = useState<'stores' | 'departments'>('stores')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [ownerSearch, setOwnerSearch] = useState('')
   const [form, setForm] = useState<CreateStoreForm>(initialForm)
@@ -37,6 +41,11 @@ export function AdminStoresPage() {
   const storesQuery = useQuery({
     queryKey: ['admin', 'stores'],
     queryFn: storesApi.adminList,
+  })
+
+  const departmentsQuery = useQuery({
+    queryKey: ['admin', 'store-departments'],
+    queryFn: storesApi.adminDepartments,
   })
 
   const sellerUsersQuery = useQuery({
@@ -82,6 +91,25 @@ export function AdminStoresPage() {
     },
     onError: (error) => {
       setFormError(error instanceof Error ? error.message : 'The store could not be created.')
+    },
+  })
+
+  const assignDepartment = useMutation({
+    mutationFn: ({
+      storeId,
+      departmentId,
+    }: {
+      storeId: string
+      departmentId: string | null
+    }) =>
+      storesApi.update(storeId, {
+        departmentId,
+      }),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['admin', 'stores'],
+      })
     },
   })
 
@@ -139,6 +167,7 @@ export function AdminStoresPage() {
       name: form.name.trim(),
       description: form.description.trim() || null,
       sellerId: form.sellerId,
+      departmentId: form.departmentId || null,
       commissionPercent,
       campusLocation: form.campusLocation.trim() || null,
       deliveryTimeMinutes,
@@ -161,21 +190,53 @@ export function AdminStoresPage() {
             Create stores, manage commission, track revenue, and close monthly settlements.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsCreateOpen(true)}
-          className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-3 font-bold text-black shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-neutral-950"
-        >
-          Create store
-        </button>
+        {adminView === 'stores' ? (
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-5 py-3 font-bold text-black shadow-lg shadow-amber-500/20 transition hover:bg-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-neutral-950"
+          >
+            Create store
+          </button>
+        ) : null}
       </header>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-xl backdrop-blur-xl">
+      <div className="inline-flex w-fit rounded-xl border border-white/10 bg-white/5 p-1">
+        <button
+          type="button"
+          onClick={() => setAdminView('stores')}
+          className={`rounded-lg px-5 py-2.5 text-sm font-bold transition ${
+            adminView === 'stores'
+              ? 'bg-amber-500 text-black shadow'
+              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          Stores
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAdminView('departments')}
+          className={`rounded-lg px-5 py-2.5 text-sm font-bold transition ${
+            adminView === 'departments'
+              ? 'bg-amber-500 text-black shadow'
+              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          Store Departments
+        </button>
+      </div>
+
+      {adminView === 'departments' ? (
+        <AdminStoreDepartmentsPanel />
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-xl backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
               <tr className="border-b border-white/10 bg-white/[0.03]">
-                {['Store', 'Status', 'Commission', 'Seller', 'Actions'].map((heading) => (
+                {['Store', 'Department', 'Status', 'Commission', 'Seller', 'Actions'].map((heading) => (
                   <th
                     key={heading}
                     className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-400"
@@ -194,6 +255,31 @@ export function AdminStoresPage() {
                       {store.campusLocation || 'Campus location not added'}
                     </small>
                   </td>
+
+                  <td className="px-6 py-5">
+                    <select
+                      aria-label={`Department for ${store.name}`}
+                      value={store.departmentId ?? ''}
+                      disabled={assignDepartment.isPending}
+                      onChange={(event) =>
+                        assignDepartment.mutate({
+                          storeId: store.id,
+                          departmentId: event.target.value || null,
+                        })
+                      }
+                      className="min-w-[170px] rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
+                    >
+                      <option value="">No department</option>
+
+                      {(departmentsQuery.data ?? []).map((department) => (
+                        <option key={department.id} value={department.id}>
+                          {department.name}
+                          {!department.isActive ? ' (Disabled)' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
                   <td className="px-6 py-5">
                     <span
                       className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${
@@ -245,7 +331,7 @@ export function AdminStoresPage() {
 
               {!stores.length && !storesQuery.isLoading && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center">
+                  <td colSpan={6} className="px-6 py-16 text-center">
                     <div className="mx-auto max-w-md">
                       <h2 className="mb-2 text-xl font-bold text-white">No stores created yet</h2>
                       <p className="mb-5 text-gray-400">
@@ -265,7 +351,7 @@ export function AdminStoresPage() {
 
               {storesQuery.isLoading && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
                     Loading stores…
                   </td>
                 </tr>
@@ -274,6 +360,17 @@ export function AdminStoresPage() {
           </table>
         </div>
       </div>
+
+      {assignDepartment.isError ? (
+        <p
+          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          role="alert"
+        >
+          {assignDepartment.error instanceof Error
+            ? assignDepartment.error.message
+            : 'The store department could not be changed.'}
+        </p>
+      ) : null}
 
       {removeStore.isError ? (
         <p
@@ -384,6 +481,38 @@ export function AdminStoresPage() {
                   )}
                 </div>
 
+                <label className="space-y-2 md:col-span-2">
+                  <span className="text-sm font-semibold text-gray-200">
+                    Store department
+                  </span>
+
+                  <select
+                    value={form.departmentId}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        departmentId: event.target.value,
+                      })
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-white outline-none transition focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    <option value="">No department</option>
+
+                    {(departmentsQuery.data ?? [])
+                      .filter((department) => department.isActive)
+                      .map((department) => (
+                        <option key={department.id} value={department.id}>
+                          {department.name}
+                        </option>
+                      ))}
+                  </select>
+
+                  <p className="text-xs text-gray-500">
+                    This groups the store on the marketplace homepage. It does not affect the
+                    categories created inside the store.
+                  </p>
+                </label>
+
                 <label className="space-y-2">
                   <span className="text-sm font-semibold text-gray-200">
                     Commission percentage *
@@ -475,6 +604,8 @@ export function AdminStoresPage() {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </section>
   )

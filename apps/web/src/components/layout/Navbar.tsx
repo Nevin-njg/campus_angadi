@@ -1,6 +1,13 @@
-import { type FormEvent, useEffect, useRef, useState } from 'react'
+import {
+  type FormEvent,
+  useEffect,
+  useRef,
+  useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link,
+  NavLink,
+  useLocation,
+  useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../features/auth/store/use-auth-store'
 import { cartApi } from '../../features/cart/api/cart.api'
 import { notificationsApi } from '../../features/notifications/api/notifications.api'
@@ -15,6 +22,7 @@ import {
   PackageIcon,
   SearchIcon,
   UserIcon,
+  ShoppingBagIcon,
 } from '../ui/icons'
 import { queryKeys } from '../../lib/query-keys'
 
@@ -78,7 +86,11 @@ export function Navbar() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const query = search.trim()
-    void navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search')
+    void navigate(
+      query
+        ? `/search?q=${encodeURIComponent(query)}&scope=all`
+        : '/search',
+    )
   }
 
   return (
@@ -251,14 +263,9 @@ export function Navbar() {
           <PackageIcon />
           <span>Home</span>
         </NavLink>
-        <NavLink
-          to="/search"
-          className={({ isActive }: { isActive: boolean }) =>
-            isActive || location.pathname === '/second-hand-store' ? 'active' : undefined
-          }
-        >
-          <SearchIcon />
-          <span>Browse</span>
+        <NavLink to="/search?type=stores">
+          <ShoppingBagIcon />
+          <span>Stores</span>
         </NavLink>
         <NavLink className="mobile-bottom-sell" to="/account/listings/new">
           <span className="mobile-bottom-sell-icon">
@@ -266,12 +273,68 @@ export function Navbar() {
           </span>
           <span>Sell</span>
         </NavLink>
-        <NavLink className="mobile-bottom-cart" to="/cart">
-          <CartIcon />
-          {(cart.data?.totalItems ?? 0) > 0 ? (
-            <small>{Math.min(cart.data?.totalItems ?? 0, 99)}</small>
-          ) : null}
-          <span>Cart</span>
+        <NavLink to="/second-hand-store">
+          <svg
+            className="mobile-bottom-secondhand-icon"
+            viewBox="0 0 36 36"
+            aria-hidden="true"
+          >
+            <path
+              d="M18 3.5
+                 C20 3.5 21.2 5 23 5.3
+                 C24.8 5.7 26.7 5.1 28 6.5
+                 C29.3 7.8 28.8 9.8 29.6 11.4
+                 C30.4 13 32.2 14 32.2 16
+                 C32.2 18 30.5 19.2 30.1 21
+                 C29.7 22.8 30.4 24.8 29 26.2
+                 C27.6 27.6 25.6 27 24 27.8
+                 C22.4 28.6 21.5 30.5 19.5 30.5
+                 C17.5 30.5 16.4 28.9 14.6 28.6
+                 C12.8 28.3 10.8 29 9.5 27.6
+                 C8.2 26.2 8.8 24.2 8 22.6
+                 C7.2 21 5.3 20 5.3 18
+                 C5.3 16 7 14.8 7.4 13
+                 C7.8 11.2 7.1 9.2 8.5 7.8
+                 C9.9 6.4 11.9 7 13.5 6.2
+                 C15.1 5.4 16 3.5 18 3.5Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            <path
+              d="M12.5 29
+                 L10 34
+                 L16.5 31
+                 L18 33
+                 L19.5 31
+                 L26 34
+                 L23.5 29"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            <path
+              d="M13 13.5
+                 C13.5 10.8 15.5 9.5 18 9.5
+                 C21 9.5 23 11.2 23 13.7
+                 C23 15.6 21.8 16.8 19.4 18.1
+                 C17.2 19.3 16 20.2 16 22.2
+                 L16 23
+                 L23 23"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>Second-Hand</span>
         </NavLink>
         <NavLink to={user ? '/account/profile' : '/login'}>
           <UserIcon />
