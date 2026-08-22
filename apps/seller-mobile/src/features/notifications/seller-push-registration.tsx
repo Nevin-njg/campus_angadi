@@ -24,7 +24,7 @@ export function SellerPushRegistration() {
 
     try {
       if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('seller-orders-v2', {
+        await Notifications.setNotificationChannelAsync('seller-orders-v3', {
           name: 'Seller order alerts',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 500, 200, 500],

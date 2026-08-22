@@ -23,7 +23,7 @@ import {
 } from '../features/devices/device-api'
 import { getSellerDeviceId } from '../features/notifications/seller-device'
 
-const ORDER_CHANNEL_ID = 'seller-orders-v2'
+const ORDER_CHANNEL_ID = 'seller-orders-v3'
 
 const C = {
   text: '#18181b',

@@ -297,9 +297,9 @@ export class PushService {
             to: device.expoPushToken,
             title: payload.title,
             body: payload.body,
-            sound: 'default',
+            sound: 'new_order_alert_30s.wav',
             priority: 'high',
-            channelId: 'seller-orders-v2',
+            channelId: 'seller-orders-v3',
             tag: payload.tag,
             data: {
               type: payload.orderId ? 'NEW_ORDER' : 'GENERAL',
