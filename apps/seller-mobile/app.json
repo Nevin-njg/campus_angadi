@@ -24,7 +24,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "app.campusangadi.seller"
+      "package": "app.campusangadi.seller",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",

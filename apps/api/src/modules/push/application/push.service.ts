@@ -1,6 +1,7 @@
 import webPush from 'web-push'
 import { AppError } from '../../../core/errors/app-error.js'
 import { PushSubscriptionModel } from '../infrastructure/push-subscription.model.js'
+import { SellerMobileDeviceModel } from '../infrastructure/seller-mobile-device.model.js'
 
 export interface PushSubscriptionInput {
   endpoint: string
@@ -11,12 +12,36 @@ export interface PushSubscriptionInput {
   }
 }
 
+export interface SellerMobileDeviceInput {
+  deviceId: string
+  expoPushToken: string
+  deviceName: string
+  platform: 'android' | 'ios'
+}
+
 export interface PushNotificationPayload {
   title: string
   body: string
   url: string
   tag?: string
   orderId?: string
+}
+
+type ExpoPushTicket =
+  | {
+      status: 'ok'
+      id: string
+    }
+  | {
+      status: 'error'
+      message: string
+      details?: {
+        error?: string
+      }
+    }
+
+type ExpoPushResponse = {
+  data: ExpoPushTicket | ExpoPushTicket[]
 }
 
 export class PushService {
@@ -95,7 +120,77 @@ export class PushService {
     return { subscribed: false }
   }
 
+  async registerSellerMobileDevice(
+    userId: string,
+    input: SellerMobileDeviceInput,
+  ) {
+    const now = new Date()
+
+    // A physical installation keeps one stable deviceId. Expo push tokens may
+    // rotate, so either identifier can find the existing record.
+    await SellerMobileDeviceModel.findOneAndUpdate(
+      {
+        $or: [
+          { deviceId: input.deviceId },
+          { expoPushToken: input.expoPushToken },
+        ],
+      },
+      {
+        $set: {
+          userId,
+          deviceId: input.deviceId,
+          expoPushToken: input.expoPushToken,
+          deviceName: input.deviceName,
+          platform: input.platform,
+          pushEnabled: true,
+          lastActiveAt: now,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    )
+
+    return {
+      registered: true,
+      deviceId: input.deviceId,
+    }
+  }
+
+  async unregisterSellerMobileDevice(
+    userId: string,
+    deviceId: string,
+  ) {
+    await SellerMobileDeviceModel.deleteOne({
+      userId,
+      deviceId,
+    })
+
+    return {
+      registered: false,
+      deviceId,
+    }
+  }
+
   async sendToUser(
+    userId: string,
+    payload: PushNotificationPayload,
+  ): Promise<number> {
+    // Web push and seller-mobile push are independent. A failure in one
+    // transport must not prevent the other transport from being attempted.
+    const results = await Promise.allSettled([
+      this.sendWebPushToUser(userId, payload),
+      this.sendSellerMobilePushToUser(userId, payload),
+    ])
+
+    return results.reduce((total, result) => {
+      return result.status === 'fulfilled' ? total + result.value : total
+    }, 0)
+  }
+
+  private async sendWebPushToUser(
     userId: string,
     payload: PushNotificationPayload,
   ): Promise<number> {
@@ -140,7 +235,6 @@ export class PushService {
               ? Number((error as { statusCode?: unknown }).statusCode)
               : null
 
-          // Browser removed the subscription or the endpoint expired.
           if (statusCode === 404 || statusCode === 410) {
             await PushSubscriptionModel.deleteOne({
               _id: subscription._id,
@@ -149,6 +243,85 @@ export class PushService {
 
           throw error
         }
+      }),
+    )
+
+    return results.filter(
+      (result) => result.status === 'fulfilled' && result.value,
+    ).length
+  }
+
+  private async sendSellerMobilePushToUser(
+    userId: string,
+    payload: PushNotificationPayload,
+  ): Promise<number> {
+    const devices = await SellerMobileDeviceModel.find({
+      userId,
+      pushEnabled: true,
+    }).lean()
+
+    if (!devices.length) return 0
+
+    const results = await Promise.allSettled(
+      devices.map(async (device) => {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: device.expoPushToken,
+            title: payload.title,
+            body: payload.body,
+            sound: 'default',
+            priority: 'high',
+            channelId: 'seller-orders',
+            tag: payload.tag,
+            data: {
+              type: payload.orderId ? 'NEW_ORDER' : 'GENERAL',
+              orderId: payload.orderId ?? null,
+              url: payload.url,
+            },
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(
+            `Expo push request failed with HTTP ${response.status}.`,
+          )
+        }
+
+        const result = (await response.json()) as ExpoPushResponse
+        const ticket = Array.isArray(result.data)
+          ? result.data[0]
+          : result.data
+
+        if (!ticket) {
+          throw new Error('Expo push returned no ticket.')
+        }
+
+        if (ticket.status === 'error') {
+          if (ticket.details?.error === 'DeviceNotRegistered') {
+            await SellerMobileDeviceModel.deleteOne({
+              _id: device._id,
+            })
+            return false
+          }
+
+          throw new Error(ticket.message)
+        }
+
+        await SellerMobileDeviceModel.updateOne(
+          { _id: device._id },
+          {
+            $set: {
+              lastPushAt: new Date(),
+            },
+          },
+        )
+
+        return true
       }),
     )
 

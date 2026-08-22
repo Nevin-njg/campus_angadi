@@ -20,6 +20,7 @@ import type { CartRepository, CheckoutCatalogRepository } from '../../cart/domai
 import type { CheckoutPlanGroup, OrderRepository } from '../domain/order.js'
 import type { NotificationRepository } from '../../notifications/domain/notification.js'
 import type { PushService } from '../../push/application/push.service.js'
+import { StoreModel } from '../../stores/infrastructure/store.model.js'
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
@@ -188,7 +189,16 @@ export class OrderService {
       // Second-hand USER orders must not trigger seller notifications.
       if (!checkoutGroup || checkoutGroup.sellerType !== 'ADMIN') return
 
-      const sellerId = checkoutGroup.items[0]?.product.sellerId
+      // For an official-store order, the authoritative seller is the
+      // seller assigned to the Store document. Product.sellerId may reflect
+      // an admin/legacy product creator and must not be used for seller-app push.
+      if (!checkoutGroup.storeId) return
+
+      const store = await StoreModel.findById(checkoutGroup.storeId)
+        .select({ sellerId: 1 })
+        .lean()
+
+      const sellerId = store?.sellerId ? String(store.sellerId) : null
       if (!sellerId) return
 
       const message = `${order.orderNumber} · ₹${order.totalAmount.toFixed(2)} · ${

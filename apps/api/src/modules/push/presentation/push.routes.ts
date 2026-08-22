@@ -6,6 +6,7 @@ import { validateBody } from '../../../core/middleware/validate.js'
 import type {
   PushService,
   PushSubscriptionInput,
+  SellerMobileDeviceInput,
 } from '../application/push.service.js'
 
 const subscriptionSchema = z
@@ -24,6 +25,28 @@ const subscriptionSchema = z
 const unsubscribeSchema = z
   .object({
     endpoint: z.string().url(),
+  })
+  .strict()
+
+const sellerMobileDeviceSchema = z
+  .object({
+    deviceId: z.string().min(8).max(128),
+    expoPushToken: z
+      .string()
+      .min(20)
+      .max(512)
+      .regex(
+        /^(ExponentPushToken|ExpoPushToken)\[[^\]]+\]$/,
+        'Invalid Expo push token.',
+      ),
+    deviceName: z.string().trim().min(1).max(120),
+    platform: z.enum(['android', 'ios']),
+  })
+  .strict()
+
+const sellerMobileUnregisterSchema = z
+  .object({
+    deviceId: z.string().min(8).max(128),
   })
   .strict()
 
@@ -76,6 +99,40 @@ export function createPushRouter(
       res.json({
         success: true,
         message: 'Push notifications disabled.',
+        data,
+      })
+    }),
+  )
+
+  router.post(
+    '/seller-mobile/register',
+    validateBody(sellerMobileDeviceSchema),
+    asyncHandler(async (req, res) => {
+      const data = await service.registerSellerMobileDevice(
+        req.auth!.user.id,
+        req.body as SellerMobileDeviceInput,
+      )
+
+      res.status(201).json({
+        success: true,
+        message: 'Seller mobile device registered for push notifications.',
+        data,
+      })
+    }),
+  )
+
+  router.delete(
+    '/seller-mobile/unregister',
+    validateBody(sellerMobileUnregisterSchema),
+    asyncHandler(async (req, res) => {
+      const data = await service.unregisterSellerMobileDevice(
+        req.auth!.user.id,
+        String(req.body.deviceId),
+      )
+
+      res.json({
+        success: true,
+        message: 'Seller mobile device removed from push notifications.',
         data,
       })
     }),
