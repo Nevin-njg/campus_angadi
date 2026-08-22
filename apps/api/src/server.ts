@@ -26,12 +26,14 @@ async function start(): Promise<void> {
   server.headersTimeout = 35_000
   server.keepAliveTimeout = 5_000
   root.cleanupScheduler.start()
+  root.sellerOrderAlertScheduler.start()
 
   const shutdown = async (signal: string, exitCode = 0): Promise<void> => {
     if (shuttingDown) return
     shuttingDown = true
     root.logger.info({ signal }, 'Graceful shutdown started')
     root.cleanupScheduler.stop()
+    root.sellerOrderAlertScheduler.stop()
 
     const forceTimer = setTimeout(() => {
       root.logger.error({ timeoutMs: root.env.SHUTDOWN_TIMEOUT_MS }, 'Graceful shutdown timed out')

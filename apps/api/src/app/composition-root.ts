@@ -34,6 +34,7 @@ import {
 import { CartService } from '../modules/cart/application/cart.service.js'
 import { MongooseOrderRepository } from '../modules/orders/infrastructure/mongoose-order.repository.js'
 import { OrderService } from '../modules/orders/application/order.service.js'
+import { SellerOrderAlertScheduler } from '../modules/orders/application/seller-order-alert.scheduler.js'
 import { DealerService } from '../modules/dealers/application/dealer.service.js'
 import { MongooseDealerRepository } from '../modules/dealers/infrastructure/mongoose-dealer.repository.js'
 import { MongooseNotificationRepository } from '../modules/notifications/infrastructure/mongoose-notification.repository.js'
@@ -121,6 +122,11 @@ export function createCompositionRoot() {
     env.VAPID_PRIVATE_KEY,
     env.VAPID_SUBJECT,
   )
+  const sellerOrderAlertScheduler = new SellerOrderAlertScheduler(
+    redis,
+    pushService,
+    logger,
+  )
   const listings = new MongooseListingRepository()
   const listingService = new ListingService(
     listings,
@@ -141,6 +147,7 @@ export function createCompositionRoot() {
     env.APP_NAME,
     notifications,
     pushService,
+    sellerOrderAlertScheduler,
   )
   const dealers = new MongooseDealerRepository()
   const dealerService = new DealerService(dealers)
@@ -198,6 +205,7 @@ export function createCompositionRoot() {
     settingsService,
     adminService,
     cleanupScheduler,
+    sellerOrderAlertScheduler,
     indexInspectionService,
     authenticate,
   }

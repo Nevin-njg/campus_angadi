@@ -259,6 +259,17 @@ describe('OrderService', () => {
       (await service.updateStatus('order-1', 'admin', { status: 'CONFIRMED', note: null })).status,
     ).toBe('CONFIRMED')
     expect(
+      (await service.updateStatus('order-1', 'admin', { status: 'PREPARING', note: null })).status,
+    ).toBe('PREPARING')
+    expect(
+      (
+        await service.updateStatus('order-1', 'admin', {
+          status: 'READY_FOR_PICKUP',
+          note: null,
+        })
+      ).status,
+    ).toBe('READY_FOR_PICKUP')
+    expect(
       (await service.updateStatus('order-1', 'admin', { status: 'COMPLETED', note: null })).status,
     ).toBe('COMPLETED')
     await expect(

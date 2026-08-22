@@ -20,6 +20,7 @@ import type { CartRepository, CheckoutCatalogRepository } from '../../cart/domai
 import type { CheckoutPlanGroup, OrderRepository } from '../domain/order.js'
 import type { NotificationRepository } from '../../notifications/domain/notification.js'
 import type { PushService } from '../../push/application/push.service.js'
+import type { SellerOrderAlertScheduler } from './seller-order-alert.scheduler.js'
 import { StoreModel } from '../../stores/infrastructure/store.model.js'
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
@@ -62,6 +63,7 @@ export class OrderService {
     private readonly appName = 'Campus Angadi',
     private readonly notifications: NotificationRepository | null = null,
     private readonly push: PushService | null = null,
+    private readonly sellerOrderAlerts: SellerOrderAlertScheduler | null = null,
   ) {}
 
   async checkout(buyerId: string, input: CheckoutInput): Promise<CheckoutResult> {
@@ -164,6 +166,35 @@ export class OrderService {
 
     const checkoutGroups = [...groups.values()]
 
+    for (const group of checkoutGroups) {
+      // Platform-wide official products may not belong to a Store.
+      if (group.sellerType !== 'ADMIN' || !group.storeId) continue
+
+      const storeProduct = group.items[0]?.product
+      const minimumOrderAmount = storeProduct?.storeMinimumOrderAmount ?? 0
+
+      if (minimumOrderAmount <= 0) continue
+
+      const storeSubtotal = group.items.reduce(
+        (total, item) =>
+          total + item.product.summary.price * item.quantity,
+        0,
+      )
+
+      if (storeSubtotal < minimumOrderAmount) {
+        const storeName = storeProduct?.storeName?.trim() || 'This store'
+        const remaining = Number(
+          (minimumOrderAmount - storeSubtotal).toFixed(2),
+        )
+
+        throw new AppError(
+          409,
+          'STORE_MINIMUM_NOT_MET',
+          `${storeName} requires a minimum order of ₹${minimumOrderAmount}. Add ₹${remaining} more from this store.`,
+        )
+      }
+    }
+
     const result = await this.orders.createCheckout(
       buyerId,
       input,
@@ -220,6 +251,8 @@ export class OrderService {
         tag: `order-${order.id}`,
         orderId: order.id,
       })
+
+      await this.sellerOrderAlerts?.schedule(order.id)
     })
 
     await Promise.allSettled(sellerNotifications)
