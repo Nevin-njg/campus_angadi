@@ -112,7 +112,6 @@ function PendingOrderCard({
       <View style={styles.divider} />
 
       <Text style={styles.customerName}>{order.fullName || 'Customer'}</Text>
-      <Text style={styles.customerPhone}>{order.phoneNumber || 'No phone number'}</Text>
 
       <View style={styles.items}>
         {order.items.length ? (
@@ -176,9 +175,11 @@ function CompletedOrderCard({ order, onCall }: { order: SellerOrder; onCall: () 
         <Text style={styles.completedAmount}>{money(order.totalAmount)}</Text>
       </View>
 
-      <Pressable style={styles.callButton} onPress={onCall}>
-        <Text style={styles.callButtonText}>Call Customer</Text>
-      </Pressable>
+      {order.phoneNumber ? (
+        <Pressable style={styles.callButton} onPress={onCall}>
+          <Text style={styles.callButtonText}>Call Customer</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -340,7 +341,7 @@ export default function HomeScreen() {
   }
 
   async function callCustomer(order: SellerOrder) {
-    const phone = order.phoneNumber.replace(/[^+\d]/g, '')
+    const phone = (order.phoneNumber ?? '').replace(/[^+\d]/g, '')
     if (!phone) {
       Alert.alert('Phone unavailable', 'This order does not have a customer phone number.')
       return

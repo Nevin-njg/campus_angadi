@@ -1292,9 +1292,11 @@ export function SellerDashboardPage() {
                             <strong className="mt-2 block text-sm text-white">
                               {order.fullName}
                             </strong>
-                            <span className="mt-1 block text-sm text-zinc-500">
-                              {order.phoneNumber}
-                            </span>
+                            {order.status === 'COMPLETED' && order.phoneNumber ? (
+                              <span className="mt-1 block text-sm text-zinc-500">
+                                {order.phoneNumber}
+                              </span>
+                            ) : null}
                             <span className="mt-1 block text-sm text-zinc-500">
                               Pickup: {order.pickupLocation}
                             </span>

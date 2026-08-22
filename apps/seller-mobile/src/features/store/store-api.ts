@@ -55,7 +55,7 @@ export type SellerOrder = {
   totalAmount: number
   itemCount: number
   fullName: string
-  phoneNumber: string
+  phoneNumber: string | null
   pickupLocation: string
   preferredPickupTime: string | null
   notes: string | null

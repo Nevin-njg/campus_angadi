@@ -160,17 +160,19 @@ export default function OrdersScreen() {
     [accessToken, busyOrderId, refreshSession],
   )
 
-  const callCustomer = useCallback(async (phoneNumber: string) => {
-    const normalized = phoneNumber.trim()
-    if (!normalized) return
+  const callCustomer = useCallback(async (phoneNumber: string | null) => {
+    const normalized = (phoneNumber ?? '').replace(/[^+\d]/g, '')
 
-    const supported = await Linking.canOpenURL(`tel:${normalized}`)
-    if (!supported) {
-      Alert.alert('Unable to call', 'No phone app is available on this device.')
+    if (!normalized) {
+      Alert.alert('Unable to call', 'The customer phone number is unavailable.')
       return
     }
 
-    await Linking.openURL(`tel:${normalized}`)
+    try {
+      await Linking.openURL(`tel:${normalized}`)
+    } catch {
+      Alert.alert('Unable to call', 'The phone dialer could not be opened.')
+    }
   }, [])
 
   const renderOrderCard = (order: SellerOrder, exact = false) => {
@@ -197,7 +199,9 @@ export default function OrdersScreen() {
           <Ionicons name="person-outline" size={18} color={MUTED} />
           <View style={styles.customerText}>
             <Text style={styles.customerName}>{order.fullName}</Text>
-            <Text style={styles.metaText}>{order.phoneNumber}</Text>
+            {order.status === 'COMPLETED' && order.phoneNumber ? (
+              <Text style={styles.metaText}>{order.phoneNumber}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -277,7 +281,7 @@ export default function OrdersScreen() {
           </View>
         ) : null}
 
-        {order.status === 'COMPLETED' ? (
+        {order.status === 'COMPLETED' && order.phoneNumber ? (
           <Pressable
             onPress={() => void callCustomer(order.phoneNumber)}
             style={({ pressed }) => [

@@ -302,7 +302,7 @@ const orderView = (order: any, items: any[] = []) => ({
   totalAmount: order.totalAmount,
   itemCount: order.itemCount,
   fullName: order.fullName,
-  phoneNumber: order.phoneNumber,
+  phoneNumber: order.status === 'COMPLETED' ? order.phoneNumber : null,
   pickupLocation: order.pickupLocation,
   preferredPickupTime: order.preferredPickupTime ?? null,
   notes: order.notes ?? null,
