@@ -121,6 +121,19 @@ export function createPushRouter(
     }),
   )
 
+  router.get(
+    '/seller-mobile/devices',
+    asyncHandler(async (req, res) => {
+      const data = await service.listSellerMobileDevices(req.auth!.user.id)
+
+      res.json({
+        success: true,
+        message: 'Seller mobile devices retrieved.',
+        data,
+      })
+    }),
+  )
+
   router.delete(
     '/seller-mobile/unregister',
     validateBody(sellerMobileUnregisterSchema),

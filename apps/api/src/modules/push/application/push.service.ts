@@ -159,6 +159,21 @@ export class PushService {
     }
   }
 
+  async listSellerMobileDevices(userId: string) {
+    const devices = await SellerMobileDeviceModel.find({ userId })
+      .sort({ lastActiveAt: -1 })
+      .lean()
+
+    return devices.map((device) => ({
+      deviceId: device.deviceId,
+      deviceName: device.deviceName,
+      platform: device.platform,
+      pushEnabled: device.pushEnabled,
+      lastActiveAt: device.lastActiveAt.toISOString(),
+      firstSeenAt: device.createdAt.toISOString(),
+    }))
+  }
+
   async unregisterSellerMobileDevice(
     userId: string,
     deviceId: string,

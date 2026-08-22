@@ -13,7 +13,7 @@ const items = [
   ['ticket-outline', 'Offers', '/offers'],
   ['wallet-outline', 'Finance', '/finance'],
   ['time-outline', 'Store timings', '/store-timings'],
-  ['phone-portrait-outline', 'Logged-in devices', null],
+  ['phone-portrait-outline', 'Logged-in devices', '/devices'],
   ['settings-outline', 'Settings', null],
 ] as const
 
