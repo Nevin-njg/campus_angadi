@@ -119,7 +119,9 @@ export class OrderService {
         !product.summary.published ||
         !product.categoryActive ||
         !product.sellerActive ||
-        product.summary.stock < selectedItem.quantity
+        product.summary.stock < 1 ||
+        (product.summary.sellerType !== 'ADMIN' &&
+          product.summary.stock < selectedItem.quantity)
       ) {
         throw new AppError(
           409,

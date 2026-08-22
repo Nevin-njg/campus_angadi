@@ -121,7 +121,13 @@ export function ProductDetailsPage() {
           <dl className="product-facts">
             <div>
               <dt>Availability</dt>
-              <dd>{product.stock} in stock</dd>
+              <dd>
+                {product.sellerType === 'ADMIN'
+                  ? product.stock > 0
+                    ? 'In Stock'
+                    : 'Out of Stock'
+                  : `${product.stock} in stock`}
+              </dd>
             </div>
             <div>
               <dt>Views</dt>

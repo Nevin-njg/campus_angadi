@@ -178,13 +178,39 @@ export class MongooseOrderRepository implements OrderRepository {
                 deletedAt: null,
                 status: 'APPROVED',
                 published: true,
-                stock: { $gte: item.quantity },
+                stock: {
+                  $gte:
+                    item.product.summary.sellerType === 'ADMIN'
+                      ? 1
+                      : item.quantity,
+                },
               },
               [
-                { $set: { stock: { $subtract: ['$stock', item.quantity] } } },
                 {
                   $set: {
-                    status: { $cond: [{ $eq: ['$stock', 0] }, 'OUT_OF_STOCK', '$status'] },
+                    stock: {
+                      $cond: [
+                        { $eq: ['$sellerType', 'ADMIN'] },
+                        '$stock',
+                        { $subtract: ['$stock', item.quantity] },
+                      ],
+                    },
+                  },
+                },
+                {
+                  $set: {
+                    status: {
+                      $cond: [
+                        {
+                          $and: [
+                            { $ne: ['$sellerType', 'ADMIN'] },
+                            { $eq: ['$stock', 0] },
+                          ],
+                        },
+                        'OUT_OF_STOCK',
+                        '$status',
+                      ],
+                    },
                   },
                 },
               ],
@@ -841,11 +867,30 @@ export class MongooseOrderRepository implements OrderRepository {
         ProductModel.updateOne(
           { _id: item.productId, deletedAt: null },
           [
-            { $set: { stock: { $add: ['$stock', Number(item.quantity)] } } },
+            {
+              $set: {
+                stock: {
+                  $cond: [
+                    { $eq: ['$sellerType', 'ADMIN'] },
+                    '$stock',
+                    { $add: ['$stock', Number(item.quantity)] },
+                  ],
+                },
+              },
+            },
             {
               $set: {
                 status: {
-                  $cond: [{ $eq: ['$status', 'OUT_OF_STOCK'] }, 'APPROVED', '$status'],
+                  $cond: [
+                    {
+                      $and: [
+                        { $ne: ['$sellerType', 'ADMIN'] },
+                        { $eq: ['$status', 'OUT_OF_STOCK'] },
+                      ],
+                    },
+                    'APPROVED',
+                    '$status',
+                  ],
                 },
               },
             },

@@ -55,7 +55,14 @@
       ],
       "expo-secure-store",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Campus Angadi Seller to choose product photos.",
+          "cameraPermission": "Allow Campus Angadi Seller to take product photos."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

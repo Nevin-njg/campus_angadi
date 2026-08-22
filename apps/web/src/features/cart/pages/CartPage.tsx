@@ -135,7 +135,11 @@ export function CartPage() {
                   </Link>
                   <small>
                     {item.product.sellerType === 'ADMIN' ? 'Official product' : 'Second-hand'} ·{' '}
-                    {item.product.stock} available
+                    {item.product.sellerType === 'ADMIN'
+                      ? item.product.stock > 0
+                        ? 'In Stock'
+                        : 'Out of Stock'
+                      : `${item.product.stock} available`}
                   </small>
                 </div>
                 <div className="quantity-control" aria-label={`Quantity for ${item.product.title}`}>
@@ -151,7 +155,12 @@ export function CartPage() {
                   <span>{item.quantity}</span>
                   <button
                     aria-label={`Increase quantity of ${item.product.title}`}
-                    disabled={busy || item.quantity >= item.product.stock || item.quantity >= 20}
+                    disabled={
+                      busy ||
+                      item.quantity >= 20 ||
+                      (item.product.sellerType !== 'ADMIN' &&
+                        item.quantity >= item.product.stock)
+                    }
                     onClick={() =>
                       update.mutate({ productId: item.product.id, quantity: item.quantity + 1 })
                     }

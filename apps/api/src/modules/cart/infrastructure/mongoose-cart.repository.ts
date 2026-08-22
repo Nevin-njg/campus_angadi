@@ -222,8 +222,12 @@ export class DefaultCartMapper implements CartMapper {
         })
         return []
       }
-      const quantity = Math.min(recordItem.quantity, product.stock)
-      if (recordItem.quantity > product.stock) {
+      const quantity =
+        product.sellerType === 'ADMIN'
+          ? recordItem.quantity
+          : Math.min(recordItem.quantity, product.stock)
+
+      if (product.sellerType !== 'ADMIN' && recordItem.quantity > product.stock) {
         issues.push({
           productId: product.id,
           code: 'INSUFFICIENT_STOCK',

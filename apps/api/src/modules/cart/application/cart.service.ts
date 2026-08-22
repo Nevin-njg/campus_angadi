@@ -26,7 +26,10 @@ export class CartService {
     const currentQuantity =
       existing.items.find((item) => item.productId === input.productId)?.quantity ?? 0
     const quantity = currentQuantity + input.quantity
-    if (quantity > product.summary.stock) {
+    if (
+      product.summary.sellerType !== 'ADMIN' &&
+      quantity > product.summary.stock
+    ) {
       throw new AppError(
         409,
         'INSUFFICIENT_STOCK',
@@ -43,7 +46,10 @@ export class CartService {
       throw new AppError(404, 'CART_ITEM_NOT_FOUND', 'This product is not in your cart.')
     }
     const product = await this.requirePurchasable(productId, userId)
-    if (input.quantity > product.summary.stock) {
+    if (
+      product.summary.sellerType !== 'ADMIN' &&
+      input.quantity > product.summary.stock
+    ) {
       throw new AppError(
         409,
         'INSUFFICIENT_STOCK',
@@ -85,7 +91,9 @@ export class CartService {
       await this.carts.setItem(
         userId,
         item.productId,
-        Math.min(item.quantity, product.summary.stock),
+        product.summary.sellerType === 'ADMIN'
+          ? item.quantity
+          : Math.min(item.quantity, product.summary.stock),
         product.summary.price,
       )
     }

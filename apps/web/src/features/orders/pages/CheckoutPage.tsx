@@ -98,7 +98,13 @@ export function CheckoutPage() {
         </div>
       </section>
     )
-  if (loadError || !checkoutItems.length || (buyNowProduct.data?.stock ?? quantity) < quantity) {
+  const buyNowInsufficientStock =
+    Boolean(buyNowProduct.data) &&
+    (buyNowProduct.data!.stock < 1 ||
+      (buyNowProduct.data!.sellerType !== 'ADMIN' &&
+        buyNowProduct.data!.stock < quantity))
+
+  if (loadError || !checkoutItems.length || buyNowInsufficientStock) {
     return (
       <section className="section">
         <div className="container catalog-empty">

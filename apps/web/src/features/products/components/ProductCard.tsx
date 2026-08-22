@@ -193,7 +193,11 @@ export function ProductCard({ product }: { product: ProductSummary }) {
 
         <div className="catalog-meta-row">
           <span>
-            {product.stock} available
+            {product.sellerType === 'ADMIN'
+              ? product.stock > 0
+                ? 'In Stock'
+                : 'Out of Stock'
+              : `${product.stock} available`}
           </span>
 
           <span>
