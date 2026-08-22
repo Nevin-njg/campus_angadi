@@ -47,6 +47,7 @@ function StoreProductCard({ product, store }: { product: StoreProduct; store: St
     [],
   )
 
+  const storeIsOpen = store.availability?.isOpen !== false
   const addToCart = useMutation({
     mutationFn: () => cartApi.add({ productId: product.id, quantity: 1 }),
     onSuccess(cart) {
@@ -63,7 +64,7 @@ function StoreProductCard({ product, store }: { product: StoreProduct; store: St
       : null
 
   function handleAdd() {
-    if (product.stock <= 0 || addToCart.isPending) return
+    if (!storeIsOpen || product.stock <= 0 || addToCart.isPending) return
     if (!user) {
       void navigate(`/login?returnTo=${encodeURIComponent(`/stores/${store.slug}`)}`)
       return
@@ -72,7 +73,7 @@ function StoreProductCard({ product, store }: { product: StoreProduct; store: St
   }
 
   function handleBuyNow() {
-    if (product.stock <= 0) return
+    if (!storeIsOpen || product.stock <= 0) return
     const checkoutPath = `/checkout?buyNow=${encodeURIComponent(product.slug)}&quantity=1`
     if (!user) {
       void navigate(`/login?returnTo=${encodeURIComponent(checkoutPath)}`)
@@ -127,12 +128,14 @@ function StoreProductCard({ product, store }: { product: StoreProduct; store: St
             type="button"
             className="button button-primary"
             onClick={handleAdd}
-            disabled={product.stock <= 0 || addToCart.isPending}
+            disabled={!storeIsOpen || product.stock <= 0 || addToCart.isPending}
           >
             <CartIcon />
-            {product.stock <= 0
-              ? 'Sold out'
-              : added
+            {!storeIsOpen
+              ? 'Store closed'
+              : product.stock <= 0
+                ? 'Sold out'
+                : added
                 ? 'Added'
                 : addToCart.isPending
                   ? 'Adding…'
@@ -142,9 +145,9 @@ function StoreProductCard({ product, store }: { product: StoreProduct; store: St
             type="button"
             className="button button-outline"
             onClick={handleBuyNow}
-            disabled={product.stock <= 0}
+            disabled={!storeIsOpen || product.stock <= 0}
           >
-            Buy now
+            {storeIsOpen ? 'Buy now' : 'Store closed'}
           </button>
         </div>
 
@@ -283,6 +286,11 @@ export function StoreBrowsePage() {
           </div>
 
           <div className="public-store-facts">
+            <span>
+              <ClockIcon />
+              <strong>{store.availability?.isOpen !== false ? 'Open now' : 'Closed'}</strong>
+              <small>{store.availability?.message || 'Store availability'}</small>
+            </span>
             <span>
               <ClockIcon />
               <strong>{store.deliveryTimeMinutes} min</strong>

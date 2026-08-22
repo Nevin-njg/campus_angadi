@@ -34,6 +34,32 @@ export interface StoreDepartment {
   updatedAt: string
 }
 
+export type StoreDay =
+  | 'SUNDAY'
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+
+export interface StoreOpeningHour {
+  day: StoreDay
+  isOpen: boolean
+  openTime: string
+  closeTime: string
+}
+
+export interface StoreAvailability {
+  isOpen: boolean
+  status: 'OPEN' | 'CLOSED'
+  source: 'STATUS' | 'MANUAL' | 'SCHEDULE'
+  manualOpenOverride: 'AUTO' | 'OPEN' | 'CLOSED'
+  timeZone: string
+  today: StoreOpeningHour
+  message: string
+}
+
 export interface Store {
   id: string
   name: string
@@ -48,6 +74,9 @@ export interface Store {
   campusLocation: string | null
   deliveryTimeMinutes: number
   minimumOrderAmount: number
+  openingHours?: StoreOpeningHour[]
+  manualOpenOverride?: 'AUTO' | 'OPEN' | 'CLOSED'
+  availability?: StoreAvailability
   categories: StoreCategory[]
 }
 
@@ -88,6 +117,7 @@ export interface MarketplaceSearchProduct extends StoreProduct {
     campusLocation: string | null
     deliveryTimeMinutes: number
     minimumOrderAmount: number
+    availability?: StoreAvailability
   } | null
 }
 

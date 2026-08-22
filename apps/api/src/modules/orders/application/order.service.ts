@@ -22,6 +22,7 @@ import type { NotificationRepository } from '../../notifications/domain/notifica
 import type { PushService } from '../../push/application/push.service.js'
 import type { SellerOrderAlertScheduler } from './seller-order-alert.scheduler.js'
 import { StoreModel } from '../../stores/infrastructure/store.model.js'
+import { assertStoreOpenForCheckout } from '../../stores/application/store-hours.service.js'
 
 const ADMIN_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ['CONFIRMED', 'CANCELLED', 'REJECTED'],
@@ -175,7 +176,10 @@ export class OrderService {
       const storeProduct = group.items[0]?.product
       const minimumOrderAmount = storeProduct?.storeMinimumOrderAmount ?? 0
 
-      if (minimumOrderAmount <= 0) continue
+      if (minimumOrderAmount <= 0) {
+        await assertStoreOpenForCheckout(group.storeId)
+        continue
+      }
 
       const storeSubtotal = group.items.reduce(
         (total, item) =>
@@ -195,6 +199,8 @@ export class OrderService {
           `${storeName} requires a minimum order of ₹${minimumOrderAmount}. Add ₹${remaining} more from this store.`,
         )
       }
+
+      await assertStoreOpenForCheckout(group.storeId)
     }
 
     const result = await this.orders.createCheckout(

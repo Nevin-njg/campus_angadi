@@ -7,6 +7,11 @@ import {
   getSellerStoreFinance,
   settleAdminStoreMonth,
 } from '../application/store-finance.service.js'
+import {
+  getSellerStoreTimings,
+  updateSellerStoreAvailability,
+  updateSellerStoreTimings,
+} from '../application/store-hours.service.js'
 
 function requestText(value: unknown, key: string): string {
   if (typeof value !== 'object' || value === null) return ''
@@ -207,6 +212,36 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
           request.auth!.user.id,
           requestText(request.query, 'month'),
         ),
+      })
+    }),
+  )
+  router.get(
+    '/timings',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store timings retrieved.',
+        data: await getSellerStoreTimings(request.auth!.user.id),
+      })
+    }),
+  )
+  router.put(
+    '/timings',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store timings updated.',
+        data: await updateSellerStoreTimings(request.auth!.user.id, request.body),
+      })
+    }),
+  )
+  router.patch(
+    '/availability',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store availability updated.',
+        data: await updateSellerStoreAvailability(request.auth!.user.id, request.body),
       })
     }),
   )

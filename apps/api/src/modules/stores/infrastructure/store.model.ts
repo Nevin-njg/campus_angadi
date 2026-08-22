@@ -11,6 +11,34 @@ const storeCategorySchema = new Schema(
   { _id: true, timestamps: true },
 )
 
+const STORE_DAYS = [
+  'SUNDAY',
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+] as const
+
+const storeOpeningHourSchema = new Schema(
+  {
+    day: { type: String, enum: STORE_DAYS, required: true },
+    isOpen: { type: Boolean, default: true },
+    openTime: { type: String, required: true, default: '00:00' },
+    closeTime: { type: String, required: true, default: '23:59' },
+  },
+  { _id: false },
+)
+
+const defaultOpeningHours = () =>
+  STORE_DAYS.map((day) => ({
+    day,
+    isOpen: true,
+    openTime: '00:00',
+    closeTime: '23:59',
+  }))
+
 const storeSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -29,6 +57,12 @@ const storeSchema = new Schema(
     campusLocation: { type: String, default: null, trim: true },
     deliveryTimeMinutes: { type: Number, default: 30, min: 1 },
     minimumOrderAmount: { type: Number, default: 0, min: 0 },
+    openingHours: { type: [storeOpeningHourSchema], default: defaultOpeningHours },
+    manualOpenOverride: {
+      type: String,
+      enum: ['AUTO', 'OPEN', 'CLOSED'],
+      default: 'AUTO',
+    },
     categories: { type: [storeCategorySchema], default: [] },
   },
   { timestamps: true },

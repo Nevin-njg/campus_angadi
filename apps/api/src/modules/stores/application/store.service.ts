@@ -2,6 +2,10 @@
 import mongoose, { isValidObjectId } from 'mongoose'
 import { AppError } from '../../../core/errors/app-error.js'
 import { StoreModel } from '../infrastructure/store.model.js'
+import {
+  normalizeStoreOpeningHours,
+  storeAvailabilityView,
+} from './store-hours.service.js'
 import { StoreDepartmentModel } from '../infrastructure/store-department.model.js'
 import { StoreOfferModel } from '../infrastructure/store-offer.model.js'
 import { ProductImageModel, ProductModel } from '../../products/infrastructure/product.models.js'
@@ -106,6 +110,9 @@ const storeView = (store: any) => ({
   campusLocation: store.campusLocation ?? null,
   deliveryTimeMinutes: store.deliveryTimeMinutes,
   minimumOrderAmount: store.minimumOrderAmount,
+  openingHours: normalizeStoreOpeningHours(store.openingHours),
+  manualOpenOverride: store.manualOpenOverride ?? 'AUTO',
+  availability: storeAvailabilityView(store),
   categories: (store.categories ?? []).map((category: any) => ({
     id: String(category._id),
     name: category.name,
@@ -272,6 +279,7 @@ const marketplaceProductView = (product: any, store: any, imageUrl: string | nul
       campusLocation: store.campusLocation ?? null,
       deliveryTimeMinutes: store.deliveryTimeMinutes,
       minimumOrderAmount: store.minimumOrderAmount,
+      availability: storeAvailabilityView(store),
     },
   }
 }
