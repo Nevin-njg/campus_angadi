@@ -40,11 +40,16 @@ async function request<T>(path: string, accessToken: string): Promise<T> {
   let response: Response
 
   try {
-    response = await fetch(`${mobileEnv.apiUrl}${path}`, {
+    const separator = path.includes('?') ? '&' : '?'
+    const requestPath = `${path}${separator}_=${Date.now()}`
+
+    response = await fetch(`${mobileEnv.apiUrl}${requestPath}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
+        'Cache-Control': 'no-cache, no-store',
+        Pragma: 'no-cache',
       },
     })
   } catch {
