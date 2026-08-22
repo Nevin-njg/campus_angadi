@@ -11,7 +11,7 @@ import {
 const items = [
   ['pricetags-outline', 'Categories', '/categories'],
   ['ticket-outline', 'Offers', '/offers'],
-  ['wallet-outline', 'Finance', null],
+  ['wallet-outline', 'Finance', '/finance'],
   ['time-outline', 'Store timings', null],
   ['phone-portrait-outline', 'Logged-in devices', null],
   ['settings-outline', 'Settings', null],
@@ -45,9 +45,7 @@ export default function MoreScreen() {
 
               <Text style={styles.label}>{label}</Text>
 
-              {label === 'Finance' ||
-              label === 'Store timings' ||
-              label === 'Settings' ? (
+              {label === 'Store timings' || label === 'Settings' ? (
                 <Ionicons name="lock-closed-outline" size={16} color="#a1a1aa" />
               ) : null}
 

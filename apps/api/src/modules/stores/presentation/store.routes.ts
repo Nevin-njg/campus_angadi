@@ -4,6 +4,7 @@ import { requireRoles } from '../../../core/middleware/authenticate.js'
 import type { StoreService } from '../application/store.service.js'
 import {
   getAdminStoreFinance,
+  getSellerStoreFinance,
   settleAdminStoreMonth,
 } from '../application/store-finance.service.js'
 
@@ -193,6 +194,19 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
         success: true,
         message: 'Seller store retrieved.',
         data: await service.sellerStore(request.auth!.user.id),
+      })
+    }),
+  )
+  router.get(
+    '/finance',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store finance retrieved.',
+        data: await getSellerStoreFinance(
+          request.auth!.user.id,
+          requestText(request.query, 'month'),
+        ),
       })
     }),
   )

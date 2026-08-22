@@ -250,6 +250,16 @@ export async function getAdminStoreFinance(storeId: string, requestedMonth = '')
   }
 }
 
+export async function getSellerStoreFinance(sellerId: string, requestedMonth = '') {
+  const store = await StoreModel.findOne({ sellerId }).select('_id').lean()
+
+  if (!store) {
+    throw new AppError(404, 'STORE_NOT_FOUND', 'No store is assigned to this seller.')
+  }
+
+  return getAdminStoreFinance(String(store._id), requestedMonth)
+}
+
 export async function settleAdminStoreMonth(
   storeId: string,
   requestedMonth: string,
