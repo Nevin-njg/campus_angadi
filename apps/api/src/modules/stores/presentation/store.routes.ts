@@ -203,6 +203,19 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       })
     }),
   )
+  router.patch(
+    '/',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store information updated.',
+        data: await service.updateSellerStoreInformation(
+          request.auth!.user.id,
+          request.body,
+        ),
+      })
+    }),
+  )
   router.get(
     '/finance',
     asyncHandler(async (request, response) => {

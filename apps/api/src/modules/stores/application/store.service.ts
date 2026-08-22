@@ -999,6 +999,89 @@ export class StoreService {
     return storeView(store.toObject())
   }
 
+  async updateSellerStoreInformation(sellerId: string, input: any) {
+    const store = await this.sellerDocument(sellerId)
+    const value =
+      typeof input === 'object' && input !== null
+        ? (input as Record<string, unknown>)
+        : {}
+
+    if (Object.prototype.hasOwnProperty.call(value, 'commissionPercent')) {
+      throw new AppError(
+        403,
+        'STORE_COMMISSION_LOCKED',
+        'Store commission can only be changed by a Campus Angadi administrator.',
+      )
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'name')) {
+      const name = String(value.name ?? '').trim()
+      if (name.length < 2 || name.length > 80) {
+        throw new AppError(
+          400,
+          'STORE_NAME_INVALID',
+          'Store name must be between 2 and 80 characters.',
+        )
+      }
+      store.name = name
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'description')) {
+      const description = String(value.description ?? '').trim()
+      if (description.length > 1000) {
+        throw new AppError(
+          400,
+          'STORE_DESCRIPTION_INVALID',
+          'Store description must be 1000 characters or fewer.',
+        )
+      }
+      store.description = description || null
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'campusLocation')) {
+      const campusLocation = String(value.campusLocation ?? '').trim()
+      if (campusLocation.length > 120) {
+        throw new AppError(
+          400,
+          'STORE_LOCATION_INVALID',
+          'Campus location must be 120 characters or fewer.',
+        )
+      }
+      store.campusLocation = campusLocation || null
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'deliveryTimeMinutes')) {
+      const deliveryTimeMinutes = Number(value.deliveryTimeMinutes)
+      if (
+        !Number.isInteger(deliveryTimeMinutes) ||
+        deliveryTimeMinutes < 1 ||
+        deliveryTimeMinutes > 240
+      ) {
+        throw new AppError(
+          400,
+          'STORE_DELIVERY_TIME_INVALID',
+          'Delivery time must be between 1 and 240 minutes.',
+        )
+      }
+      store.deliveryTimeMinutes = deliveryTimeMinutes
+    }
+
+    if (Object.prototype.hasOwnProperty.call(value, 'minimumOrderAmount')) {
+      const minimumOrderAmount = Number(value.minimumOrderAmount)
+      if (!Number.isFinite(minimumOrderAmount) || minimumOrderAmount < 0) {
+        throw new AppError(
+          400,
+          'STORE_MINIMUM_ORDER_INVALID',
+          'Minimum order amount cannot be negative.',
+        )
+      }
+      store.minimumOrderAmount = money(minimumOrderAmount)
+    }
+
+    await store.save()
+    return storeView(store.toObject())
+  }
+
   async sellerStore(sellerId: string) {
     const store: any = await StoreModel.findOne({ sellerId }).lean()
     if (!store) throw new AppError(404, 'STORE_NOT_FOUND', 'No store is assigned to this seller.')

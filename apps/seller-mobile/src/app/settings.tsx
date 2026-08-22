@@ -1,19 +1,22 @@
-import { Ionicons } from '@expo/vector-icons'
+import {
+  Ionicons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import * as Notifications from 'expo-notifications'
-import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useFocusEffect,
+  useRouter } from 'expo-router'
+import { useCallback,
+  useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   Linking,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSellerSession } from '../features/auth/session'
 import { getSellerDeviceId } from '../features/notifications/seller-device'

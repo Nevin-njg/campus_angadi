@@ -27,6 +27,14 @@ export type SellerStore = {
   categories: StoreCategory[]
 }
 
+export type UpdateSellerStoreInformationInput = {
+  name: string
+  description: string
+  campusLocation: string
+  deliveryTimeMinutes: number
+  minimumOrderAmount: number
+}
+
 export type StoreAnalytics = {
   productCount: number
   orderCount: number
@@ -194,6 +202,18 @@ export const sellerStoreApi = {
 
   orders(accessToken: string) {
     return request<SellerOrder[]>('/seller/store/orders', accessToken)
+  },
+
+  updateStoreInformation(
+    accessToken: string,
+    input: UpdateSellerStoreInformationInput,
+  ) {
+    return request<SellerStore>(
+      '/seller/store',
+      accessToken,
+      'PATCH',
+      input,
+    )
   },
 
   createCategory(

@@ -1,6 +1,11 @@
-import { Ionicons } from '@expo/vector-icons'
-import { useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Ionicons } from '@expo/vector-icons'
+import { useFocusEffect,
+  useRouter } from 'expo-router'
+import { useCallback,
+  useEffect,
+  useMemo,
+  useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -8,13 +13,13 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSellerSession } from '../features/auth/session'
 import {

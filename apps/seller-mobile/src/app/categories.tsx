@@ -1,19 +1,23 @@
-import { Ionicons } from '@expo/vector-icons'
+import {
+  Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback,
+  useEffect,
+  useMemo,
+  useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
   Modal,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useSellerSession } from '../features/auth/session'
 import {

@@ -1,18 +1,20 @@
-import { Ionicons } from '@expo/vector-icons'
+import {
+  Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import {
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const items = [
   ['pricetags-outline', 'Categories', '/categories'],
   ['ticket-outline', 'Offers', '/offers'],
   ['wallet-outline', 'Finance', '/finance'],
   ['time-outline', 'Store timings', '/store-timings'],
+  ['storefront-outline', 'Store information', '/store-information'],
   ['phone-portrait-outline', 'Logged-in devices', '/devices'],
   ['settings-outline', 'Settings', '/settings'],
 ] as const
