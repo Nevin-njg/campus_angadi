@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useFocusEffect } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -143,9 +144,11 @@ export default function ProductsScreen() {
     [accessToken, withFreshToken],
   )
 
-  useEffect(() => {
-    void load()
-  }, [load])
+  useFocusEffect(
+    useCallback(() => {
+      void load()
+    }, [load]),
+  )
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
