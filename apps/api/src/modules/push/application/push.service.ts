@@ -276,7 +276,7 @@ export class PushService {
             body: payload.body,
             sound: 'default',
             priority: 'high',
-            channelId: 'seller-orders',
+            channelId: 'seller-orders-v2',
             tag: payload.tag,
             data: {
               type: payload.orderId ? 'NEW_ORDER' : 'GENERAL',

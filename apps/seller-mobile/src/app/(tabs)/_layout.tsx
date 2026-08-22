@@ -3,6 +3,7 @@ import { Redirect, Tabs } from 'expo-router'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 
 import { useSellerSession } from '../../features/auth/session'
+import { NotificationResponseRouter } from '../../features/notifications/notification-response-router'
 import { SellerPushRegistration } from '../../features/notifications/seller-push-registration'
 import { ForegroundOrderAlertProvider } from '../../features/orders/foreground-order-alerts'
 
@@ -27,6 +28,7 @@ export default function TabsLayout() {
   return (
     <ForegroundOrderAlertProvider>
       <SellerPushRegistration />
+      <NotificationResponseRouter />
       <Tabs
         screenOptions={{
           headerShown: false,

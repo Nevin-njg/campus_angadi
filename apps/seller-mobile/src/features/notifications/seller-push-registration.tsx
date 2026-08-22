@@ -24,11 +24,11 @@ export function SellerPushRegistration() {
 
     try {
       if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('seller-orders', {
+        await Notifications.setNotificationChannelAsync('seller-orders-v2', {
           name: 'Seller order alerts',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 500, 200, 500],
-          sound: 'default',
+          sound: 'new_order_alert_30s.wav',
           enableVibrate: true,
           lockscreenVisibility:
             Notifications.AndroidNotificationVisibility.PUBLIC,
