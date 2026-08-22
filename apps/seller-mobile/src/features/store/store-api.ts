@@ -99,7 +99,7 @@ export class SellerStoreError extends Error {
 async function requestOnce<T>(
   path: string,
   accessToken: string,
-  method: 'GET' | 'POST' = 'GET',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
   body?: Record<string, unknown>,
 ): Promise<T> {
   let response: Response
@@ -155,7 +155,7 @@ async function requestOnce<T>(
 async function request<T>(
   path: string,
   accessToken: string,
-  method: 'GET' | 'POST' = 'GET',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
   body?: Record<string, unknown>,
 ): Promise<T> {
   try {
@@ -194,6 +194,53 @@ export const sellerStoreApi = {
 
   orders(accessToken: string) {
     return request<SellerOrder[]>('/seller/store/orders', accessToken)
+  },
+
+  createCategory(
+    accessToken: string,
+    input: { name: string; description?: string },
+  ) {
+    return request<SellerStore>(
+      '/seller/store/categories',
+      accessToken,
+      'POST',
+      input,
+    )
+  },
+
+  updateCategory(
+    accessToken: string,
+    categoryId: string,
+    input: {
+      name?: string
+      description?: string
+      isActive?: boolean
+      displayOrder?: number
+    },
+  ) {
+    return request<SellerStore>(
+      `/seller/store/categories/${encodeURIComponent(categoryId)}`,
+      accessToken,
+      'PATCH',
+      input,
+    )
+  },
+
+  reorderCategories(accessToken: string, categoryIds: string[]) {
+    return request<SellerStore>(
+      '/seller/store/categories/reorder',
+      accessToken,
+      'PATCH',
+      { categoryIds },
+    )
+  },
+
+  deleteCategory(accessToken: string, categoryId: string) {
+    return request<SellerStore>(
+      `/seller/store/categories/${encodeURIComponent(categoryId)}`,
+      accessToken,
+      'DELETE',
+    )
   },
 
   decideOrder(accessToken: string, orderId: string, decision: 'ACCEPT' | 'REJECT') {

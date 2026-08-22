@@ -251,6 +251,16 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
     }),
   )
   router.patch(
+    '/categories/reorder',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Categories reordered.',
+        data: await service.reorderCategories(request.auth!.user.id, request.body),
+      })
+    }),
+  )
+  router.patch(
     '/categories/:id',
     asyncHandler(async (request, response) => {
       response.json({
@@ -260,6 +270,19 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
           request.auth!.user.id,
           String(request.params.id),
           request.body,
+        ),
+      })
+    }),
+  )
+  router.delete(
+    '/categories/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Category deleted.',
+        data: await service.deleteCategory(
+          request.auth!.user.id,
+          String(request.params.id),
         ),
       })
     }),

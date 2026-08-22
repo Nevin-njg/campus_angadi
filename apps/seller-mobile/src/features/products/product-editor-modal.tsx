@@ -68,10 +68,14 @@ export function ProductEditorModal({
     setTitle(product?.title ?? '')
     setDescription(product?.description ?? '')
     setPrice(product ? String(product.price) : '')
+    const currentCategory = categories.find(
+      (category) =>
+        category.id === product?.storeCategoryId && category.isActive,
+    )
+
     setCategoryId(
-      product?.storeCategoryId ??
+      currentCategory?.id ??
         categories.find((category) => category.isActive)?.id ??
-        categories[0]?.id ??
         '',
     )
     setInStock(product ? product.stock > 0 : true)
@@ -79,6 +83,11 @@ export function ProductEditorModal({
   }, [categories, product, visible])
 
   const previewUri = image?.uri ?? product?.primaryImage ?? null
+
+  const activeCategories = useMemo(
+    () => categories.filter((category) => category.isActive),
+    [categories],
+  )
 
   const selectedCategory = useMemo(
     () => categories.find((category) => category.id === categoryId) ?? null,
@@ -309,7 +318,7 @@ export function ProductEditorModal({
           <View style={styles.field}>
             <Text style={styles.label}>Category</Text>
 
-            {!categories.length ? (
+            {!activeCategories.length ? (
               <View style={styles.notice}>
                 <Ionicons
                   name="information-circle-outline"
@@ -322,7 +331,7 @@ export function ProductEditorModal({
               </View>
             ) : (
               <View style={styles.chips}>
-                {categories.map((category) => {
+                {activeCategories.map((category) => {
                   const selected = category.id === categoryId
 
                   return (
@@ -417,11 +426,11 @@ export function ProductEditorModal({
           </Pressable>
 
           <Pressable
-            disabled={saving || !categories.length}
+            disabled={saving || !activeCategories.length}
             onPress={submit}
             style={({ pressed }) => [
               styles.saveButton,
-              (pressed || saving || !categories.length) && styles.pressed,
+              (pressed || saving || !activeCategories.length) && styles.pressed,
             ]}
           >
             {saving ? (

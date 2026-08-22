@@ -855,6 +855,77 @@ export class StoreService {
     return storeView(store.toObject())
   }
 
+  async reorderCategories(sellerId: string, input: any) {
+    const store = await this.sellerDocument(sellerId)
+    const categoryIds: string[] = Array.isArray(input.categoryIds)
+      ? input.categoryIds
+          .map((id: unknown) => String(id).trim())
+          .filter((id: string) => id.length > 0)
+      : []
+
+    const currentIds = store.categories.map((category: any) => String(category._id))
+    const uniqueIds = [...new Set(categoryIds)]
+
+    if (
+      uniqueIds.length !== currentIds.length ||
+      currentIds.some((id: string) => !uniqueIds.includes(id))
+    ) {
+      throw new AppError(
+        400,
+        'CATEGORY_ORDER_INVALID',
+        'Category order must include every store category exactly once.',
+      )
+    }
+
+    uniqueIds.forEach((categoryId, displayOrder) => {
+      const category: any = store.categories.id(categoryId)
+      if (category) category.displayOrder = displayOrder
+    })
+
+    await store.save()
+    return storeView(store.toObject())
+  }
+
+  async deleteCategory(sellerId: string, categoryId: string) {
+    const store = await this.sellerDocument(sellerId)
+    const category: any = store.categories.id(categoryId)
+
+    if (!category) {
+      throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found.')
+    }
+
+    const productCount = await ProductModel.countDocuments({
+      storeId: store._id,
+      storeCategoryId: category._id,
+      deletedAt: null,
+    })
+
+    if (productCount > 0) {
+      throw new AppError(
+        409,
+        'CATEGORY_IN_USE',
+        `${productCount} product${productCount === 1 ? '' : 's'} still ${
+          productCount === 1 ? 'uses' : 'use'
+        } this category. Move or delete ${
+          productCount === 1 ? 'it' : 'them'
+        } first.`,
+      )
+    }
+
+    store.categories.pull(category._id)
+
+    // Normalize display order after removal.
+    const ordered = [...store.categories].sort(
+      (left: any, right: any) => Number(left.displayOrder) - Number(right.displayOrder),
+    )
+    ordered.forEach((item: any, displayOrder: number) => {
+      item.displayOrder = displayOrder
+    })
+
+    await store.save()
+    return storeView(store.toObject())
+  }
+
   async sellerStore(sellerId: string) {
     const store: any = await StoreModel.findOne({ sellerId }).lean()
     if (!store) throw new AppError(404, 'STORE_NOT_FOUND', 'No store is assigned to this seller.')

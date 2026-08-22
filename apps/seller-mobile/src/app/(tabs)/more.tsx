@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import {
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -7,23 +9,36 @@ import {
 } from 'react-native'
 
 const items = [
-  ['pricetags-outline', 'Categories'],
-  ['ticket-outline', 'Offers'],
-  ['wallet-outline', 'Finance'],
-  ['time-outline', 'Store timings'],
-  ['phone-portrait-outline', 'Logged-in devices'],
-  ['settings-outline', 'Settings'],
+  ['pricetags-outline', 'Categories', '/categories'],
+  ['ticket-outline', 'Offers', null],
+  ['wallet-outline', 'Finance', null],
+  ['time-outline', 'Store timings', null],
+  ['phone-portrait-outline', 'Logged-in devices', null],
+  ['settings-outline', 'Settings', null],
 ] as const
 
 export default function MoreScreen() {
+  const router = useRouter()
+
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
         <Text style={styles.title}>More</Text>
 
         <View style={styles.list}>
-          {items.map(([icon, label]) => (
-            <View key={label} style={styles.item}>
+          {items.map(([icon, label, route], index) => (
+            <Pressable
+              key={label}
+              disabled={!route}
+              onPress={() => {
+                if (route) router.push(route as never)
+              }}
+              style={({ pressed }) => [
+                styles.item,
+                index === items.length - 1 && styles.lastItem,
+                pressed && styles.pressed,
+              ]}
+            >
               <View style={styles.icon}>
                 <Ionicons name={icon} size={20} color="#52525b" />
               </View>
@@ -39,10 +54,10 @@ export default function MoreScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={19}
-                color="#a1a1aa"
+                color={route ? '#71717a' : '#d4d4d8'}
                 style={styles.chevron}
               />
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -79,6 +94,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e4e4e7',
   },
+  lastItem: {
+    borderBottomWidth: 0,
+  },
   icon: {
     width: 34,
   },
@@ -90,5 +108,8 @@ const styles = StyleSheet.create({
   },
   chevron: {
     marginLeft: 7,
+  },
+  pressed: {
+    backgroundColor: '#fafafa',
   },
 })
