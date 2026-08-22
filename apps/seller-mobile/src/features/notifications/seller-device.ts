@@ -27,6 +27,13 @@ export function getSellerDeviceName() {
     const manufacturer = constants.Manufacturer?.trim()
 
     if (manufacturer && model) {
+      const normalizedManufacturer = manufacturer.toLowerCase()
+      const normalizedModel = model.toLowerCase()
+
+      if (normalizedModel.startsWith(normalizedManufacturer)) {
+        return model.slice(0, 120)
+      }
+
       return `${manufacturer} ${model}`.slice(0, 120)
     }
 
