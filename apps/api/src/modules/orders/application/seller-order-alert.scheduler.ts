@@ -209,7 +209,7 @@ export class SellerOrderAlertScheduler {
           : 'New order needs attention',
       body: message,
       url: `/seller?section=orders&order=${encodeURIComponent(job.orderId)}`,
-      tag: `order-${job.orderId}-ring-${job.stage}`,
+      tag: `order-${job.orderId}`,
       orderId: job.orderId,
     })
 
