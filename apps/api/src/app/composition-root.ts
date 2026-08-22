@@ -50,6 +50,7 @@ import { CleanupService } from '../modules/operations/application/cleanup.servic
 import { CleanupScheduler } from '../modules/operations/application/cleanup.scheduler.js'
 import { IndexInspectionService } from '../modules/operations/application/index-inspection.service.js'
 import { StoreService } from '../modules/stores/application/store.service.js'
+import { StoreOfferScheduler } from '../modules/stores/application/store-offer.scheduler.js'
 import { PushService } from '../modules/push/application/push.service.js'
 
 export function createCompositionRoot() {
@@ -116,6 +117,7 @@ export function createCompositionRoot() {
     maxCount: env.PRODUCT_IMAGE_MAX_COUNT,
   })
   const storeService = new StoreService(uploadService)
+  const storeOfferScheduler = new StoreOfferScheduler(redis, logger)
   const notifications = new MongooseNotificationRepository()
   const pushService = new PushService(
     env.VAPID_PUBLIC_KEY,
@@ -191,6 +193,7 @@ export function createCompositionRoot() {
     categoryService,
     productService,
     storeService,
+    storeOfferScheduler,
     homepageService,
     dynamicHomepageService,
     uploadService,

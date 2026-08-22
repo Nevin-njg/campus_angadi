@@ -67,7 +67,15 @@ export function ProductEditorModal({
 
     setTitle(product?.title ?? '')
     setDescription(product?.description ?? '')
-    setPrice(product ? String(product.price) : '')
+    setPrice(
+      product
+        ? String(
+            product.currentOffer?.basePrice ??
+              product.originalPrice ??
+              product.price,
+          )
+        : '',
+    )
     const currentCategory = categories.find(
       (category) =>
         category.id === product?.storeCategoryId && category.isActive,

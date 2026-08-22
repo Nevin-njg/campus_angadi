@@ -3,6 +3,7 @@ import mongoose, { isValidObjectId } from 'mongoose'
 import { AppError } from '../../../core/errors/app-error.js'
 import { StoreModel } from '../infrastructure/store.model.js'
 import { StoreDepartmentModel } from '../infrastructure/store-department.model.js'
+import { StoreOfferModel } from '../infrastructure/store-offer.model.js'
 import { ProductImageModel, ProductModel } from '../../products/infrastructure/product.models.js'
 import {
   OrderItemModel,
@@ -26,6 +27,70 @@ const money = (value: unknown) => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : 0
 }
+
+type StoreOfferDiscountType = 'PERCENTAGE' | 'FLAT'
+
+const offerDiscountedPrice = (
+  basePrice: number,
+  discountType: StoreOfferDiscountType,
+  discountValue: number,
+) => {
+  if (discountType === 'PERCENTAGE') {
+    if (!Number.isFinite(discountValue) || discountValue <= 0 || discountValue > 90) {
+      throw new AppError(
+        400,
+        'OFFER_PERCENT_INVALID',
+        'Percentage discount must be between 1% and 90%.',
+      )
+    }
+    return money(basePrice * (1 - discountValue / 100))
+  }
+
+  if (!Number.isFinite(discountValue) || discountValue <= 0 || discountValue >= basePrice) {
+    throw new AppError(
+      400,
+      'OFFER_FLAT_INVALID',
+      'Flat discount must be greater than zero and lower than the regular price.',
+    )
+  }
+
+  return money(basePrice - discountValue)
+}
+
+const offerDate = (value: unknown, code: string, message: string) => {
+  const date = new Date(String(value ?? ''))
+  if (Number.isNaN(date.getTime())) throw new AppError(400, code, message)
+  return date
+}
+
+const offerSummaryView = (offer: any) => ({
+  id: String(offer._id),
+  status: offer.status,
+  discountType: offer.discountType,
+  discountValue: offer.discountValue,
+  basePrice: offer.basePrice,
+  discountedPrice: offer.discountedPrice,
+  startsAt: offer.startsAt,
+  endsAt: offer.endsAt,
+})
+
+const offerView = (offer: any, product: any, imageUrl: string | null = null) => ({
+  id: String(offer._id),
+  storeId: String(offer.storeId),
+  productId: String(offer.productId),
+  productTitle: product?.title ?? 'Deleted product',
+  productImage: imageUrl,
+  discountType: offer.discountType,
+  discountValue: offer.discountValue,
+  basePrice: offer.basePrice,
+  discountedPrice: offer.discountedPrice,
+  startsAt: offer.startsAt,
+  endsAt: offer.endsAt,
+  status: offer.status,
+  isCurrent: Boolean(offer.isCurrent),
+  createdAt: offer.createdAt,
+  updatedAt: offer.updatedAt,
+})
 
 const storeView = (store: any) => ({
   id: String(store._id),
@@ -972,14 +1037,33 @@ export class StoreService {
     const filter: Record<string, unknown> = { storeId: store._id, deletedAt: null }
     if (query) filter.title = { $regex: query, $options: 'i' }
     const products = await ProductModel.find(filter).sort({ createdAt: -1 }).lean()
-    const images = await ProductImageModel.find({
-      productId: { $in: products.map((product) => product._id) },
-      isPrimary: true,
-    }).lean()
-    const imageByProduct = new Map(images.map((image) => [String(image.productId), image.url]))
-    return products.map((product: any) =>
-      productView(product, imageByProduct.get(String(product._id)) ?? null),
+    const productIds = products.map((product) => product._id)
+
+    const [images, currentOffers] = await Promise.all([
+      ProductImageModel.find({
+        productId: { $in: productIds },
+        isPrimary: true,
+      }).lean(),
+      StoreOfferModel.find({
+        productId: { $in: productIds },
+        isCurrent: true,
+      }).lean(),
+    ])
+
+    const imageByProduct = new Map(
+      images.map((image) => [String(image.productId), image.url]),
     )
+    const offerByProduct = new Map(
+      currentOffers.map((offer: any) => [String(offer.productId), offer]),
+    )
+
+    return products.map((product: any) => {
+      const currentOffer = offerByProduct.get(String(product._id))
+      return {
+        ...productView(product, imageByProduct.get(String(product._id)) ?? null),
+        currentOffer: currentOffer ? offerSummaryView(currentOffer) : null,
+      }
+    })
   }
 
   async createProduct(sellerId: string, input: any) {
@@ -1131,6 +1215,11 @@ export class StoreService {
 
     if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.')
 
+    const currentOffer: any = await StoreOfferModel.findOne({
+      productId: product._id,
+      isCurrent: true,
+    })
+
     if (typeof input.title === 'string' && input.title.trim()) {
       product.title = input.title.trim()
     }
@@ -1143,7 +1232,26 @@ export class StoreService {
       const price = money(input.price)
       if (price <= 0)
         throw new AppError(400, 'PRODUCT_PRICE_INVALID', 'Price must be greater than zero.')
-      product.price = price
+
+      if (currentOffer) {
+        const discountedPrice = offerDiscountedPrice(
+          price,
+          currentOffer.discountType as StoreOfferDiscountType,
+          Number(currentOffer.discountValue),
+        )
+        currentOffer.basePrice = price
+        currentOffer.discountedPrice = discountedPrice
+
+        if (currentOffer.status === 'ACTIVE') {
+          product.originalPrice = price
+          product.price = discountedPrice
+        } else {
+          product.originalPrice = null
+          product.price = price
+        }
+      } else {
+        product.price = price
+      }
     }
 
     if (input.stock !== undefined) {
@@ -1170,6 +1278,7 @@ export class StoreService {
       product.categoryId = category._id
     }
 
+    if (currentOffer) await currentOffer.save()
     await product.save()
 
     const currentPrimaryImage = await ProductImageModel.findOne({
@@ -1423,40 +1532,209 @@ export class StoreService {
     return orderView(order.toObject())
   }
 
-  async applyOffer(sellerId: string, input: any) {
+  async sellerOffers(sellerId: string) {
     const store = await this.sellerDocument(sellerId)
-    const discountPercent = Number(input.discountPercent)
-    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 90) {
-      throw new AppError(400, 'OFFER_PERCENT_INVALID', 'Discount must be between 0% and 90%.')
-    }
+    const offers: any[] = await StoreOfferModel.find({ storeId: store._id })
+      .sort({ isCurrent: -1, createdAt: -1 })
+      .lean()
 
-    const filter: Record<string, unknown> = { storeId: store._id, deletedAt: null }
-    if (input.scope === 'PRODUCT') {
-      filter._id = String(input.targetId ?? '')
-    } else if (input.scope === 'CATEGORY') {
-      const category: any = store.categories.id(String(input.targetId ?? ''))
-      if (!category) throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found.')
-      filter.storeCategoryId = category._id
-    } else {
-      throw new AppError(400, 'OFFER_SCOPE_INVALID', 'Choose a product or category offer.')
-    }
+    const productIds = [...new Set(offers.map((offer) => String(offer.productId)))]
+    const [products, images] = await Promise.all([
+      ProductModel.find({ _id: { $in: productIds } }).lean(),
+      ProductImageModel.find({ productId: { $in: productIds }, isPrimary: true }).lean(),
+    ])
 
-    const products: any[] = await ProductModel.find(filter)
-    if (!products.length)
-      throw new AppError(404, 'OFFER_TARGET_EMPTY', 'No products matched this offer.')
+    const productById = new Map(
+      products.map((product: any) => [String(product._id), product]),
+    )
+    const imageByProduct = new Map(
+      images.map((image: any) => [String(image.productId), image.url]),
+    )
 
-    for (const product of products) {
-      if (discountPercent === 0) {
-        if (product.originalPrice) product.price = product.originalPrice
-        product.originalPrice = null
-      } else {
-        const basePrice = product.originalPrice || product.price
-        product.originalPrice = basePrice
-        product.price = money(basePrice * (1 - discountPercent / 100))
-      }
-      await product.save()
-    }
-
-    return { updatedCount: products.length, discountPercent }
+    return offers.map((offer) =>
+      offerView(
+        offer,
+        productById.get(String(offer.productId)),
+        imageByProduct.get(String(offer.productId)) ?? null,
+      ),
+    )
   }
+
+  async createOffer(sellerId: string, input: any) {
+    const store = await this.sellerDocument(sellerId)
+    const productId = String(input.productId ?? '').trim()
+
+    if (!isValidObjectId(productId)) {
+      throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.')
+    }
+
+    const product: any = await ProductModel.findOne({
+      _id: productId,
+      storeId: store._id,
+      sellerType: 'ADMIN',
+      deletedAt: null,
+    })
+    if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.')
+
+    const existing = await StoreOfferModel.findOne({
+      productId: product._id,
+      isCurrent: true,
+    }).lean()
+
+    if (existing) {
+      throw new AppError(
+        409,
+        'OFFER_ALREADY_EXISTS',
+        'This product already has an active or scheduled offer.',
+      )
+    }
+
+    const discountType = String(input.discountType ?? '').trim().toUpperCase()
+    if (discountType !== 'PERCENTAGE' && discountType !== 'FLAT') {
+      throw new AppError(400, 'OFFER_TYPE_INVALID', 'Choose a percentage or flat discount.')
+    }
+
+    const basePrice = money(product.originalPrice ?? product.price)
+    const discountValue = Number(input.discountValue)
+    const discountedPrice = offerDiscountedPrice(basePrice, discountType, discountValue)
+    const startsAt = offerDate(input.startsAt, 'OFFER_START_INVALID', 'Choose a valid offer start time.')
+    const endsAt = offerDate(input.endsAt, 'OFFER_END_INVALID', 'Choose a valid offer end time.')
+
+    if (endsAt <= startsAt) {
+      throw new AppError(400, 'OFFER_SCHEDULE_INVALID', 'Offer end time must be after the start time.')
+    }
+
+    const now = new Date()
+    if (endsAt <= now) {
+      throw new AppError(400, 'OFFER_END_INVALID', 'Offer end time must be in the future.')
+    }
+
+    const status = startsAt <= now ? 'ACTIVE' : 'SCHEDULED'
+    const offer: any = await StoreOfferModel.create({
+      storeId: store._id,
+      sellerId,
+      productId: product._id,
+      discountType,
+      discountValue,
+      basePrice,
+      discountedPrice,
+      startsAt,
+      endsAt,
+      status,
+      isCurrent: true,
+    })
+
+    if (status === 'ACTIVE') {
+      product.originalPrice = basePrice
+      product.price = discountedPrice
+    } else {
+      product.originalPrice = null
+      product.price = basePrice
+    }
+    await product.save()
+
+    const image = await ProductImageModel.findOne({
+      productId: product._id,
+      isPrimary: true,
+    }).lean()
+
+    return offerView(offer.toObject(), product.toObject(), image?.url ?? null)
+  }
+
+  async updateOffer(sellerId: string, offerId: string, input: any) {
+    const store = await this.sellerDocument(sellerId)
+    const offer: any = await StoreOfferModel.findOne({ _id: offerId, storeId: store._id })
+
+    if (!offer) throw new AppError(404, 'OFFER_NOT_FOUND', 'Offer not found.')
+    if (!offer.isCurrent || offer.status === 'EXPIRED') {
+      throw new AppError(409, 'OFFER_EXPIRED', 'Expired offers cannot be edited.')
+    }
+
+    const product: any = await ProductModel.findOne({
+      _id: offer.productId,
+      storeId: store._id,
+      deletedAt: null,
+    })
+    if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found.')
+
+    const discountType =
+      input.discountType === undefined
+        ? String(offer.discountType)
+        : String(input.discountType).trim().toUpperCase()
+
+    if (discountType !== 'PERCENTAGE' && discountType !== 'FLAT') {
+      throw new AppError(400, 'OFFER_TYPE_INVALID', 'Choose a percentage or flat discount.')
+    }
+
+    const discountValue =
+      input.discountValue === undefined ? Number(offer.discountValue) : Number(input.discountValue)
+
+    const discountedPrice = offerDiscountedPrice(
+      Number(offer.basePrice),
+      discountType,
+      discountValue,
+    )
+
+    const startsAt =
+      input.startsAt === undefined
+        ? new Date(offer.startsAt)
+        : offerDate(input.startsAt, 'OFFER_START_INVALID', 'Choose a valid offer start time.')
+
+    const endsAt =
+      input.endsAt === undefined
+        ? new Date(offer.endsAt)
+        : offerDate(input.endsAt, 'OFFER_END_INVALID', 'Choose a valid offer end time.')
+
+    if (endsAt <= startsAt) {
+      throw new AppError(400, 'OFFER_SCHEDULE_INVALID', 'Offer end time must be after the start time.')
+    }
+
+    const now = new Date()
+    if (endsAt <= now) {
+      throw new AppError(400, 'OFFER_END_INVALID', 'Offer end time must be in the future.')
+    }
+
+    offer.discountType = discountType
+    offer.discountValue = discountValue
+    offer.discountedPrice = discountedPrice
+    offer.startsAt = startsAt
+    offer.endsAt = endsAt
+    offer.status = startsAt <= now ? 'ACTIVE' : 'SCHEDULED'
+    offer.isCurrent = true
+
+    if (offer.status === 'ACTIVE') {
+      product.originalPrice = offer.basePrice
+      product.price = discountedPrice
+    } else {
+      product.originalPrice = null
+      product.price = offer.basePrice
+    }
+
+    await Promise.all([offer.save(), product.save()])
+
+    const image = await ProductImageModel.findOne({
+      productId: product._id,
+      isPrimary: true,
+    }).lean()
+
+    return offerView(offer.toObject(), product.toObject(), image?.url ?? null)
+  }
+
+  async deleteOffer(sellerId: string, offerId: string) {
+    const store = await this.sellerDocument(sellerId)
+    const offer: any = await StoreOfferModel.findOne({ _id: offerId, storeId: store._id })
+
+    if (!offer) throw new AppError(404, 'OFFER_NOT_FOUND', 'Offer not found.')
+
+    if (offer.isCurrent) {
+      await ProductModel.updateOne(
+        { _id: offer.productId, storeId: store._id, deletedAt: null },
+        { $set: { price: offer.basePrice, originalPrice: null } },
+      )
+    }
+
+    await StoreOfferModel.deleteOne({ _id: offer._id })
+    return { id: String(offer._id) }
+  }
+
 }

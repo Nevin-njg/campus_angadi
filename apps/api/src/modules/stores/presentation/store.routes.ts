@@ -329,13 +329,50 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       })
     }),
   )
-  router.post(
+  router.get(
     '/offers',
     asyncHandler(async (request, response) => {
       response.json({
         success: true,
-        message: 'Offer applied.',
-        data: await service.applyOffer(request.auth!.user.id, request.body),
+        message: 'Offers retrieved.',
+        data: await service.sellerOffers(request.auth!.user.id),
+      })
+    }),
+  )
+  router.post(
+    '/offers',
+    asyncHandler(async (request, response) => {
+      response.status(201).json({
+        success: true,
+        message: 'Offer created.',
+        data: await service.createOffer(request.auth!.user.id, request.body),
+      })
+    }),
+  )
+  router.patch(
+    '/offers/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Offer updated.',
+        data: await service.updateOffer(
+          request.auth!.user.id,
+          String(request.params.id),
+          request.body,
+        ),
+      })
+    }),
+  )
+  router.delete(
+    '/offers/:id',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Offer deleted.',
+        data: await service.deleteOffer(
+          request.auth!.user.id,
+          String(request.params.id),
+        ),
       })
     }),
   )

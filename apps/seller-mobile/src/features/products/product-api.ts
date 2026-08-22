@@ -18,6 +18,16 @@ export type SellerProduct = {
   primaryImage: string | null
   createdAt: string
   updatedAt: string
+  currentOffer: {
+    id: string
+    status: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED'
+    discountType: 'PERCENTAGE' | 'FLAT'
+    discountValue: number
+    basePrice: number
+    discountedPrice: number
+    startsAt: string
+    endsAt: string
+  } | null
 }
 
 export type ProductImageAsset = {

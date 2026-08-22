@@ -10,7 +10,7 @@ import {
 
 const items = [
   ['pricetags-outline', 'Categories', '/categories'],
-  ['ticket-outline', 'Offers', null],
+  ['ticket-outline', 'Offers', '/offers'],
   ['wallet-outline', 'Finance', null],
   ['time-outline', 'Store timings', null],
   ['phone-portrait-outline', 'Logged-in devices', null],

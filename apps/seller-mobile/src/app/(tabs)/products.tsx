@@ -59,9 +59,10 @@ function money(value: number) {
 
 function hasOffer(product: SellerProduct) {
   return (
-    product.originalPrice !== null &&
-    product.originalPrice > 0 &&
-    product.originalPrice > product.price
+    Boolean(product.currentOffer) ||
+    (product.originalPrice !== null &&
+      product.originalPrice > 0 &&
+      product.originalPrice > product.price)
   )
 }
 
@@ -530,13 +531,19 @@ export default function ProductsScreen() {
 
                     <View style={styles.priceRow}>
                       <Text style={styles.price}>{money(product.price)}</Text>
-                      {offer && product.originalPrice !== null ? (
+                      {offer ? (
                         <>
-                          <Text style={styles.originalPrice}>
-                            {money(product.originalPrice)}
-                          </Text>
+                          {product.originalPrice !== null ? (
+                            <Text style={styles.originalPrice}>
+                              {money(product.originalPrice)}
+                            </Text>
+                          ) : null}
                           <View style={styles.offerPill}>
-                            <Text style={styles.offerText}>Offer</Text>
+                            <Text style={styles.offerText}>
+                              {product.currentOffer?.status === 'SCHEDULED'
+                                ? 'Scheduled'
+                                : 'Offer'}
+                            </Text>
                           </View>
                         </>
                       ) : null}
