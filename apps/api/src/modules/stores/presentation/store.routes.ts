@@ -277,6 +277,20 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       })
     }),
   )
+  router.post(
+    '/orders/:id/decision',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Order decision saved.',
+        data: await service.decideOrder(
+          request.auth!.user.id,
+          String(request.params.id),
+          requestText(request.body, 'decision'),
+        ),
+      })
+    }),
+  )
   router.patch(
     '/orders/:id/status',
     asyncHandler(async (request, response) => {

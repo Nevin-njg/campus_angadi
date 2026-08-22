@@ -1,12 +1,13 @@
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import type { AuthUser, UserRole } from '@campusbaza/contracts'
 import { isEmailDomainAllowed, normalizeEmail } from '@campusbaza/validation'
 import { AppError } from '../../../core/errors/app-error.js'
-import { hashToken } from '../../../core/security/hash.js'
+import { hashOtp, hashToken } from '../../../core/security/hash.js'
 import type { TokenService } from '../../../core/security/token-service.js'
 import type { UserRepository } from '../../users/domain/user.js'
 import { toAuthUser } from '../../users/domain/user.js'
 import type { GoogleIdentityVerifier } from '../domain/google-identity.js'
+import type { EmailSender, OtpStore } from '../domain/otp.js'
 import type { SessionRepository } from '../domain/session.js'
 
 export interface AuthServiceOptions {
@@ -19,6 +20,16 @@ export interface AuthServiceOptions {
 export interface RequestMetadata {
   ipAddress: string | null
   userAgent: string | null
+}
+
+export interface SellerOtpConfig {
+  store: OtpStore
+  emailSender: EmailSender
+  hashSecret: string
+  appName: string
+  expiresInMinutes?: number
+  resendAfterSeconds?: number
+  attempts?: number
 }
 
 export interface AuthenticationResult {
@@ -35,6 +46,7 @@ export class AuthService {
     private readonly googleIdentity: GoogleIdentityVerifier,
     private readonly tokenService: TokenService,
     private readonly options: AuthServiceOptions,
+    private readonly sellerOtp?: SellerOtpConfig,
   ) {}
 
   async signInWithGoogle(
@@ -96,6 +108,163 @@ export class AuthService {
     return this.createSession(value.user.id, value.user.role, toAuthUser(value), metadata)
   }
 
+  async requestSellerOtp(
+    rawEmail: string,
+  ): Promise<{ expiresInSeconds: number; resendAfterSeconds: number }> {
+    const config = this.requireSellerOtp()
+    const email = normalizeEmail(rawEmail)
+
+    const expiresInMinutes = config.expiresInMinutes ?? 5
+    const resendAfterSeconds = config.resendAfterSeconds ?? 30
+    const attempts = config.attempts ?? 5
+
+    const value = await this.users.findByEmail(email)
+
+    // Keep the request response generic so we do not expose which
+    // email addresses are registered seller accounts.
+    if (!value || value.user.role !== 'SELLER' || value.user.status !== 'ACTIVE') {
+      return {
+        expiresInSeconds: expiresInMinutes * 60,
+        resendAfterSeconds,
+      }
+    }
+
+    const now = new Date()
+    const existing = await config.store.get(email)
+
+    if (existing && existing.resendAvailableAt.getTime() > now.getTime()) {
+      const waitSeconds = Math.max(
+        1,
+        Math.ceil(
+          (existing.resendAvailableAt.getTime() - now.getTime()) / 1000,
+        ),
+      )
+
+      throw new AppError(
+        429,
+        'SELLER_OTP_RESEND_TOO_SOON',
+        `Wait ${waitSeconds} seconds before requesting another code.`,
+      )
+    }
+
+    const sendCount = existing ? existing.sendCount + 1 : 1
+
+    if (sendCount > 5) {
+      throw new AppError(
+        429,
+        'SELLER_OTP_SEND_LIMIT',
+        'Too many login codes requested. Try again later.',
+      )
+    }
+
+    const code = randomInt(0, 1_000_000)
+      .toString()
+      .padStart(6, '0')
+
+    const expiresAt = new Date(
+      now.getTime() + expiresInMinutes * 60_000,
+    )
+
+    await config.store.set({
+      email,
+      hash: hashOtp(email, code, config.hashSecret),
+      expiresAt,
+      resendAvailableAt: new Date(
+        now.getTime() + resendAfterSeconds * 1000,
+      ),
+      attemptsRemaining: attempts,
+      sendCount,
+      sendWindowStartedAt:
+        existing?.sendWindowStartedAt ?? now,
+    })
+
+    try {
+      await config.emailSender.sendLoginOtp({
+        recipient: email,
+        code,
+        expiresInMinutes,
+        appName: `${config.appName} Seller`,
+      })
+    } catch {
+      await config.store.delete(email)
+
+      throw new AppError(
+        503,
+        'SELLER_OTP_DELIVERY_FAILED',
+        'Could not send the login code. Try again.',
+      )
+    }
+
+    return {
+      expiresInSeconds: expiresInMinutes * 60,
+      resendAfterSeconds,
+    }
+  }
+
+  async verifySellerOtp(
+    rawEmail: string,
+    code: string,
+    metadata: RequestMetadata,
+  ): Promise<AuthenticationResult> {
+    const config = this.requireSellerOtp()
+    const email = normalizeEmail(rawEmail)
+
+    const verification = await config.store.verifyAndConsume(
+      email,
+      hashOtp(email, code, config.hashSecret),
+    )
+
+    if (verification.status === 'MISSING') {
+      throw new AppError(
+        401,
+        'SELLER_OTP_EXPIRED',
+        'The login code is missing or expired. Request a new code.',
+      )
+    }
+
+    if (verification.status === 'LOCKED') {
+      throw new AppError(
+        429,
+        'SELLER_OTP_LOCKED',
+        'Too many incorrect attempts. Request a new code.',
+      )
+    }
+
+    if (verification.status === 'INVALID') {
+      throw new AppError(
+        401,
+        'SELLER_OTP_INVALID',
+        `Incorrect code. ${verification.attemptsRemaining} attempts remaining.`,
+      )
+    }
+
+    const value = await this.users.findByEmail(email)
+
+    if (
+      !value ||
+      value.user.role !== 'SELLER' ||
+      value.user.status !== 'ACTIVE'
+    ) {
+      throw new AppError(
+        403,
+        'SELLER_APP_ACCESS_DENIED',
+        'This account cannot use the seller app.',
+      )
+    }
+
+    const activeUser = await this.users.recordSuccessfulLogin(
+      value.user.id,
+      'SELLER',
+    )
+
+    return this.createSession(
+      activeUser.user.id,
+      activeUser.user.role,
+      toAuthUser(activeUser),
+      metadata,
+    )
+  }
+
   async signInForTesting(email: string, metadata: RequestMetadata): Promise<AuthenticationResult> {
     const value = await this.users.findByEmail(normalizeEmail(email))
     if (!value || value.user.status !== 'ACTIVE') {
@@ -109,6 +278,38 @@ export class AuthService {
       toAuthUser(activeUser),
       metadata,
     )
+  }
+
+  async refreshSellerMobile(refreshToken: string): Promise<AuthenticationResult> {
+    const payload = this.tokenService.verifyRefreshToken(refreshToken)
+    const session = await this.sessions.findById(payload.sid)
+
+    if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
+      throw new AppError(401, 'SESSION_EXPIRED', 'Please sign in again.')
+    }
+
+    if (
+      session.userId !== payload.sub ||
+      session.refreshJti !== payload.jti ||
+      session.refreshTokenHash !== hashToken(refreshToken)
+    ) {
+      // Do not revoke every seller device because of one stale/invalid token.
+      // Each seller login is a separate device session.
+      throw new AppError(401, 'SESSION_EXPIRED', 'Please sign in again.')
+    }
+
+    const value = await this.users.findById(payload.sub)
+    if (!value || value.user.status !== 'ACTIVE') {
+      await this.sessions.revoke(session.id, 'ACCOUNT_NOT_ACTIVE')
+      throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not currently active.')
+    }
+
+    return {
+      accessToken: this.tokenService.createAccessToken(value.user.id, value.user.role),
+      refreshToken,
+      refreshExpiresAt: session.expiresAt,
+      user: toAuthUser(value),
+    }
   }
 
   async refresh(refreshToken: string): Promise<AuthenticationResult> {
@@ -205,6 +406,18 @@ export class AuthService {
       refreshExpiresAt: tokens.refreshExpiresAt,
       user,
     }
+  }
+
+  private requireSellerOtp(): SellerOtpConfig {
+    if (!this.sellerOtp) {
+      throw new AppError(
+        503,
+        'SELLER_OTP_NOT_CONFIGURED',
+        'Seller login is not configured.',
+      )
+    }
+
+    return this.sellerOtp
   }
 
   private assertHostedDomain(email: string, hostedDomain: string | null): void {

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
-import { isValidObjectId } from 'mongoose'
+import mongoose, { isValidObjectId } from 'mongoose'
 import { AppError } from '../../../core/errors/app-error.js'
 import { StoreModel } from '../infrastructure/store.model.js'
 import { StoreDepartmentModel } from '../infrastructure/store-department.model.js'
@@ -234,6 +234,8 @@ const orderView = (order: any, items: any[] = []) => ({
   preferredPickupTime: order.preferredPickupTime ?? null,
   notes: order.notes ?? null,
   createdAt: order.createdAt,
+  completedAt: order.completedAt ?? null,
+  cancelledAt: order.cancelledAt ?? null,
   items: items.map((item) => ({
     id: String(item._id),
     productName: item.productName,
@@ -254,6 +256,15 @@ const sellerStatusTransitions: Record<string, string[]> = {
   DELIVERING_TO_CAMPUS: ['COMPLETED', 'CANCELLED'],
   ARRIVED_AT_CAMPUS: ['COMPLETED', 'CANCELLED'],
   READY_FOR_PICKUP: ['COMPLETED', 'CANCELLED'],
+}
+
+function transactionUnavailable(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return (
+    message.includes('Transaction numbers are only allowed') ||
+    message.includes('replica set member or mongos') ||
+    message.includes('does not support retryable writes')
+  )
 }
 
 export class StoreService {
@@ -1170,6 +1181,146 @@ export class StoreService {
       itemsByOrder.set(key, [...(itemsByOrder.get(key) ?? []), item])
     }
     return orders.map((order: any) => orderView(order, itemsByOrder.get(String(order._id)) ?? []))
+  }
+
+  async decideOrder(sellerId: string, orderId: string, decision: string) {
+    const store = await this.sellerDocument(sellerId)
+    const normalizedDecision = String(decision).trim().toUpperCase()
+
+    if (normalizedDecision !== 'ACCEPT' && normalizedDecision !== 'REJECT') {
+      throw new AppError(
+        400,
+        'ORDER_DECISION_INVALID',
+        'Choose either ACCEPT or REJECT for this order.',
+      )
+    }
+
+    const nextStatus = normalizedDecision === 'ACCEPT' ? 'COMPLETED' : 'REJECTED'
+    const session = await mongoose.startSession()
+    let changed = false
+
+    try {
+      await session.withTransaction(async () => {
+        changed = false
+        const now = new Date()
+        const set: Record<string, unknown> = {
+          status: nextStatus,
+          ...(nextStatus === 'COMPLETED'
+            ? { completedAt: now }
+            : { cancelledAt: now }),
+        }
+
+        const previousOrder: any = await OrderModel.findOneAndUpdate(
+          {
+            _id: orderId,
+            storeId: store._id,
+            status: 'PENDING',
+          },
+          { $set: set },
+          { new: false, session },
+        ).lean()
+
+        if (!previousOrder) return
+        changed = true
+
+        const items: any[] = await OrderItemModel.find({ orderId })
+          .session(session)
+          .lean()
+
+        if (nextStatus === 'REJECTED' && !previousOrder.stockRestored) {
+          await Promise.all(
+            items.map((item) =>
+              ProductModel.updateOne(
+                { _id: item.productId, deletedAt: null },
+                [
+                  { $set: { stock: { $add: ['$stock', Number(item.quantity)] } } },
+                  {
+                    $set: {
+                      status: {
+                        $cond: [
+                          { $eq: ['$status', 'OUT_OF_STOCK'] },
+                          'APPROVED',
+                          '$status',
+                        ],
+                      },
+                    },
+                  },
+                ],
+                { session },
+              ),
+            ),
+          )
+
+          await OrderModel.updateOne(
+            { _id: orderId },
+            { $set: { stockRestored: true } },
+            { session },
+          )
+        }
+
+        if (nextStatus === 'COMPLETED') {
+          await Promise.all(
+            items.map((item) =>
+              ProductModel.updateOne(
+                { _id: item.productId },
+                { $inc: { completedOrderCount: 1 } },
+                { session },
+              ),
+            ),
+          )
+        }
+
+        await OrderStatusHistoryModel.create(
+          [
+            {
+              orderId,
+              fromStatus: 'PENDING',
+              toStatus: nextStatus,
+              note:
+                nextStatus === 'COMPLETED'
+                  ? 'Accepted from seller mobile app.'
+                  : 'Rejected from seller mobile app.',
+              actorId: sellerId,
+            },
+          ],
+          { session },
+        )
+      })
+    } catch (error) {
+      if (transactionUnavailable(error)) {
+        throw new AppError(
+          503,
+          'DATABASE_TRANSACTIONS_REQUIRED',
+          'Seller order decisions require MongoDB replica-set transactions.',
+        )
+      }
+      throw error
+    } finally {
+      await session.endSession()
+    }
+
+    if (!changed) {
+      const existing: any = await OrderModel.findOne({
+        _id: orderId,
+        storeId: store._id,
+      }).lean()
+      if (!existing) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found.')
+
+      throw new AppError(
+        409,
+        'ORDER_ALREADY_DECIDED',
+        `This order is already ${String(existing.status).toLowerCase().replaceAll('_', ' ')}.`,
+      )
+    }
+
+    const updated: any = await OrderModel.findOne({
+      _id: orderId,
+      storeId: store._id,
+    }).lean()
+    if (!updated) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found.')
+
+    const items = await OrderItemModel.find({ orderId }).lean()
+    return orderView(updated, items)
   }
 
   async updateOrderStatus(sellerId: string, orderId: string, nextStatus: string, note = '') {

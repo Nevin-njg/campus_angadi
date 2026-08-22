@@ -34,6 +34,15 @@ export class TokenService {
     private readonly refreshExpiresIn: string,
   ) {}
 
+  createAccessToken(userId: string, role: UserRole): string {
+    return jwt.sign({ role, type: 'access' }, this.accessSecret, {
+      subject: userId,
+      // jsonwebtoken's declaration narrows duration strings more than the runtime API.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      expiresIn: this.accessExpiresIn as JwtExpiresIn,
+    })
+  }
+
   createTokenPair(userId: string, role: UserRole, sessionId: string): TokenPairData {
     const refreshJti = randomUUID()
     const accessToken = jwt.sign({ role, type: 'access' }, this.accessSecret, {

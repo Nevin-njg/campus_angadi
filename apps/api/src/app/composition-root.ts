@@ -7,6 +7,7 @@ import { GoogleIdentityTokenVerifier } from '../infrastructure/google/google-ide
 import { AuthService } from '../modules/auth/application/auth.service.js'
 import { AccessRequestService } from '../modules/auth/application/access-request.service.js'
 import { ConsoleEmailSender } from '../infrastructure/email/console-email.sender.js'
+import { RedisOtpStore } from '../infrastructure/otp/redis-otp.store.js'
 import { MongooseSessionRepository } from '../modules/auth/infrastructure/mongoose-session.repository.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
 import { MongooseUserRepository } from '../modules/users/infrastructure/mongoose-user.repository.js'
@@ -64,12 +65,18 @@ export function createCompositionRoot() {
   const redis = createRedis(env.REDIS_URL, logger)
   const googleIdentity = new GoogleIdentityTokenVerifier(env.GOOGLE_CLIENT_ID)
   const emailSender = new ConsoleEmailSender(logger)
+  const sellerOtpStore = new RedisOtpStore(redis)
 
   const authService = new AuthService(users, sessions, googleIdentity, tokenService, {
     allowedEmailDomains: env.ALLOWED_EMAIL_DOMAINS,
     googleHostedDomains: env.GOOGLE_HOSTED_DOMAINS,
     adminEmails: env.ADMIN_EMAILS,
     superAdminEmails: env.SUPER_ADMIN_EMAILS,
+  }, {
+    store: sellerOtpStore,
+    emailSender,
+    hashSecret: env.JWT_REFRESH_SECRET,
+    appName: env.APP_NAME,
   })
   const accessRequestService = new AccessRequestService(
     googleIdentity,
