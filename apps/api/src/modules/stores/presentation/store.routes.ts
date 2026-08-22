@@ -9,6 +9,7 @@ import {
 } from '../application/store-finance.service.js'
 import {
   getSellerStoreTimings,
+  permanentlyCloseSellerStore,
   updateSellerStoreAvailability,
   updateSellerStoreTimings,
 } from '../application/store-hours.service.js'
@@ -245,6 +246,17 @@ export function createSellerStoreRouter(service: StoreService, authenticate: Req
       })
     }),
   )
+  router.patch(
+    '/permanently-close',
+    asyncHandler(async (request, response) => {
+      response.json({
+        success: true,
+        message: 'Store permanently closed.',
+        data: await permanentlyCloseSellerStore(request.auth!.user.id),
+      })
+    }),
+  )
+
   router.get(
     '/products',
     asyncHandler(async (request, response) => {

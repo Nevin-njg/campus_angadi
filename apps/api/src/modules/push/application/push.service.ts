@@ -174,6 +174,14 @@ export class PushService {
     }))
   }
 
+  async unregisterAllSellerMobileDevices(userId: string) {
+    const result = await SellerMobileDeviceModel.deleteMany({ userId })
+
+    return {
+      removed: result.deletedCount ?? 0,
+    }
+  }
+
   async unregisterSellerMobileDevice(
     userId: string,
     deviceId: string,

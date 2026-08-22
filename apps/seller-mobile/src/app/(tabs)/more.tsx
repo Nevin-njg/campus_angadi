@@ -14,7 +14,7 @@ const items = [
   ['wallet-outline', 'Finance', '/finance'],
   ['time-outline', 'Store timings', '/store-timings'],
   ['phone-portrait-outline', 'Logged-in devices', '/devices'],
-  ['settings-outline', 'Settings', null],
+  ['settings-outline', 'Settings', '/settings'],
 ] as const
 
 export default function MoreScreen() {
@@ -44,10 +44,6 @@ export default function MoreScreen() {
               </View>
 
               <Text style={styles.label}>{label}</Text>
-
-              {label === 'Settings' ? (
-                <Ionicons name="lock-closed-outline" size={16} color="#a1a1aa" />
-              ) : null}
 
               <Ionicons
                 name="chevron-forward"

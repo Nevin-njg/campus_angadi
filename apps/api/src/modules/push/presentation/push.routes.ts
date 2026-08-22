@@ -135,6 +135,19 @@ export function createPushRouter(
   )
 
   router.delete(
+    '/seller-mobile/unregister-all',
+    asyncHandler(async (req, res) => {
+      const data = await service.unregisterAllSellerMobileDevices(req.auth!.user.id)
+
+      res.json({
+        success: true,
+        message: 'All seller mobile devices removed from push notifications.',
+        data,
+      })
+    }),
+  )
+
+  router.delete(
     '/seller-mobile/unregister',
     validateBody(sellerMobileUnregisterSchema),
     asyncHandler(async (req, res) => {

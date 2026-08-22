@@ -308,6 +308,20 @@ export async function updateSellerStoreAvailability(sellerId: string, input: unk
   return timingsView(store.toObject())
 }
 
+export async function permanentlyCloseSellerStore(sellerId: string) {
+  const store = await sellerStoreDocument(sellerId)
+
+  store.set('status', 'ARCHIVED')
+  store.set('manualOpenOverride', 'CLOSED')
+  await store.save()
+
+  return {
+    storeId: String(store._id),
+    status: 'ARCHIVED' as const,
+    manualOpenOverride: 'CLOSED' as const,
+  }
+}
+
 export async function assertStoreOpenForCheckout(storeId: string) {
   const store = await StoreModel.findById(storeId).lean()
 
