@@ -7,6 +7,7 @@ import { GoogleIdentityTokenVerifier } from '../infrastructure/google/google-ide
 import { AuthService } from '../modules/auth/application/auth.service.js'
 import { AccessRequestService } from '../modules/auth/application/access-request.service.js'
 import { ConsoleEmailSender } from '../infrastructure/email/console-email.sender.js'
+import { SmtpEmailSender } from '../infrastructure/email/smtp-email.sender.js'
 import { RedisOtpStore } from '../infrastructure/otp/redis-otp.store.js'
 import { MongooseSessionRepository } from '../modules/auth/infrastructure/mongoose-session.repository.js'
 import { ProfileService } from '../modules/users/application/profile.service.js'
@@ -66,7 +67,24 @@ export function createCompositionRoot() {
 
   const redis = createRedis(env.REDIS_URL, logger)
   const googleIdentity = new GoogleIdentityTokenVerifier(env.GOOGLE_CLIENT_ID)
-  const emailSender = new ConsoleEmailSender(logger)
+  const smtpConfigured = Boolean(
+    env.SMTP_HOST &&
+      env.SMTP_USER &&
+      env.SMTP_PASSWORD &&
+      env.SMTP_FROM_EMAIL,
+  )
+
+  const emailSender = smtpConfigured
+    ? new SmtpEmailSender(
+        env.SMTP_HOST,
+        env.SMTP_PORT,
+        env.SMTP_SECURE,
+        env.SMTP_USER,
+        env.SMTP_PASSWORD,
+        env.SMTP_FROM_NAME,
+        env.SMTP_FROM_EMAIL,
+      )
+    : new ConsoleEmailSender(logger)
   const sellerOtpStore = new RedisOtpStore(redis)
 
   const authService = new AuthService(users, sessions, googleIdentity, tokenService, {

@@ -47,6 +47,13 @@ const envSchema = z
     MONGODB_SERVER_SELECTION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(8000),
     REDIS_URL: z.string().min(1),
     ALLOWED_EMAIL_DOMAINS: csv,
+    SMTP_HOST: z.string().trim().default(''),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+    SMTP_SECURE: booleanFromString.default(true),
+    SMTP_USER: z.string().trim().default(''),
+    SMTP_PASSWORD: z.string().default(''),
+    SMTP_FROM_NAME: z.string().trim().min(1).default('Campus Angadi'),
+    SMTP_FROM_EMAIL: z.string().trim().email().optional().or(z.literal('')).default(''),
     GOOGLE_CLIENT_ID: z.string().trim().min(20),
     GOOGLE_HOSTED_DOMAINS: csv.default(''),
     ADMIN_EMAILS: csv.default(''),
@@ -86,6 +93,25 @@ const envSchema = z
     VAPID_SUBJECT: z.string().trim().default('https://campusangadi.app'),
   })
   .superRefine((value, context) => {
+    if (value.NODE_ENV === 'production') {
+      const requiredSmtpFields = [
+        ['SMTP_HOST', value.SMTP_HOST],
+        ['SMTP_USER', value.SMTP_USER],
+        ['SMTP_PASSWORD', value.SMTP_PASSWORD],
+        ['SMTP_FROM_EMAIL', value.SMTP_FROM_EMAIL],
+      ] as const
+
+      for (const [field, fieldValue] of requiredSmtpFields) {
+        if (!fieldValue) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: 'Production seller OTP email requires SMTP configuration.',
+          })
+        }
+      }
+    }
+
     if (value.NODE_ENV === 'production' && value.METRICS_ENABLED && !value.METRICS_TOKEN) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
