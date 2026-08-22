@@ -382,7 +382,13 @@ export default function SettingsScreen() {
               icon="notifications-outline"
               title="Order notifications"
               value={notificationStatus}
-              onPress={() => void Linking.openSettings()}
+              onPress={() => router.push('/notification-health' as never)}
+            />
+            <SettingRow
+              icon="shield-checkmark-outline"
+              title="Notification health"
+              value="Permissions, registration and battery guidance"
+              onPress={() => router.push('/notification-health' as never)}
             />
             <SettingRow
               icon="construct-outline"
